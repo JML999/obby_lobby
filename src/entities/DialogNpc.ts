@@ -369,7 +369,7 @@ export abstract class DialogNpc {
              if (playerUI.cleanupTimer) {
                  clearTimeout(playerUI.cleanupTimer);
              }
-             const hideDelay = 3000; // 3 seconds
+             const hideDelay = 10000; // 3 seconds
              playerUI.cleanupTimer = setTimeout(() => {
                 this.cleanupPlayerInteraction(player);
              }, hideDelay);

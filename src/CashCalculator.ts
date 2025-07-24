@@ -31,6 +31,10 @@ export class CashCalculator {
         'bounce-pad': 5,
         'rotating-beam': 5,
         'obstacle': 5,
+        'zombie': 10,        // Zombies cost more due to AI complexity
+        'zombie-normal': 10,
+        'zombie-fast': 12,   // Fast zombies cost slightly more
+        'zombie-strong': 15, // Strong zombies cost the most
         // Add more entity types as needed
     };
 

@@ -117,7 +117,12 @@ class BlockInventoryPanel {
             { id: 'bounce_pad_small', name: 'Jump Pad', size: '', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
             
             // Rotating Beam (only small size for now)
-            { id: 'rotating_beam_small', name: 'Rotating Beam', size: '', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png' }
+            { id: 'rotating_beam_small', name: 'Rotating Beam', size: '', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
+            
+            // Enemies - Zombies (using size field to store variant)
+            { id: 'zombie_normal', name: 'Zombie', size: 'normal', type: 'zombie', sizeId: 'normal', icon: 'ui/icons/target.png' },
+            { id: 'zombie_fast', name: 'Fast Zombie', size: 'fast', type: 'zombie', sizeId: 'fast', icon: 'ui/icons/target.png' },
+            { id: 'zombie_strong', name: 'Strong Zombie', size: 'strong', type: 'zombie', sizeId: 'strong', icon: 'ui/icons/target.png' }
         ];
     }
 

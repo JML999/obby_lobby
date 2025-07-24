@@ -592,6 +592,11 @@ export class PlotManager {
         // Spawn obstacles using direct obstacle creation
         const obstaclePlacementManager = (await import('./ObstaclePlacementManager')).ObstaclePlacementManager.getInstance();
         obstaclePlacementManager.initializeWorld(world);
+        
+        // Initialize EnemyPlacementManager for spawning enemies
+        const { EnemyPlacementManager } = await import('./EnemyPlacementManager');
+        const enemyPlacementManager = EnemyPlacementManager.getInstance();
+        enemyPlacementManager.initializeWorld(world);
 
         for (const obstacle of plotData.obstacles) {
             // Apply transformation if needed (same logic as PlotSaveManager)

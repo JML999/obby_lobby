@@ -168,7 +168,6 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         this.handleAnimationStateChange(entity, currentAnimationState);
         
         if (isClimbing) {
-            console.log(`[TICK] Applying climbing physics for player ${playerEntity.player.id}`);
             // Use climbing physics - this overrides all other movement types
             this.applyClimbingPhysics(entity, input, cameraOrientation, deltaTimeMs);
         } else if (isOnIce) {
@@ -783,21 +782,25 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                 plotId // Pass plotId for boundary checking
             );
             if (success) {
-                // Map obstacle type to entity type for cash calculation
-                let entityType = 'obstacle'; // Default fallback
-                switch (selectedObstacle.type) {
-                    case 'bounce_pad':
-                        entityType = 'bounce-pad';
-                        break;
-                    case 'rotating_beam':
-                        entityType = 'rotating-beam';
-                        break;
-                    case 'seesaw':
-                        entityType = 'obstacle'; // Use generic for now
-                        break;
-                    default:
-                        entityType = 'obstacle';
-                }
+                                        // Map obstacle type to entity type for cash calculation
+                        let entityType = 'obstacle'; // Default fallback
+                        switch (selectedObstacle.type) {
+                            case 'bounce_pad':
+                                entityType = 'bounce-pad';
+                                break;
+                            case 'rotating_beam':
+                                entityType = 'rotating-beam';
+                                break;
+                            case 'zombie':
+                                // Use variant-specific cost for zombies
+                                entityType = `zombie-${selectedObstacle.size}`;
+                                break;
+                            case 'seesaw':
+                                entityType = 'obstacle'; // Use generic for now
+                                break;
+                            default:
+                                entityType = 'obstacle';
+                        }
                 // Deduct cash and update UI
                 const currentCash = this.plotSaveManager.getPlayerCash(playerEntity.player);
                 const newCash = CashCalculator.deductEntityCost(currentCash, entityType);
@@ -850,6 +853,10 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                                 break;
                             case 'rotating_beam':
                                 entityType = 'rotating-beam';
+                                break;
+                            case 'zombie':
+                                // Use variant-specific cost for zombies
+                                entityType = `zombie-${selectedObstacle.size}`;
                                 break;
                             case 'seesaw':
                                 entityType = 'obstacle'; // Use generic for now
@@ -929,6 +936,10 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                             break;
                         case 'rotating_beam':
                             entityType = 'rotating-beam';
+                            break;
+                        case 'zombie':
+                            // Use variant-specific refund for zombies
+                            entityType = `zombie-${obstacleRemovalResult.obstacleSize || 'normal'}`;
                             break;
                         case 'seesaw':
                             entityType = 'obstacle'; // Use generic for now, can add specific type later

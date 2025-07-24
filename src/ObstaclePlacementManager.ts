@@ -27,7 +27,12 @@ export class ObstaclePlacementManager {
     { id: 'bounce_pad_small', name: 'Jump Pad', type: 'bounce_pad', size: 'small', description: 'Jump pad for bouncing', category: 'movement' },
     
     // Rotating Beam (only small size)
-    { id: 'rotating_beam_small', name: 'Rotating Beam', type: 'rotating_beam', size: 'small', description: 'Rotating beam obstacle', category: 'hazard' }
+    { id: 'rotating_beam_small', name: 'Rotating Beam', type: 'rotating_beam', size: 'small', description: 'Rotating beam obstacle', category: 'hazard' },
+    
+    // Enemies - Zombies
+    { id: 'zombie_normal', name: 'Zombie', type: 'zombie', size: 'normal', description: 'Basic zombie enemy - follows and attacks players', category: 'enemy' },
+    { id: 'zombie_fast', name: 'Fast Zombie', type: 'zombie', size: 'fast', description: 'Quick zombie - faster movement and attacks', category: 'enemy' },
+    { id: 'zombie_strong', name: 'Strong Zombie', type: 'zombie', size: 'strong', description: 'Tough zombie - more health and damage', category: 'enemy' }
   ];
 
   public static getInstance(): ObstaclePlacementManager {
@@ -57,6 +62,18 @@ export class ObstaclePlacementManager {
       return false;
     }
     
+    // Check if this is an enemy (zombie) - delegate to EnemyPlacementManager
+    if (obstacleType.type === 'zombie') {
+      const { EnemyPlacementManager } = require('./EnemyPlacementManager');
+      const enemyPlacementManager = EnemyPlacementManager.getInstance();
+      
+      // Initialize world if needed
+      enemyPlacementManager.initializeWorld(this.world);
+      
+      return enemyPlacementManager.placeEnemy(player, obstacleId, position, plotId);
+    }
+    
+    // Handle regular obstacles
     // Check collision and boundaries using the new collision manager
     const canPlace = this.obstacleCollisionManager.canPlaceObstacle(
       plotId, 
@@ -98,6 +115,22 @@ export class ObstaclePlacementManager {
   public removeObstacle(player: Player, position: Vector3Like, plotId?: string): { success: boolean; obstacleType?: string; obstacleSize?: string } {
     if (!this.world) return { success: false };
     
+    // First try to remove enemies (zombies)
+    const { EnemyPlacementManager } = require('./EnemyPlacementManager');
+    const enemyPlacementManager = EnemyPlacementManager.getInstance();
+    enemyPlacementManager.initializeWorld(this.world);
+    
+    const enemyRemovalResult = enemyPlacementManager.removeEnemy(player, position, plotId);
+    if (enemyRemovalResult.success) {
+      // Enemy was removed, return enemy data for cash refund
+      return {
+        success: true,
+        obstacleType: 'zombie',
+        obstacleSize: enemyRemovalResult.enemyVariant || 'normal'
+      };
+    }
+    
+    // No enemy found, try regular obstacles
     // Find obstacles near the target position
     const obstacles = this.world.entityManager.getEntitiesByTag('obstacle');
     const targetPos = new Vector3(position.x, position.y, position.z);
@@ -136,7 +169,7 @@ export class ObstaclePlacementManager {
       }
     }
     
-    this.world.chatManager.sendPlayerMessage(player, 'No obstacle found to remove here!', 'FF0000');
+    this.world.chatManager.sendPlayerMessage(player, 'No obstacle or enemy found to remove here!', 'FF0000');
     return { success: false };
   }
 

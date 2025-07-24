@@ -64,6 +64,11 @@ export default class ObbyRegion extends GameRegion {
     this.plotSaveManager.initializeWorld(this.world);
     this.blockPlacementManager.initializeWorld(this.world);
     
+    // Initialize EnemyPlacementManager
+    const { EnemyPlacementManager } = require('./EnemyPlacementManager');
+    const enemyPlacementManager = EnemyPlacementManager.getInstance();
+    enemyPlacementManager.initializeWorld(this.world);
+    
     // Plot initialization is now handled automatically by PlotManager.assignPlayerToPlotInWorld()
     // when the first player is assigned to this region
     
