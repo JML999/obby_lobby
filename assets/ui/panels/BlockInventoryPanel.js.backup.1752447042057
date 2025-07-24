@@ -1,0 +1,1223 @@
+class BlockInventoryPanel {
+    constructor() {
+        this.container = null;
+        this.inventoryOpen = false;
+        this.inventoryElement = null;
+        this.selectedBlock = null;
+        this.availableBlocks = [];
+        this.availableObstacles = [];
+        this.mouseFollower = null;
+        this.heldBlock = null;
+        this.selectedHotbarSlot = 3; // Start with first editable slot
+        this.currentTab = 'blocks'; // 'blocks' or 'obstacles'
+        
+        // State management
+        this.currentPlayerState = 'LOBBY';
+        this.isEnabled = false;
+        
+        // Define available blocks and obstacles
+        this.initializeBlocks();
+        this.initializeObstacles();
+    }
+
+    initialize(containerId) {
+        this.container = document.getElementById(containerId);
+        if (!this.container) {
+            console.error(`[BlockInventoryPanel] Container with ID '${containerId}' not found.`);
+            return;
+        }
+
+        this.createInventoryUI();
+        this.addStyles();
+        this.setupEventListeners();
+        this.createMouseFollower();
+        
+        // Initially disabled (only enabled in build mode)
+        this.setEnabled(false);
+        
+        // Listen for state changes
+        if (window.hytopia && window.hytopia.onData) {
+            window.hytopia.onData((data) => {
+                if (data.type === 'playerStateChanged') {
+                    this.onPlayerStateChanged(data.state, data.plotIndex);
+                }
+            });
+        }
+        
+        console.log('[BlockInventoryPanel] Initialized successfully.');
+    }
+
+    onPlayerStateChanged(newState, plotIndex) {
+        console.log('[BlockInventoryPanel] Player state changed to:', newState, 'plotIndex:', plotIndex);
+        this.currentPlayerState = newState;
+        
+        // Only enable inventory when in building mode
+        if (newState === 'BUILDING') {
+            this.setEnabled(true);
+            console.log('[BlockInventoryPanel] Build mode activated - inventory enabled');
+        } else {
+            this.setEnabled(false);
+            // Close inventory if it's open when exiting build mode
+            if (this.inventoryOpen) {
+                this.toggle(false);
+            }
+            console.log('[BlockInventoryPanel] Exited build mode - inventory disabled');
+        }
+    }
+
+    setEnabled(enabled) {
+        this.isEnabled = enabled;
+        // Visual indicator could be added here if desired
+    }
+
+    isInBuildMode() {
+        return this.currentPlayerState === 'BUILDING' && this.isEnabled;
+    }
+
+        initializeBlocks() {
+        // AUTO-GENERATED FROM BlockRegistry - DO NOT EDIT MANUALLY
+        // To update this data, run: bun run scripts/updateUIBlocks.ts
+        this.availableBlocks = [
+            // Required blocks (0 points)
+            { id: 100, name: 'start', textureUri: 'blocks/start.png', cost: 0, type: 'start' },
+            { id: 101, name: 'goal', textureUri: 'blocks/goal.png', cost: 0, type: 'goal' },
+            { id: 102, name: 'checkpoint', textureUri: 'blocks/emerald-block.png', cost: 3, type: 'checkpoint' },
+            
+            // Basic movement blocks (1 point each)
+            { id: 1, name: 'bricks', textureUri: 'blocks/stone.png', cost: 1, type: 'bricks' },
+            { id: 2, name: 'clay', textureUri: 'blocks/clay.png', cost: 1, type: 'clay' },
+            { id: 4, name: 'dirt', textureUri: 'blocks/dirt.png', cost: 1, type: 'dirt' },
+            { id: 7, name: 'grass', textureUri: 'blocks/grass', cost: 1, type: 'grass' },
+            { id: 8, name: 'gravel', textureUri: 'blocks/gravel.png', cost: 1, type: 'gravel' },
+            { id: 9, name: 'ice', textureUri: 'blocks/ice.png', cost: 1, type: 'ice' },
+            { id: 11, name: 'log-side', textureUri: 'blocks/log', cost: 1, type: 'log-side' },
+            { id: 12, name: 'log-top', textureUri: 'blocks/log', cost: 1, type: 'log-top' },
+            { id: 13, name: 'mossy-cobblestone', textureUri: 'blocks/mossy-coblestone.png', cost: 1, type: 'mossy-cobblestone' },
+            { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines' },
+            { id: 16, name: 'oak-planks', textureUri: 'blocks/oak-planks.png', cost: 1, type: 'oak-planks' },
+            { id: 17, name: 'sand', textureUri: 'blocks/sand.png', cost: 1, type: 'sand' },
+            { id: 19, name: 'stone', textureUri: 'blocks/stone.png', cost: 1, type: 'stone' },
+            { id: 20, name: 'stone-bricks', textureUri: 'blocks/stone.png', cost: 1, type: 'stone-bricks' },
+            { id: 103, name: 'snow', textureUri: 'blocks/snow.png', cost: 1, type: 'snow' },
+            
+            // Hazard blocks (2 points each)
+            { id: 5, name: 'dragons-stone', textureUri: 'blocks/dragons-stone.png', cost: 2, type: 'dragons-stone' },
+            { id: 10, name: 'infected-shadowrock', textureUri: 'blocks/infected-shadowrock.png', cost: 2, type: 'infected-shadowrock' },
+            { id: 14, name: 'nuit', textureUri: 'blocks/nuit.png', cost: 2, type: 'nuit' },
+            { id: 18, name: 'shadowrock', textureUri: 'blocks/shadowrock.png', cost: 2, type: 'shadowrock' },
+            { id: 21, name: 'lava', textureUri: 'blocks/void-sand.png', cost: 2, type: 'lava' },
+            
+            // Special blocks (3+ points each)
+            { id: 3, name: 'diamond-ore', textureUri: 'blocks/diamond-ore.png', cost: 3, type: 'diamond-ore' },
+            { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass' },
+            { id: 22, name: 'cloud', textureUri: 'blocks/cloud.png', cost: 3, type: 'cloud' },
+        ];
+    }
+
+    initializeObstacles() {
+        // Define obstacles with size variants
+        this.availableObstacles = [
+            // Bounce Pads
+            { id: 'bounce_pad_small', name: 'Bounce Pad', size: 'Small', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
+            { id: 'bounce_pad_medium', name: 'Bounce Pad', size: 'Medium', type: 'bounce_pad', sizeId: 'medium', icon: 'ui/icons/speed-icon.png' },
+            { id: 'bounce_pad_large', name: 'Bounce Pad', size: 'Large', type: 'bounce_pad', sizeId: 'large', icon: 'ui/icons/speed-icon.png' },
+            
+            // Rotating Beams
+            { id: 'rotating_beam_small', name: 'Rotating Beam', size: 'Small', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
+            { id: 'rotating_beam_large', name: 'Rotating Beam', size: 'Large', type: 'rotating_beam', sizeId: 'large', icon: 'ui/icons/speed-icon.png' },
+            
+            // Seesaws
+            { id: 'seesaw', name: 'Seesaw', size: 'Standard', type: 'seesaw', sizeId: 'standard', icon: 'ui/icons/speed-icon.png' }
+        ];
+    }
+
+    createInventoryUI() {
+        this.inventoryElement = document.createElement('div');
+        this.inventoryElement.id = 'block-inventory-ui';
+        this.inventoryElement.className = 'backpack-overlay';
+        this.inventoryElement.style.display = 'none';
+
+        this.inventoryElement.innerHTML = `
+            <!-- Main Container -->
+            <div class="backpack-container">
+                <div class="backpack-header">
+                    <div class="backpack-info">
+                        <div class="backpack-icon">🎒</div>
+                        <div class="backpack-details">
+                            <div class="backpack-name">Building Kit</div>
+                            <div class="backpack-subtitle">Blocks & Obstacles</div>
+                        </div>
+                    </div>
+                    <button class="backpack-close">×</button>
+                </div>
+                
+                <div class="backpack-content">
+                    <!-- Left Navigation Tabs -->
+                    <div class="backpack-nav">
+                        <button class="backpack-tab active" data-tab="blocks" title="Blocks">
+                            <div class="tab-icon">🔲</div>
+                            <div class="tab-label">Blocks</div>
+                        </button>
+                        <button class="backpack-tab" data-tab="obstacles" title="Obstacles">
+                            <div class="tab-icon">⚡</div>
+                            <div class="tab-label">Obstacles</div>
+                        </button>
+                    </div>
+
+                    <!-- Main Grid Container -->
+                    <div class="backpack-main">
+                        <div class="backpack-grid-container">
+                            <div class="backpack-grid" id="block-inventory-grid">
+                                <!-- Grid slots will be generated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hotbar Container -->
+            <div class="backpack-hotbar-container">
+                <div class="backpack-hotbar-header">
+                    <h3 class="backpack-hotbar-title">Hotbar</h3>
+                </div>
+                <div class="backpack-hotbar-grid" id="backpack-hotbar-grid">
+                    <!-- Hotbar slots will be generated by JavaScript -->
+                </div>
+            </div>
+        `;
+
+        this.container.appendChild(this.inventoryElement);
+        this.generateBlockGrid();
+        this.generateHotbarPreview();
+    }
+
+    generateBlockGrid() {
+        const grid = document.getElementById('block-inventory-grid');
+        grid.innerHTML = '';
+
+        const items = this.currentTab === 'blocks' ? this.availableBlocks : this.availableObstacles;
+
+        items.forEach((item, index) => {
+            const slot = document.createElement('div');
+            slot.className = 'backpack-slot';
+            slot.dataset.itemId = item.id;
+            slot.dataset.itemName = item.name;
+            slot.dataset.itemType = this.currentTab;
+            slot.title = this.currentTab === 'obstacles' ? `${item.name} (${item.size})` : item.name;
+
+            const content = document.createElement('div');
+            content.className = 'backpack-slot-content';
+
+            if (this.currentTab === 'blocks') {
+                // Block display
+                const blockImage = document.createElement('img');
+                blockImage.className = 'backpack-item-icon';
+                blockImage.src = this.getBlockIconPath(item);
+                blockImage.alt = item.name;
+                content.appendChild(blockImage);
+            } else {
+                // Obstacle display with text name instead of image
+                const obstacleText = document.createElement('div');
+                obstacleText.className = 'backpack-obstacle-text';
+                obstacleText.textContent = item.name;
+                content.appendChild(obstacleText);
+
+                // Add size label for obstacles
+                const sizeLabel = document.createElement('div');
+                sizeLabel.className = 'obstacle-size-label';
+                sizeLabel.textContent = item.size;
+                content.appendChild(sizeLabel);
+            }
+
+            slot.appendChild(content);
+            grid.appendChild(slot);
+        });
+    }
+
+    generateHotbarPreview() {
+        const grid = document.getElementById('backpack-hotbar-grid');
+        grid.innerHTML = '';
+
+        // Get the permanent actions from the main hotbar
+        const permanentActions = [
+            { id: 'save', icon: '💾', label: 'Save' },
+            { id: 'undo', icon: '↩️', label: 'Undo' },
+            { id: 'redo', icon: '↪️', label: 'Redo' }
+        ];
+
+        for (let i = 0; i < 9; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'backpack-hotbar-slot';
+            slot.dataset.hotbarIndex = i;
+            
+            // Mark currently selected slot
+            if (i === this.selectedHotbarSlot) {
+                slot.classList.add('selected');
+            }
+
+            const content = document.createElement('div');
+            content.className = 'backpack-hotbar-slot-content';
+            
+            // First 3 slots are permanent action buttons
+            if (i < 3) {
+                const action = permanentActions[i];
+                const actionIcon = document.createElement('span');
+                actionIcon.className = 'backpack-action-icon';
+                actionIcon.textContent = action.icon;
+                actionIcon.title = action.label;
+                content.appendChild(actionIcon);
+            } else {
+                content.textContent = i + 1;
+            }
+
+            slot.appendChild(content);
+            grid.appendChild(slot);
+        }
+    }
+
+    createMouseFollower() {
+        this.mouseFollower = document.createElement('div');
+        this.mouseFollower.id = 'block-mouse-follower';
+        this.mouseFollower.style.cssText = `
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+            border: 2px solid #ffffff;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+        `;
+        document.body.appendChild(this.mouseFollower);
+    }
+
+    setupEventListeners() {
+        // Close button
+        const closeBtn = this.inventoryElement.querySelector('.backpack-close');
+        closeBtn.addEventListener('click', () => this.toggle(false));
+
+        // Tab switching
+        const tabButtons = this.inventoryElement.querySelectorAll('.backpack-tab');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                this.switchTab(tabName);
+            });
+        });
+
+        // Block selection from backpack grid
+        const grid = document.getElementById('block-inventory-grid');
+        grid.addEventListener('click', (e) => {
+            const slot = e.target.closest('.backpack-slot');
+            if (slot) {
+                this.selectItem(slot);
+            }
+        });
+
+        // Hotbar preview interaction (drag from backpack to hotbar)
+        const hotbarGrid = document.getElementById('backpack-hotbar-grid');
+        
+        // Hotbar slot selection
+        hotbarGrid.addEventListener('click', (e) => {
+            const slot = e.target.closest('.backpack-hotbar-slot');
+            if (slot) {
+                this.selectHotbarSlot(parseInt(slot.dataset.hotbarIndex));
+            }
+        });
+        
+        // Mouse events for drag and drop
+        grid.addEventListener('mousedown', (e) => {
+            const slot = e.target.closest('.backpack-slot');
+            if (slot) {
+                this.startDrag(slot, e);
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (this.heldBlock) {
+                this.updateMouseFollower(e);
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (this.heldBlock) {
+                this.endDrag(e);
+            }
+        });
+
+        // Toggle inventory with 'E' key
+        document.addEventListener('keydown', (e) => {
+            console.log('[BlockInventoryPanel] Key pressed:', e.key, 'isInputActive:', this.isInputElementActive(), 'isInBuildMode:', this.isInBuildMode());
+            
+            // Only respond to keys when in build mode
+            if (!this.isInBuildMode() || this.isInputElementActive()) return;
+            
+            if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+                console.log('[BlockInventoryPanel] E key detected - toggling inventory');
+                e.preventDefault();
+                this.toggle();
+            } else if (e.key === 'Escape' && this.inventoryOpen) {
+                console.log('[BlockInventoryPanel] Escape key detected - closing inventory');
+                e.preventDefault();
+                this.toggle(false);
+            }
+        });
+    }
+
+    switchTab(tabName) {
+        // Update active tab
+        document.querySelectorAll('.backpack-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        this.currentTab = tabName;
+        this.generateBlockGrid();
+        console.log(`[BlockInventoryPanel] Switched to ${tabName} tab`);
+    }
+
+    selectItem(slot) {
+        // Remove previous selection
+        const previousSelected = this.inventoryElement.querySelector('.backpack-slot.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
+
+        // Select new item
+        slot.classList.add('selected');
+        
+        const itemId = slot.dataset.itemId;
+        const itemName = slot.dataset.itemName;
+        const itemType = slot.dataset.itemType;
+
+        if (itemType === 'blocks') {
+            this.selectedBlock = {
+                id: parseInt(itemId),
+                name: itemName
+            };
+        } else {
+            // For obstacles, find the full item data
+            const obstacle = this.availableObstacles.find(o => o.id === itemId);
+            this.selectedBlock = {
+                id: itemId,
+                name: itemName,
+                type: obstacle.type,
+                size: obstacle.sizeId
+            };
+        }
+
+        // Auto-place in the locally selected hotbar slot
+        if (window.HotbarPanel) {
+            const hotbarItem = itemType === 'blocks' ? {
+                id: this.selectedBlock.id,
+                name: this.selectedBlock.name,
+                textureUri: this.availableBlocks.find(b => b.id === this.selectedBlock.id)?.textureUri
+            } : {
+                id: this.selectedBlock.id,
+                name: this.selectedBlock.name,
+                type: this.selectedBlock.type,
+                size: this.selectedBlock.size,
+                textureUri: this.getObstacleIconPath(this.availableObstacles.find(o => o.id === this.selectedBlock.id))
+            };
+            
+            // Update the hotbar slot
+            window.HotbarPanel.setSlotBlock(this.selectedHotbarSlot, hotbarItem);
+            
+            // Also select this slot in the hotbar
+            window.HotbarPanel.selectSlot(this.selectedHotbarSlot);
+            
+            // Update the inventory preview
+            this.updateHotbarPreview();
+            
+            console.log('[BlockInventoryPanel] Updated hotbar slot', this.selectedHotbarSlot, 'with item:', hotbarItem);
+        }
+
+        // Send data to game based on item type
+        if (itemType === 'blocks') {
+            // Send block selection data
+            hytopia.sendData({
+                type: 'selectBlock',
+                blockId: this.selectedBlock.id
+            });
+        } else {
+            // Send obstacle selection data
+            hytopia.sendData({
+                type: 'selectObstacle',
+                obstacleId: this.selectedBlock.id,
+                obstacleType: this.selectedBlock.type,
+                obstacleSize: this.selectedBlock.size
+            });
+        }
+
+        console.log('[BlockInventoryPanel] Selected item:', this.selectedBlock);
+    }
+
+    selectHotbarSlot(slotIndex) {
+        // Only allow selecting editable slots (3-8)
+        if (slotIndex < 3) {
+            console.log('[BlockInventoryPanel] Cannot select permanent action slot:', slotIndex);
+            return;
+        }
+        
+        // Update local selection
+        this.selectedHotbarSlot = slotIndex;
+        
+        // Update visual selection in inventory hotbar preview
+        const hotbarSlots = this.inventoryElement.querySelectorAll('.backpack-hotbar-slot');
+        hotbarSlots.forEach((slot, index) => {
+            if (index === slotIndex) {
+                slot.classList.add('selected');
+            } else {
+                slot.classList.remove('selected');
+            }
+        });
+        
+        // Also update the actual hotbar selection
+        if (window.HotbarPanel) {
+            window.HotbarPanel.selectSlot(slotIndex);
+        }
+        
+        console.log('[BlockInventoryPanel] Selected hotbar slot:', slotIndex);
+    }
+
+    updateHotbarPreview() {
+        if (!window.HotbarPanel) return;
+
+        // Get the permanent actions from the main hotbar
+        const permanentActions = [
+            { id: 'save', icon: '💾', label: 'Save' },
+            { id: 'undo', icon: '↩️', label: 'Undo' },
+            { id: 'redo', icon: '↪️', label: 'Redo' }
+        ];
+
+        // Get current hotbar state - use a safer method
+        const hotbarSlots = window.HotbarPanel.getHotbarSlots() || [];
+
+        // Update each hotbar slot in the inventory preview
+        for (let i = 0; i < 9; i++) {
+            const hotbarSlot = this.inventoryElement.querySelector(`[data-hotbar-index="${i}"]`);
+            if (hotbarSlot) {
+                const content = hotbarSlot.querySelector('.backpack-hotbar-slot-content');
+                content.innerHTML = '';
+
+                // Update selection indicator based on locally selected slot
+                if (i === this.selectedHotbarSlot) {
+                    hotbarSlot.classList.add('selected');
+                } else {
+                    hotbarSlot.classList.remove('selected');
+                }
+
+                // First 3 slots are permanent action buttons
+                if (i < 3) {
+                    const action = permanentActions[i];
+                    const actionIcon = document.createElement('span');
+                    actionIcon.className = 'backpack-action-icon';
+                    actionIcon.textContent = action.icon;
+                    actionIcon.title = action.label;
+                    content.appendChild(actionIcon);
+                } else {
+                    // Slots 3-8 show blocks if present, otherwise show slot number
+                    const block = hotbarSlots[i];
+                    if (block) {
+                        const blockImage = document.createElement('img');
+                        blockImage.className = 'backpack-hotbar-slot-icon';
+                        blockImage.src = this.getBlockIconPath(block);
+                        blockImage.alt = block.name;
+                        content.appendChild(blockImage);
+                    } else {
+                        content.textContent = i + 1;
+                    }
+                }
+            }
+        }
+    }
+
+    startDrag(slot, event) {
+        event.preventDefault();
+        
+        const itemId = slot.dataset.itemId;
+        const itemName = slot.dataset.itemName;
+        const itemType = slot.dataset.itemType;
+
+        if (itemType === 'blocks') {
+            this.heldBlock = {
+                id: parseInt(itemId),
+                name: itemName,
+                textureUri: this.availableBlocks.find(b => b.id === parseInt(itemId))?.textureUri
+            };
+        } else {
+            const obstacle = this.availableObstacles.find(o => o.id === itemId);
+            this.heldBlock = {
+                id: itemId,
+                name: itemName,
+                type: obstacle.type,
+                size: obstacle.sizeId,
+                textureUri: this.getObstacleIconPath(obstacle)
+            };
+        }
+
+        // Set up mouse follower
+        this.mouseFollower.style.backgroundImage = `url('${this.heldBlock.textureUri}')`;
+        this.mouseFollower.style.display = 'block';
+        this.updateMouseFollower(event);
+    }
+
+    updateMouseFollower(event) {
+        this.mouseFollower.style.left = (event.clientX - 20) + 'px';
+        this.mouseFollower.style.top = (event.clientY - 20) + 'px';
+    }
+
+    endDrag(event) {
+        if (!this.heldBlock) return;
+
+        // Check if dropping on hotbar slot in inventory preview
+        const hotbarSlot = document.elementFromPoint(event.clientX, event.clientY)?.closest('.backpack-hotbar-slot');
+        if (hotbarSlot) {
+            const hotbarIndex = parseInt(hotbarSlot.dataset.hotbarIndex);
+            
+            // Only allow dropping on editable slots (3-8)
+            if (hotbarIndex < 3) {
+                console.log('[BlockInventoryPanel] Cannot drop on permanent action slot:', hotbarIndex);
+                return;
+            }
+
+            const itemId = this.heldBlock.id;
+            const itemName = this.heldBlock.name;
+            
+            // Update hotbar slot visually
+            const content = hotbarSlot.querySelector('.backpack-hotbar-slot-content');
+            content.innerHTML = '';
+            
+            const blockImage = document.createElement('img');
+            blockImage.className = 'backpack-hotbar-slot-icon';
+            blockImage.src = this.heldBlock.textureUri;
+            blockImage.alt = itemName;
+            
+            content.appendChild(blockImage);
+            
+            // Notify the actual hotbar panel if it exists
+            if (window.HotbarPanel) {
+                window.HotbarPanel.setSlotBlock(hotbarIndex, this.heldBlock);
+                // Also select this slot
+                window.HotbarPanel.selectSlot(hotbarIndex);
+                // Update the inventory preview
+                this.updateHotbarPreview();
+            }
+        }
+
+        // Clean up
+        this.heldBlock = null;
+        this.mouseFollower.style.display = 'none';
+    }
+
+    toggle(forceState) {
+        // Only allow toggle when in build mode
+        if (!this.isInBuildMode()) {
+            console.log('[BlockInventoryPanel] Toggle ignored - not in build mode');
+            return;
+        }
+        
+        if (typeof forceState === 'boolean') {
+            this.inventoryOpen = forceState;
+        } else {
+            this.inventoryOpen = !this.inventoryOpen;
+        }
+
+        if (this.inventoryOpen) {
+            this.inventoryElement.style.display = 'flex';
+            // Sync local hotbar selection with game hotbar when opening
+            if (window.HotbarPanel) {
+                this.selectedHotbarSlot = window.HotbarPanel.getSelectedSlotIndex();
+                // Update hotbar preview to sync with current state
+                this.updateHotbarPreview();
+                // Hide the main hotbar to prevent overlap
+                window.HotbarPanel.setVisible(false);
+            }
+            // Send unlock pointer data to game
+            hytopia.sendData({
+                type: 'disablePlayerInput'
+            });
+        } else {
+            this.inventoryElement.style.display = 'none';
+            // Show the main hotbar again when closing inventory
+            if (window.HotbarPanel) {
+                window.HotbarPanel.setVisible(true);
+            }
+            // Send lock pointer data to game
+            hytopia.sendData({
+                type: 'enablePlayerInput'
+            });
+        }
+
+        console.log('[BlockInventoryPanel] Inventory:', this.inventoryOpen ? 'opened' : 'closed');
+    }
+
+    isInputElementActive() {
+        const activeElement = document.activeElement;
+        return activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable
+        );
+    }
+
+    getAssetBaseUrl() {
+        // Check if we're in a Hytopia environment with CDN_ASSETS_URL available
+        if (typeof window.CDN_ASSETS_URL !== 'undefined' && window.CDN_ASSETS_URL) {
+            return window.CDN_ASSETS_URL;
+        }
+        
+        // Try to extract it from a script tag's src attribute
+        const scriptTags = document.getElementsByTagName('script');
+        for (let i = 0; i < scriptTags.length; i++) {
+            const src = scriptTags[i].src;
+            if (src && src.includes('/ui/panels/')) {
+                const baseUrl = src.substring(0, src.indexOf('/ui/panels/'));
+                return baseUrl;
+            }
+        }
+        
+        // Fallback to current origin
+        return window.location.origin;
+    }
+
+    getBlockIconPath(block) {
+        const baseUrl = this.getAssetBaseUrl();
+        
+        if (block.textureUri) {
+            if (block.textureUri.startsWith('/')) {
+                return `${baseUrl}${block.textureUri}`;
+            } else {
+                return `${baseUrl}/${block.textureUri}`;
+            }
+        } else {
+            // Fallback to a default block icon
+            return `${baseUrl}/blocks/dirt.png`;
+        }
+    }
+
+    getObstacleIconPath(obstacle) {
+        const baseUrl = this.getAssetBaseUrl();
+        
+        if (obstacle.icon) {
+            if (obstacle.icon.startsWith('/')) {
+                return `${baseUrl}${obstacle.icon}`;
+            } else {
+                return `${baseUrl}/${obstacle.icon}`;
+            }
+        } else {
+            // Fallback to speed icon
+            return `${baseUrl}/ui/icons/speed-icon.png`;
+        }
+    }
+
+    addStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            @font-face {
+                font-family: 'Inter-ExtraBold';
+                src: url('${this.getAssetBaseUrl()}/ui/fonts/Inter-ExtraBold.ttf') format('truetype');
+                font-weight: 800;
+                font-display: swap;
+            }
+
+            :root {
+                --backpack-slot-size: 56px;
+                --backpack-hotbar-size: 64px;
+                --backpack-icon-size: 48px;
+                --backpack-gap: 6px;
+                --backpack-padding: 12px;
+                --backpack-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+
+            .backpack-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                font-family: var(--backpack-font);
+                user-select: none;
+                gap: 16px;
+            }
+
+            /* Container Styles */
+            .backpack-container {
+                background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+                border: 2px solid #444;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                width: 600px;
+                height: 400px;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .backpack-hotbar-container {
+                background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+                border: 2px solid #444;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                width: 680px;
+            }
+
+            /* Header Styles */
+            .backpack-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px 20px;
+                background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
+                border-bottom: 1px solid #444;
+                border-radius: 10px 10px 0 0;
+            }
+
+            .backpack-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .backpack-icon {
+                width: 48px;
+                height: 48px;
+                background: rgba(0, 0, 0, 0.6);
+                border: 2px solid #444;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+            }
+
+            .backpack-details {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .backpack-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: #ffffff;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+                line-height: 1;
+            }
+
+            .backpack-subtitle {
+                font-size: 14px;
+                font-weight: 500;
+                color: #cccccc;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+                margin-top: 2px;
+                letter-spacing: 0.3px;
+            }
+
+            .backpack-hotbar-header {
+                justify-content: flex-start;
+            }
+
+            .backpack-title,
+            .backpack-hotbar-title {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #ffffff;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+                letter-spacing: 0.3px;
+            }
+
+            .backpack-close {
+                background: rgba(255, 0, 0, 0.2);
+                border: 1px solid rgba(255, 0, 0, 0.3);
+                border-radius: 6px;
+                color: #ff6b6b;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .backpack-close:hover {
+                background: rgba(255, 0, 0, 0.3);
+                transform: scale(1.05);
+            }
+
+            /* Content Layout */
+            .backpack-content {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            /* Navigation Tabs */
+            .backpack-nav {
+                width: 80px;
+                background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
+                border-right: 1px solid #444;
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+                gap: 4px;
+            }
+
+            .backpack-tab {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 8px;
+                background: transparent;
+                border: 1px solid transparent;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                width: 64px;
+                height: 64px;
+                gap: 4px;
+            }
+
+            .backpack-tab:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #555;
+            }
+
+            .backpack-tab.active {
+                background: rgba(0, 0, 0, 0.6);
+                border-color: #4CAF50;
+                box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+            }
+
+            .tab-icon {
+                font-size: 20px;
+                opacity: 0.7;
+                transition: opacity 0.2s ease;
+            }
+
+            .tab-label {
+                font-size: 10px;
+                font-weight: 600;
+                color: #cccccc;
+                text-align: center;
+                line-height: 1;
+            }
+
+            .backpack-tab:hover .tab-icon,
+            .backpack-tab.active .tab-icon {
+                opacity: 1;
+            }
+
+            .backpack-tab.active .tab-label {
+                color: #4CAF50;
+            }
+
+            /* Main Content */
+            .backpack-main {
+                flex: 1;
+                padding: 20px;
+                overflow: hidden;
+            }
+
+            .backpack-grid-container {
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Grid Styles */
+            .backpack-grid {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                grid-auto-rows: max-content;
+                gap: var(--backpack-gap);
+                background: rgba(0, 0, 0, 0.3);
+                padding: var(--backpack-padding);
+                border: 1px solid #444;
+                border-radius: 8px;
+                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+                max-height: 280px;
+                overflow-y: auto;
+                align-content: start;
+            }
+
+            .backpack-hotbar-grid {
+                display: grid;
+                grid-template-columns: repeat(9, 1fr);
+                gap: 8px;
+                background: rgba(0, 0, 0, 0.3);
+                padding: 16px;
+                border-radius: 0 0 8px 8px;
+                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+                justify-items: center;
+                max-width: 100%;
+            }
+
+            /* Slot Styles */
+            .backpack-slot {
+                width: var(--backpack-slot-size);
+                height: var(--backpack-slot-size);
+                background: rgba(0, 0, 0, 0.6);
+                border: 2px solid #333;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+            }
+
+            .backpack-hotbar-slot {
+                width: 56px;
+                height: 56px;
+                background: rgba(0, 0, 0, 0.6);
+                border: 2px solid #333;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+            }
+
+            /* Slot Hover & Highlight States */
+            .backpack-slot:hover,
+            .backpack-hotbar-slot:hover {
+                border-color: #555;
+                background: rgba(0, 0, 0, 0.8);
+                transform: translateY(-1px);
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
+            }
+
+            .backpack-slot.selected,
+            .backpack-hotbar-slot.selected {
+                border-color: #4CAF50 !important;
+                background: rgba(76, 175, 80, 0.2) !important;
+                box-shadow: 0 0 10px rgba(76, 175, 80, 0.5) !important;
+            }
+
+            /* Content Styles */
+            .backpack-slot-content,
+            .backpack-hotbar-slot-content {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                color: #ccc;
+                position: relative;
+            }
+
+            .backpack-hotbar-slot-content {
+                font-size: 14px;
+                font-weight: 600;
+                color: #888;
+            }
+
+            .backpack-item-icon {
+                width: var(--backpack-icon-size);
+                height: var(--backpack-icon-size);
+                object-fit: contain;
+                image-rendering: pixelated;
+                filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+            }
+
+            .backpack-obstacle-text {
+                font-family: 'Inter-ExtraBold', var(--backpack-font);
+                font-weight: 800;
+                font-size: 9px;
+                color: #ffffff;
+                text-align: center;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+                line-height: 1.1;
+                padding: 1px 2px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                word-wrap: break-word;
+                hyphens: auto;
+                max-width: 48px;
+                max-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .backpack-hotbar-slot-icon {
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
+                image-rendering: pixelated;
+                filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+            }
+
+            /* Obstacle Size Label */
+            .obstacle-size-label {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                background: rgba(0, 0, 0, 0.8);
+                color: #ffffff;
+                font-weight: 700;
+                font-size: 8px;
+                padding: 1px 3px;
+                border-radius: 3px;
+                line-height: 1;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                min-width: 10px;
+                text-align: center;
+                pointer-events: none;
+            }
+
+            /* Action Icon Styling for Hotbar Preview */
+            .backpack-action-icon {
+                font-size: 20px;
+                filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+                pointer-events: none;
+            }
+
+            /* Mouse Follower */
+            #block-mouse-follower {
+                position: fixed;
+                width: 56px;
+                height: 56px;
+                pointer-events: none;
+                z-index: 10000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+                border: 2px solid #555;
+                border-radius: 8px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+                transform: translate(-50%, -50%);
+            }
+
+            #block-mouse-follower img {
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
+                image-rendering: pixelated;
+                filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+            }
+
+            /* Mobile Styles */
+            @media (max-width: 768px) {
+                :root {
+                    --backpack-slot-size: 44px;
+                    --backpack-hotbar-size: 44px;
+                    --backpack-icon-size: 36px;
+                    --backpack-gap: 4px;
+                    --backpack-padding: 8px;
+                }
+
+                .backpack-overlay {
+                    gap: 12px;
+                    padding: 8px;
+                }
+
+                .backpack-container {
+                    width: 90%;
+                    max-width: 500px;
+                    border-radius: 8px;
+                }
+
+                .backpack-hotbar-container {
+                    width: 95%;
+                    max-width: 560px;
+                    border-radius: 8px;
+                }
+
+                .backpack-header {
+                    padding: 8px 12px;
+                    border-radius: 8px 8px 0 0;
+                }
+
+                .backpack-title,
+                .backpack-hotbar-title {
+                    font-size: 14px;
+                }
+
+                .backpack-main {
+                    padding: 12px;
+                }
+
+                .backpack-grid {
+                    padding: 8px;
+                    border-radius: 6px;
+                    grid-template-columns: repeat(4, 1fr);
+                }
+
+                .backpack-hotbar-grid {
+                    padding: 12px;
+                    border-radius: 0 0 6px 6px;
+                }
+
+                .backpack-hotbar-slot-icon {
+                    width: 40px;
+                    height: 40px;
+                }
+
+                .backpack-obstacle-text {
+                    font-size: 7px;
+                    padding: 1px;
+                    letter-spacing: 0.2px;
+                    max-width: 36px;
+                    max-height: 32px;
+                    line-height: 1.0;
+                }
+
+                #block-mouse-follower {
+                    width: 44px;
+                    height: 44px;
+                }
+
+                #block-mouse-follower img {
+                    width: 36px;
+                    height: 36px;
+                }
+
+                .backpack-nav {
+                    width: 70px;
+                }
+
+                .backpack-tab {
+                    width: 54px;
+                    height: 54px;
+                    padding: 7px;
+                }
+
+                .tab-icon {
+                    font-size: 16px;
+                }
+
+                .tab-label {
+                    font-size: 9px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// Make it globally available as a singleton instance
+window.BlockInventoryPanel = new BlockInventoryPanel(); 

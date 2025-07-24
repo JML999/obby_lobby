@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Text Test</title>
+    <link rel="stylesheet" href="styles/AnimatedText.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            z-index: 2000;
+        }
+        
+        .controls h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .controls button {
+            display: block;
+            width: 200px;
+            margin: 5px 0;
+            padding: 10px;
+            background: #4ECDC4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background: #45B7AF;
+        }
+        
+        .controls button.warning {
+            background: #FF6B6B;
+        }
+        
+        .controls button.warning:hover {
+            background: #FF5252;
+        }
+    </style>
+</head>
+<body>
+    <!-- Controls for testing -->
+    <div class="controls">
+        <h3>Animated Text Test</h3>
+        <button onclick="testCountdown()">Test Countdown (3,2,1,GO!)</button>
+        <button onclick="testSuccess()">Test Success Message</button>
+        <button onclick="testWarning()" class="warning">Test Warning Message</button>
+        <button onclick="testCustom()">Test Custom Message</button>
+        <button onclick="testCheckpoint()">Test Checkpoint</button>
+        <button onclick="testCompleted()">Test Course Complete</button>
+        <button onclick="hideText()">Hide Text</button>
+    </div>
+
+    <!-- Animated Text Overlay -->
+    <div id="animated-text-panel" style="display: none;">
+        <div id="animated-text-overlay" class="animated-text-overlay">
+            <div class="animated-text-line line-1"></div>
+            <div class="animated-text-line line-2"></div>
+        </div>
+    </div>
+
+    <script src="panels/AnimatedTextPanel.js"></script>
+    <script>
+        // Mock hytopia object for testing
+        window.hytopia = {
+            onData: function(callback) {
+                this.dataCallback = callback;
+            },
+            sendData: function(data) {
+                console.log('Mock hytopia.sendData:', data);
+            },
+            dataCallback: null,
+            
+            // Method to simulate receiving data from backend
+            simulateData: function(data) {
+                if (this.dataCallback) {
+                    this.dataCallback(data);
+                }
+            }
+        };
+
+        // Test functions
+        function testCountdown() {
+            console.log('Testing countdown sequence...');
+            if (window.AnimatedTextPanel) {
+                window.AnimatedTextPanel.runCountdownSequence(() => {
+                    console.log('Countdown complete!');
+                });
+            }
+        }
+
+        function testSuccess() {
+            console.log('Testing success message...');
+            hytopia.simulateData({
+                type: 'showSuccess',
+                line1: 'CHECKPOINT!',
+                line2: 'Great job!',
+                duration: 2500
+            });
+        }
+
+        function testWarning() {
+            console.log('Testing warning message...');
+            hytopia.simulateData({
+                type: 'showWarning',
+                line1: 'OUT OF BOUNDS!',
+                line2: 'Return to the course',
+                duration: 2000
+            });
+        }
+
+        function testCustom() {
+            console.log('Testing custom message...');
+            hytopia.simulateData({
+                type: 'showAnimatedText',
+                line1: 'AMAZING!',
+                line2: 'You did it!',
+                duration: 3000,
+                style: 'success'
+            });
+        }
+
+        function testCheckpoint() {
+            console.log('Testing checkpoint message...');
+            hytopia.simulateData({
+                type: 'showSuccess',
+                line1: 'CHECKPOINT',
+                line2: 'REACHED!',
+                duration: 2000
+            });
+        }
+
+        function testCompleted() {
+            console.log('Testing course complete message...');
+            hytopia.simulateData({
+                type: 'showSuccess',
+                line1: 'COURSE',
+                line2: 'COMPLETED!',
+                duration: 4000
+            });
+        }
+
+        function hideText() {
+            console.log('Hiding text...');
+            hytopia.simulateData({
+                type: 'hideAnimatedText'
+            });
+        }
+
+        // Auto-test after page loads
+        setTimeout(() => {
+            console.log('Auto-testing in 2 seconds...');
+            testCountdown();
+        }, 2000);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,62 @@
+{
+  "generated": "2025-07-13T22:50:42.056Z",
+  "totalBlocks": 8,
+  "blocks": [
+    {
+      "id": 1,
+      "name": "platform",
+      "textureUri": "blocks/stone.png",
+      "cost": 1,
+      "type": "platform"
+    },
+    {
+      "id": 6,
+      "name": "glass",
+      "textureUri": "blocks/glass.png",
+      "cost": 3,
+      "type": "glass"
+    },
+    {
+      "id": 9,
+      "name": "ice",
+      "textureUri": "blocks/ice.png",
+      "cost": 1,
+      "type": "ice"
+    },
+    {
+      "id": 15,
+      "name": "vines",
+      "textureUri": "blocks/oak-planks-leafyerer.png",
+      "cost": 1,
+      "type": "vines"
+    },
+    {
+      "id": 17,
+      "name": "sand",
+      "textureUri": "blocks/sand.png",
+      "cost": 1,
+      "type": "sand"
+    },
+    {
+      "id": 21,
+      "name": "lava",
+      "textureUri": "blocks/lava.png",
+      "cost": 2,
+      "type": "lava"
+    },
+    {
+      "id": 100,
+      "name": "start",
+      "textureUri": "blocks/start.png",
+      "cost": 0,
+      "type": "start"
+    },
+    {
+      "id": 101,
+      "name": "goal",
+      "textureUri": "blocks/goal.png",
+      "cost": 0,
+      "type": "goal"
+    }
+  ]
+}

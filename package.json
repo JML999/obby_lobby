@@ -1,0 +1,19 @@
+{
+  "name": "hyobi",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@hytopia.com/assets": "^0.3.12",
+    "hytopia": "^0.6.27"
+  },
+  "trustedDependencies": [
+    "mediasoup"
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "obby": {
+    "plotData": {
+      "version": "1.0",
+      "plotSize": {
+        "width": 61,
+        "length": 61,
+        "height": 100
+      },
+      "plotCenter": {
+        "x": -39.5,
+        "y": 1,
+        "z": -96.5
+      },
+      "plotSide": "left",
+      "blocks": [
+        {
+          "relativePos": {
+            "x": -24.5,
+            "y": 38,
+            "z": 23.5
+          },
+          "blockTypeId": 100
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 0,
+            "z": -24.5
+          },
+          "blockTypeId": 101
+        },
+        {
+          "relativePos": {
+            "x": -24.5,
+            "y": 37,
+            "z": 23.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -24.5,
+            "y": 36,
+            "z": 23.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -24.5,
+            "y": 35,
+            "z": 23.5
+          },
+          "blockTypeId": 1
+        }
+      ],
+      "obstacles": [
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 19.5,
+            "y": 0,
+            "z": -15.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 17.5,
+            "y": 3,
+            "z": -6.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 9.5,
+            "y": 4,
+            "z": -13.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 8.5,
+            "y": 8,
+            "z": -2.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 0.5,
+            "y": 6,
+            "z": -7.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -10.5,
+            "y": 5,
+            "z": -2.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -9.5,
+            "y": 7,
+            "z": 7.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -8.5,
+            "y": 17,
+            "z": 24.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -18.5,
+            "y": 17,
+            "z": 14.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -21.5,
+            "y": 14,
+            "z": 9.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -19.5,
+            "y": 23,
+            "z": 15.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": -14.5,
+            "y": 25,
+            "z": 19.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 0.5,
+            "y": 12,
+            "z": 15.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 3.5,
+            "y": 2,
+            "z": 5.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 2.5,
+            "y": 10,
+            "z": -15.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 5.5,
+            "y": 14,
+            "z": -20.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 1.5,
+            "y": 3,
+            "z": -1.5
+          },
+          "config": {}
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 10.5,
+            "y": 17,
+            "z": -23.5
+          },
+          "config": {}
+        }
+      ],
+      "lastModified": 1752982765524,
+      "creatorName": "player-5",
+      "creatorId": "player-5",
+      "scoreboard": []
+    },
+    "cash": 7
+  }
+}

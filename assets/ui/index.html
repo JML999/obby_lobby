@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{CDN_ASSETS_URL}}/ui/styles.css">
+    <link rel="stylesheet" href="{{CDN_ASSETS_URL}}/ui/styles/AnimatedText.css">
+    <title>Obby Game UI</title>
+    <script>
+        console.log('Starting Obby UI initialization...');
+        
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                console.log('Loading script:', src);
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    console.log('Script loaded:', src);
+                    resolve();
+                };
+                script.onerror = (error) => {
+                    console.error('Script load error:', src, error);
+                    reject(error);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // Enhanced mobile detection function
+        function detectMobileDevice() {
+            // Check multiple mobile indicators
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            
+            // Check for mobile user agents
+            const mobileUserAgents = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            
+            // Check for touch capability
+            const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+            
+            // Check screen size (mobile typically < 768px width)
+            const isSmallScreen = window.screen.width < 768 || window.innerWidth < 768;
+            
+            // Check CSS media query for mobile
+            const matchesMediaQuery = window.matchMedia("(max-width: 768px)").matches;
+            
+            // Check for pointer type (coarse = touch)
+            const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+            
+            // Combine checks - device is mobile if it meets multiple criteria
+            const isMobile = mobileUserAgents || (hasTouchSupport && (isSmallScreen || matchesMediaQuery || isCoarsePointer));
+            
+            console.log('[UI] Mobile detection results:', {
+                userAgent: mobileUserAgents,
+                touchSupport: hasTouchSupport,
+                smallScreen: isSmallScreen,
+                mediaQuery: matchesMediaQuery,
+                coarsePointer: isCoarsePointer,
+                finalResult: isMobile
+            });
+            
+            return isMobile;
+        }
+
+        async function initializeUI() {
+            console.log('Starting UI initialization...');
+            
+            // Detect if this is a mobile device
+            const isMobileDevice = detectMobileDevice();
+            
+            // Add mobile class to body for CSS styling
+            if (isMobileDevice) {
+                document.body.classList.add('mobile-device');
+                console.log('[UI] Mobile device detected - added mobile-device class');
+            }
+            
+            await Promise.all([
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/NpcDialoguePanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/BlockInventoryPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/HotbarPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/BuildModePanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/PlayerOptionsPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/AnimatedTextPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/YourPlotPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/CreativeModeHintPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/BuildTutorialPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobileControlPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobilePlotOptionsPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobileNpcOptionsPanel.js')
+            ]);
+            
+            // Initialize panels
+            window.BlockInventoryPanel.initialize('inventory-container');
+            window.HotbarPanel.initialize('hotbar-container');
+            window.BuildModePanel.initialize('build-mode-container');
+            window.YourPlotPanel.initialize();
+            if (window.CreativeModeHintPanel) window.CreativeModeHintPanel.initialize();
+            if (window.BuildTutorialPanel) window.BuildTutorialPanel.initialize();
+            window.MobileControlPanel.initialize('mobile-controls-container');
+            window.MobilePlotOptionsPanel.initialize();
+            window.MobileNpcOptionsPanel.initialize();
+            
+            console.log('Obby UI initialization complete');
+            
+            // Send UI ready with mobile detection results
+            hytopia.sendData({
+                type: 'uiReady',
+                isMobile: isMobileDevice
+            });
+            
+            // Legacy mobile detection support
+            if (hytopia.isMobile || isMobileDevice) {
+                hytopia.sendData({
+                    type: 'uiReadyMobile',
+                    isMobile: isMobileDevice
+                });
+            }
+        }
+
+        // Handle messages from the game controller
+        if (typeof hytopia !== 'undefined') {
+            hytopia.onData(data => {
+                console.log('[UI] Received data:', data);
+                if (data.type === 'show-crosshair') {
+                    const crosshair = document.querySelector('.crosshair');
+                    console.log('[UI] Crosshair element:', crosshair);
+                    if (crosshair) {
+                        crosshair.style.display = data.show ? 'block' : 'none';
+                        console.log('[UI] Crosshair visibility set to:', data.show, 'Display style:', crosshair.style.display);
+                    } else {
+                        console.error('[UI] Crosshair element not found!');
+                    }
+                } else if (data.type === 'sceneUIDebug') {
+                    console.log('[UI] SceneUI Debug Info:', data);
+                    console.log('[UI] NPC Position:', data.npcPosition);
+                    console.log('[UI] Expected Dialog Position:', data.expectedDialogPosition);
+                    console.log('[UI] World Name:', data.worldName);
+                    
+                    // Check if the template exists
+                    const template = document.getElementById('npc-dialogue');
+                    if (template) {
+                        console.log('[UI] ✅ npc-dialogue template found');
+                        console.log('[UI] Template content:', template.innerHTML);
+                    } else {
+                        console.error('[UI] ❌ npc-dialogue template NOT found!');
+                    }
+                    
+                    // Check if any SceneUI elements are in the DOM
+                    const sceneUIElements = document.querySelectorAll('[data-scene-ui]');
+                    console.log('[UI] SceneUI elements in DOM:', sceneUIElements.length);
+                    sceneUIElements.forEach((el, index) => {
+                        console.log(`[UI] SceneUI element ${index}:`, el);
+                    });
+                    
+                    // Create a visual debug element to show where the dialog should be
+                    // this.createDebugElement(data); // Removed as per edit hint
+                } else if (data.type === 'playerStateChanged') {
+                    // Handle player state changes for Your Plot panel
+                    if (data.state === 'LOBBY' && typeof data.plotIndex === 'number') {
+                        // Show Your Plot panel with the plot number using the same clockwise mapping as getDisplayNumber()
+                        if (window.YourPlotPanel) {
+                            // Use the same clockwise mapping logic from ObbyPlayerEntity.getDisplayNumber()
+                            const clockwiseMap = {
+                                0: 4, // Left top → 4
+                                1: 3, // Left middle-top → 3
+                                2: 2, // Left middle-bottom → 2
+                                3: 1, // Left bottom → 1
+                                4: 5, // Right top → 5
+                                5: 6, // Right middle-top → 6
+                                6: 7, // Right middle-bottom → 7
+                                7: 8  // Right bottom → 8
+                            };
+                            const displayNumber = clockwiseMap[data.plotIndex] || (data.plotIndex + 1);
+                            window.YourPlotPanel.show(displayNumber);
+                            console.log(`[UI] Showing Your Plot panel for plot ${displayNumber} (internal index: ${data.plotIndex})`);
+                        }
+                    } else {
+                        // Hide Your Plot panel when not in lobby or no plot assigned
+                        if (window.YourPlotPanel) {
+                            window.YourPlotPanel.hide();
+                            console.log('[UI] Hiding Your Plot panel');
+                        }
+                    }
+                }
+            });
+        }
+
+        initializeUI();
+        
+
+    </script>
+</head>
+<body>
+    <!-- Crosshair - exact copy from HYTOPIA example -->
+    <div class="crosshair" style="display: none;"></div>
+    
+    <!-- Animated Text Overlay for big announcements -->
+    <div id="animated-text-panel" style="display: none;">
+        <div id="animated-text-overlay" class="animated-text-overlay">
+            <div class="animated-text-line line-1"></div>
+            <div class="animated-text-line line-2"></div>
+        </div>
+    </div>
+    
+    <!-- Container for block inventory -->
+    <div id="inventory-container"></div>
+    
+    <!-- Container for hotbar (always visible at bottom) -->
+    <div id="hotbar-container"></div>
+    
+    <!-- Container for build mode panel (top-right corner) -->
+    <div id="build-mode-container"></div>
+    
+    <!-- Container for your plot panel (lobby mode) -->
+    <div id="your-plot-panel"></div>
+    
+    <!-- Container for creative mode hint (desktop only) -->
+    <div id="creative-mode-hint-panel"></div>
+    
+    <!-- Container for build tutorial panel -->
+    <div id="build-tutorial-panel"></div>
+    
+    <!-- Container for mobile controls -->
+    <div id="mobile-controls-container"></div>
+    
+    <!-- Container for mobile plot options -->
+    <div id="mobile-plot-options-container"></div>
+    
+    <!-- Container for mobile NPC options -->
+    <div id="mobile-npc-options-container"></div>
+
+    <!-- UI Templates for SceneUI -->
+    <!-- Removed npc-dialogue template: now injected by NpcDialoguePanel.js -->
+    <template id="player-options">
+        <div class="player-options-container">
+            {{#each options}}
+            <div class="player-option" data-option="{{@index}}">
+                <span class="option-key">{{add @index 1}}</span>
+                <span class="option-text">{{this}}</span>
+            </div>
+            {{/each}}
+        </div>
+    </template>
+
+
+    <script>
+        // Show instructions after a brief delay
+        setTimeout(() => {
+            const instructions = document.getElementById('game-instructions');
+            if (instructions) {
+                instructions.style.display = 'block';
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    instructions.style.display = 'none';
+                }, 10000);
+            }
+        }, 2000);
+
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('UI Error:', event.error);
+        });
+
+        // Global unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled Promise Rejection:', event.reason);
+        });
+
+        // Debug function to create visual debug elements
+        // window.createDebugElement = function(data) {
+        //     // Remove any existing debug elements
+        //     const existingDebug = document.getElementById('scene-ui-debug');
+        //     if (existingDebug) {
+        //         existingDebug.remove();
+        //     }
+            
+        //     // Create debug element
+        //     const debugElement = document.createElement('div');
+        //     debugElement.id = 'scene-ui-debug';
+        //     debugElement.style.cssText = `
+        //         position: fixed;
+        //         top: 20px;
+        //         right: 20px;
+        //         background: rgba(255, 0, 0, 0.9);
+        //         color: white;
+        //         padding: 10px;
+        //         border: 2px solid yellow;
+        //         border-radius: 8px;
+        //         font-family: monospace;
+        //         font-size: 12px;
+        //         z-index: 10000;
+        //         max-width: 300px;
+        //     `;
+            
+        //     debugElement.innerHTML = `
+        //         <strong>SceneUI Debug</strong><br>
+        //         NPC: ${data.npcPosition.x.toFixed(1)}, ${data.npcPosition.y.toFixed(1)}, ${data.npcPosition.z.toFixed(1)}<br>
+        //         Expected Dialog: ${data.expectedDialogPosition.x.toFixed(1)}, ${data.expectedDialogPosition.y.toFixed(1)}, ${data.expectedDialogPosition.z.toFixed(1)}<br>
+        //         World: ${data.worldName}<br>
+        //         <button onclick="this.parentElement.remove()">Close</button>
+        //     `;
+            
+        //     document.body.appendChild(debugElement);
+            
+        //     // Auto-remove after 10 seconds
+        //     setTimeout(() => {
+        //         if (debugElement.parentElement) {
+        //             debugElement.remove();
+        //         }
+        //     }, 10000);
+        // };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,146 @@
+{
+  "obby": {
+    "plotData": {
+      "version": "1.0",
+      "plotSize": {
+        "width": 61,
+        "length": 61,
+        "height": 100
+      },
+      "plotCenter": {
+        "x": -39.5,
+        "y": 1,
+        "z": 95.5
+      },
+      "plotSide": "left",
+      "blocks": [
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 100
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 0,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 26.5,
+            "y": 0,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 0,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 0,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 24.5,
+            "y": 0,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 23.5,
+            "y": 0,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 23.5,
+            "y": 0,
+            "z": 3.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 0,
+            "z": 3.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 20.5,
+            "y": 0,
+            "z": 4.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 19.5,
+            "y": 0,
+            "z": 4.5
+          },
+          "blockTypeId": 101
+        }
+      ],
+      "obstacles": [],
+      "lastModified": 1752988664524,
+      "creatorName": "player-9",
+      "creatorId": "player-9",
+      "scoreboard": []
+    },
+    "cash": 87
+  }
+}

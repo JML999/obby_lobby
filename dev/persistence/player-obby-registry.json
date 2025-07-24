@@ -1,0 +1,3768 @@
+{
+  "player-1": {
+    "playerId": "player-1",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": -96.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 21.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 20.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 19.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 18.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 17.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 3,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 4,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 5,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 6,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 7,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 8,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 4,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 3,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 3,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 5,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 4,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 3,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 104
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 0,
+              "z": -2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 0,
+              "z": -3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 0,
+              "z": -3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 0,
+              "z": -4.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 0,
+              "z": -3.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 0,
+              "z": -4.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 0,
+              "z": -5.5
+            },
+            "blockTypeId": 104
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 0,
+              "z": -6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 0,
+              "z": -6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 5,
+              "z": 6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 5,
+              "z": 6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 5,
+              "z": 6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 4,
+              "z": 6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 4,
+              "z": 6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -6.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -5.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -4.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -3.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -2.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 1.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 2.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 3.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 104
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 0,
+              "z": -6.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 109
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 7,
+              "z": 2.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 7,
+              "z": 1.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 7,
+              "z": 0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 7,
+              "z": -0.5
+            },
+            "blockTypeId": 105
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 9.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 0,
+              "z": 8.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 1.5,
+              "y": 0,
+              "z": 8.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 0.5,
+              "y": 0,
+              "z": 7.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 0.5,
+              "y": 0,
+              "z": 6.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 1.5,
+              "y": 0,
+              "z": 6.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 1.5,
+              "y": 0,
+              "z": 5.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 0,
+              "z": 9.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 0,
+              "z": 8.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 0,
+              "z": 7.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 1,
+              "z": 7.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 0,
+              "z": 6.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 1.5,
+              "y": 0,
+              "z": 7.5
+            },
+            "blockTypeId": 101
+          }
+        ],
+        "obstacles": [],
+        "lastModified": 1753306224271,
+        "creatorName": "player-1",
+        "creatorId": "player-1",
+        "scoreboard": []
+      },
+      "cash": 9
+    },
+    "lastUpdated": 1753306224282,
+    "displayName": "player-1",
+    "worldSnapshots": {
+      "Obby Region 1": 1752969137436,
+      "Obby Region 2": 1752713595381
+    }
+  },
+  "player-6": {
+    "playerId": "player-6",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": 31.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 45,
+              "z": 2.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 37,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 36,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 36,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 36,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 37,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 34,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 34,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 33,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 34,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 33,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 33,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 33,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 36,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 36,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 35,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 32,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -0.5,
+              "y": 7,
+              "z": 3.5
+            },
+            "blockTypeId": 101
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 28,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 27,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 24,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 24,
+              "z": 4.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 23,
+              "z": 3.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 22,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 18,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 42,
+              "z": 2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 42,
+              "z": 1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 42,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 42,
+              "z": 1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 42,
+              "z": 2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 42,
+              "z": 3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 42,
+              "z": 3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 42,
+              "z": 4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 42,
+              "z": 4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 42,
+              "z": 4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 42,
+              "z": 3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -10.5,
+              "y": 42,
+              "z": 3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -10.5,
+              "y": 42,
+              "z": 2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -10.5,
+              "y": 42,
+              "z": 1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 42,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 42,
+              "z": 1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 42,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 34,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -12.5,
+              "y": 33,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 33,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 34,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -10.5,
+              "y": 31,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 7,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 0.5,
+              "y": 7,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -0.5,
+              "y": 7,
+              "z": 2.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": -0.5,
+              "y": 7,
+              "z": 4.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": -0.5,
+              "y": 14,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 17,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 19,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 27,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 33,
+              "z": 4.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 31,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 29,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 28,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 24,
+              "z": 5.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 26,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 26,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 26,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 26,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 26,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 26,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 26,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 26,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 22,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 23,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -6.5,
+              "y": 23,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 23,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 22,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 19,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 17,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 18,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 15,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 15,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 26,
+              "z": 4.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 22,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 23,
+              "z": 4.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 25,
+              "z": 0.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 25,
+              "z": 3.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 18,
+              "z": 2.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": -1.5,
+              "y": 14,
+              "z": 3.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 0.5,
+              "y": 21,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 17,
+              "z": 3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 22,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -7.5,
+              "y": 22,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -5.5,
+              "y": 25,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 24,
+              "z": -1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 23,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 28,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 21,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 27,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 26,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 27,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 27,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 26,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 33,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -9.5,
+              "y": 32,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -8.5,
+              "y": 32,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          }
+        ],
+        "obstacles": [],
+        "lastModified": 1752976552642,
+        "creatorName": "player-6",
+        "creatorId": "player-6",
+        "scoreboard": []
+      },
+      "cash": 0
+    },
+    "lastUpdated": 1752976552647,
+    "displayName": "player-6",
+    "worldSnapshots": {
+      "Obby Region 1": 1752948466468,
+      "Obby Region 2": 1752714477456
+    }
+  },
+  "player-2": {
+    "playerId": "player-2",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": -96.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 3,
+              "z": -4.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 4,
+              "z": -5.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 6,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 7,
+              "z": -8.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 8,
+              "z": -9.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 9,
+              "z": -10.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": -2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 21.5,
+              "y": 10,
+              "z": -11.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 20.5,
+              "y": 10,
+              "z": -11.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 19.5,
+              "y": 12,
+              "z": -13.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 18.5,
+              "y": 13,
+              "z": -14.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 20.5,
+              "y": 11,
+              "z": -11.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 17.5,
+              "y": 14,
+              "z": -15.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 15,
+              "z": -16.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 16,
+              "z": -17.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 17,
+              "z": -18.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 17,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 18,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 18,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 19,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 19,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 20,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 20,
+              "z": -19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -14.5,
+              "y": 0,
+              "z": -13.5
+            },
+            "blockTypeId": 101
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": -2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 5,
+              "z": 6.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 5,
+              "z": 6.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": -1.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": -1.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 3,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 3,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 4.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 4,
+              "z": 5.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": 1.5
+            },
+            "blockTypeId": 101
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 3,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          }
+        ],
+        "obstacles": [
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 10.5,
+              "y": 1,
+              "z": -2.5
+            },
+            "config": {}
+          }
+        ],
+        "lastModified": 1752951395935,
+        "creatorName": "player-2",
+        "creatorId": "player-2",
+        "scoreboard": [
+          {
+            "playerId": "player-1",
+            "playerName": "player-1",
+            "completionTime": 59990,
+            "timestamp": 1752631033514
+          }
+        ]
+      },
+      "cash": 80
+    },
+    "lastUpdated": 1752951395940,
+    "displayName": "player-2",
+    "worldSnapshots": {
+      "Obby Region 1": 1752970556756
+    }
+  },
+  "player-3": {
+    "playerId": "player-3",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": -96.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 2.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 101
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": -1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 2,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 3,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 3,
+              "z": -1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": -2.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 3,
+              "z": -2.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 4,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 4,
+              "z": -1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 4,
+              "z": -2.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 5,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 5,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 5,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 5,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 6,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 6,
+              "z": -5.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 7,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 8,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 8,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 7,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 7,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 8,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 7,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 8,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 6,
+              "z": -5.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 6,
+              "z": -5.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 3,
+              "z": -1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 3,
+              "z": -2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 3,
+              "z": -2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 3,
+              "z": -3.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 3,
+              "z": -2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 1,
+              "z": -0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": -2.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -4.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": -3.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 9
+          }
+        ],
+        "obstacles": [
+          {
+            "id": "rotating_beam_small",
+            "type": "rotating_beam",
+            "size": "small",
+            "relativePos": {
+              "x": 22.5,
+              "y": 10,
+              "z": -5.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 18.5,
+              "y": 5,
+              "z": -3.5
+            },
+            "config": {}
+          }
+        ],
+        "lastModified": 1752971482021,
+        "creatorName": "player-3",
+        "creatorId": "player-3",
+        "scoreboard": []
+      },
+      "cash": 42
+    },
+    "lastUpdated": 1752971482045,
+    "displayName": "player-3",
+    "worldSnapshots": {}
+  },
+  "player-4": {
+    "playerId": "player-4",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": -32.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 3,
+              "z": 0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 4,
+              "z": 0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": 0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": -0.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": -1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": 1.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 5,
+              "z": 2.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 17.5,
+              "y": 2,
+              "z": 2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 18.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 2,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 2,
+              "z": 2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 2,
+              "z": -0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 2,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 2,
+              "z": 2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 15.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 2,
+              "z": 1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 17.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 2,
+              "z": 2.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 5,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 5,
+              "z": 0.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 5,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 2,
+              "z": -0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 2,
+              "z": -4.5
+            },
+            "blockTypeId": 9
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 2,
+              "z": 0.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": -0.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 13.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 12.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 6
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -4.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 11.5,
+              "y": 2,
+              "z": -5.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -5.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -5.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 10.5,
+              "y": 2,
+              "z": -5.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -6.5
+            },
+            "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 9.5,
+              "y": 2,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 2,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 8.5,
+              "y": 3,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 2,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 2,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 3,
+              "z": -7.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 4,
+              "z": -7.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 5,
+              "z": -7.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 3.5,
+              "y": 2,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 2,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 2,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 6,
+              "z": -7.5
+            },
+            "blockTypeId": 15
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 6,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 6,
+              "z": -7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 6,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 5.5,
+              "y": 6,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 6,
+              "z": -6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 3,
+              "z": -1.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 4.5,
+              "y": 3,
+              "z": -2.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 6.5,
+              "y": 3,
+              "z": -3.5
+            },
+            "blockTypeId": 17
+          },
+          {
+            "relativePos": {
+              "x": 0.5,
+              "y": 0,
+              "z": -7.5
+            },
+            "blockTypeId": 101
+          }
+        ],
+        "obstacles": [
+          {
+            "id": "rotating_beam_small",
+            "type": "rotating_beam",
+            "size": "small",
+            "relativePos": {
+              "x": 17.5,
+              "y": 4,
+              "z": 4.5
+            },
+            "config": {}
+          }
+        ],
+        "lastModified": 1752972572969,
+        "creatorName": "player-4",
+        "creatorId": "player-4",
+        "scoreboard": [
+          {
+            "playerId": "player-1",
+            "playerName": "player-1",
+            "completionTime": 59990,
+            "timestamp": 1752631033514
+          }
+        ]
+      },
+      "cash": 5
+    },
+    "lastUpdated": 1752972572981,
+    "displayName": "player-4",
+    "worldSnapshots": {}
+  },
+  "player-5": {
+    "playerId": "player-5",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": -96.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": -24.5,
+              "y": 38,
+              "z": 23.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 0,
+              "z": -24.5
+            },
+            "blockTypeId": 101
+          },
+          {
+            "relativePos": {
+              "x": -24.5,
+              "y": 37,
+              "z": 23.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -24.5,
+              "y": 36,
+              "z": 23.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": -24.5,
+              "y": 35,
+              "z": 23.5
+            },
+            "blockTypeId": 1
+          }
+        ],
+        "obstacles": [
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 19.5,
+              "y": 0,
+              "z": -15.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 17.5,
+              "y": 3,
+              "z": -6.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 9.5,
+              "y": 4,
+              "z": -13.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 8.5,
+              "y": 8,
+              "z": -2.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 0.5,
+              "y": 6,
+              "z": -7.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -10.5,
+              "y": 5,
+              "z": -2.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -9.5,
+              "y": 7,
+              "z": 7.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -8.5,
+              "y": 17,
+              "z": 24.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -18.5,
+              "y": 17,
+              "z": 14.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -21.5,
+              "y": 14,
+              "z": 9.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -19.5,
+              "y": 23,
+              "z": 15.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": -14.5,
+              "y": 25,
+              "z": 19.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 0.5,
+              "y": 12,
+              "z": 15.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 3.5,
+              "y": 2,
+              "z": 5.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 2.5,
+              "y": 10,
+              "z": -15.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 5.5,
+              "y": 14,
+              "z": -20.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 1.5,
+              "y": 3,
+              "z": -1.5
+            },
+            "config": {}
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 10.5,
+              "y": 17,
+              "z": -23.5
+            },
+            "config": {}
+          }
+        ],
+        "lastModified": 1752982765524,
+        "creatorName": "player-5",
+        "creatorId": "player-5",
+        "scoreboard": []
+      },
+      "cash": 7
+    },
+    "lastUpdated": 1752982765536,
+    "displayName": "player-5",
+    "worldSnapshots": {}
+  },
+  "player-9": {
+    "playerId": "player-9",
+    "obbyData": {
+      "plotData": {
+        "version": "1.0",
+        "plotSize": {
+          "width": 61,
+          "length": 61,
+          "height": 100
+        },
+        "plotCenter": {
+          "x": -39.5,
+          "y": 1,
+          "z": 95.5
+        },
+        "plotSide": "left",
+        "blocks": [
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 100
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": -0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 27.5,
+              "y": 0,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 26.5,
+              "y": 0,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 0,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 25.5,
+              "y": 0,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 24.5,
+              "y": 0,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 0,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 23.5,
+              "y": 0,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 0,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 20.5,
+              "y": 0,
+              "z": 4.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 19.5,
+              "y": 0,
+              "z": 4.5
+            },
+            "blockTypeId": 101
+          }
+        ],
+        "obstacles": [],
+        "lastModified": 1752988664524,
+        "creatorName": "player-9",
+        "creatorId": "player-9",
+        "scoreboard": []
+      },
+      "cash": 87
+    },
+    "lastUpdated": 1752988664530,
+    "displayName": "player-9",
+    "worldSnapshots": {}
+  }
+}

@@ -1,0 +1,233 @@
+/* --- Animated Text Panel Styles --- */
+
+.animated-text-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    max-width: 80vw;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Above everything else */
+    pointer-events: none; /* Don't block game interactions */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.animated-text-overlay.visible {
+    opacity: 1;
+}
+
+.animated-text-line {
+    font-family: 'Inter', 'Arial', sans-serif;
+    font-weight: 900;
+    text-align: center;
+    color: white;
+    text-shadow: 
+        3px 3px 0px rgba(0, 0, 0, 0.8),
+        6px 6px 10px rgba(0, 0, 0, 0.6);
+    margin: 10px 0;
+    transform: scale(0.5);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.animated-text-overlay.animate-in .animated-text-line {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.animated-text-overlay.animate-out .animated-text-line {
+    transform: scale(1.2);
+    opacity: 0;
+}
+
+/* Line 1 - Main text (bigger) */
+.animated-text-line.line-1 {
+    font-size: clamp(2rem, 6vw, 4rem);
+    animation-delay: 0s;
+}
+
+/* Line 2 - Secondary text (smaller) */
+.animated-text-line.line-2 {
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    animation-delay: 0.1s;
+    color: #FFD700; /* Gold color for secondary text */
+}
+
+/* Specific styles for countdown numbers */
+.animated-text-overlay.countdown .line-1 {
+    font-size: clamp(3rem, 8vw, 6rem);
+    color: #FF6B6B; /* Red for countdown */
+    animation: countdown-pulse 0.8s ease-out;
+}
+
+.animated-text-overlay.countdown.go .line-1 {
+    color: #4ECDC4; /* Teal for "GO!" */
+    animation: go-blast 1s ease-out;
+}
+
+/* Countdown pulse animation */
+@keyframes countdown-pulse {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* GO! blast animation */
+@keyframes go-blast {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    30% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Success/Achievement styles */
+.animated-text-overlay.success .line-1 {
+    color: #4ECDC4; /* Teal */
+    animation: success-bounce 0.6s ease-out;
+}
+
+.animated-text-overlay.success .line-2 {
+    color: #FFD700; /* Gold */
+}
+
+@keyframes success-bounce {
+    0% {
+        transform: scale(0.5) translateY(50px);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1) translateY(-10px);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Warning/Elimination styles */
+.animated-text-overlay.warning .line-1 {
+    color: #FF6B6B; /* Red */
+    animation: warning-shake 0.8s ease-out;
+}
+
+@keyframes warning-shake {
+    0% {
+        transform: scale(0.5) rotate(-2deg);
+        opacity: 0;
+    }
+    25% {
+        transform: scale(1.05) rotate(1deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05) rotate(-1deg);
+    }
+    75% {
+        transform: scale(1.05) rotate(1deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .animated-text-overlay {
+        max-width: 90vw;
+    }
+    
+    .animated-text-line.line-1 {
+        font-size: clamp(1.8rem, 8vw, 3rem);
+    }
+    
+    .animated-text-line.line-2 {
+        font-size: clamp(1rem, 5vw, 1.5rem);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .animated-text-line {
+        text-shadow: 
+            2px 2px 0px black,
+            4px 4px 0px black;
+    }
+}
+
+/* Leaderboard styles */
+.leaderboard-line {
+    font-size: 1.1rem;
+    line-height: 1.2;
+    margin: 0;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 
+        2px 2px 0px rgba(0, 0, 0, 0.8),
+        4px 4px 6px rgba(0, 0, 0, 0.6);
+}
+
+.leaderboard-line.gold {
+    color: #FFD700;
+}
+
+.leaderboard-line.silver {
+    color: #C0C0C0;
+}
+
+.leaderboard-line.bronze {
+    color: #CD7F32;
+}
+
+.animated-text-overlay.leaderboard-mode {
+    max-width: 40vw;
+    padding: 0.5em 1em;
+}
+
+.animated-text-overlay.leaderboard-mode .line-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    align-items: center;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .animated-text-line {
+        transition: opacity 0.3s ease;
+        animation: none !important;
+    }
+    
+    .animated-text-overlay.animate-in .animated-text-line {
+        transform: scale(1);
+    }
+    
+    .animated-text-overlay.animate-out .animated-text-line {
+        transform: scale(1);
+    }
+} 
