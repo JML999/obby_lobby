@@ -1,4 +1,4 @@
-import { World, Vector3 } from 'hytopia';
+import { World, Vector3, Entity } from 'hytopia';
 import type { Vector3Like } from 'hytopia';
 import { ZombieEntity } from './entities/ZombieEntity';
 import type { ZombieEntityOptions } from './entities/ZombieEntity';
@@ -31,7 +31,7 @@ export interface PlotEnemyStats {
 
 export class EnemyManager {
     private world: World;
-    private enemies: Map<string, EnemyEntity> = new Map();
+    private enemies: Map<string, Entity> = new Map(); // Changed from EnemyEntity to Entity
     private enemiesByPlot: Map<string, Set<string>> = new Map(); // plotId -> Set of enemy IDs
     
     // Limits and cooldowns
@@ -56,9 +56,9 @@ export class EnemyManager {
 
     constructor(world: World, options: EnemyManagerOptions = {}) {
         this.world = world;
-        this.maxEnemiesPerPlot = options.maxEnemiesPerPlot ?? 10;
-        this.maxEnemiesTotal = options.maxEnemiesTotal ?? 100;
-        this.spawnCooldownMs = options.spawnCooldownMs ?? 1000;
+        this.maxEnemiesPerPlot = options.maxEnemiesPerPlot ?? 20; // Increased from 10 to 20
+        this.maxEnemiesTotal = options.maxEnemiesTotal ?? 200; // Increased proportionally from 100 to 200
+        this.spawnCooldownMs = options.spawnCooldownMs ?? 500; // Reduced from 1000ms to 500ms for faster spawning
         this.enableRandomSpawning = options.enableRandomSpawning ?? false;
         this.randomSpawnInterval = options.randomSpawnInterval ?? 10000;
         
@@ -73,14 +73,14 @@ export class EnemyManager {
     /**
      * Spawn an enemy on a specific plot
      */
-    public spawnEnemy(options: EnemySpawnOptions): EnemyEntity | null {
+    public spawnEnemy(options: EnemySpawnOptions): Entity | null {
         // Check if we can spawn (cooldown, total limit, and per-plot limit)
         if (!this.canSpawnOnPlot(options.plotId)) {
             console.warn(`[EnemyManager] Cannot spawn enemy on plot ${options.plotId} - limits reached or cooldown active`);
             return null;
         }
 
-        let enemy: EnemyEntity;
+        let enemy: Entity;
 
         try {
             switch (options.type) {
@@ -119,13 +119,24 @@ export class EnemyManager {
         const underTotalLimit = this.enemies.size < this.maxEnemiesTotal;
         const underPlotLimit = this.getEnemyCountInPlot(plotId) < this.maxEnemiesPerPlot;
         
+        // Debug logging to see exactly what's blocking spawns
+        const timeSinceLastSpawn = now - this.lastSpawnTime;
+        const plotEnemyCount = this.getEnemyCountInPlot(plotId);
+        const totalEnemyCount = this.enemies.size;
+        
+        console.log(`[EnemyManager] Spawn check for plot ${plotId}:`);
+        console.log(`  - Cooldown: ${cooldownPassed} (${timeSinceLastSpawn}ms since last spawn, need ${this.spawnCooldownMs}ms)`);
+        console.log(`  - Total limit: ${underTotalLimit} (${totalEnemyCount}/${this.maxEnemiesTotal})`);
+        console.log(`  - Plot limit: ${underPlotLimit} (${plotEnemyCount}/${this.maxEnemiesPerPlot})`);
+        console.log(`  - Can spawn: ${cooldownPassed && underTotalLimit && underPlotLimit}`);
+        
         return cooldownPassed && underTotalLimit && underPlotLimit;
     }
 
     /**
      * Register an enemy with plot association
      */
-    private registerEnemy(enemy: EnemyEntity, plotId: string): void {
+    private registerEnemy(enemy: Entity, plotId: string): void {
         const enemyId = enemy.id?.toString() || `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         // Add to main enemies map
@@ -139,14 +150,44 @@ export class EnemyManager {
         
         // Store plot association on the enemy for quick lookup
         (enemy as any)._plotId = plotId;
+        (enemy as any)._enemyManagerId = enemyId;
         
         // Update counters
         this.updateCounters();
         
-        // Set up cleanup when enemy dies/despawns
-        enemy.on('DESPAWNED', () => {
+        // Set up cleanup when enemy dies/despawns - listen to multiple events
+        const cleanup = () => {
+            console.log(`[EnemyManager] Cleaning up enemy ${enemyId} from plot ${plotId}`);
             this.unregisterEnemy(enemyId);
-        });
+        };
+        
+        // Listen for standard despawn event
+        enemy.on('DESPAWNED', cleanup);
+        
+        // For ZombieEntity, also listen for death events (in case they die but don't despawn immediately)
+        if (enemy instanceof ZombieEntity) {
+            // We'll check for death state periodically since zombies might die but not despawn
+            const checkDeath = () => {
+                if ((enemy as any)._isDead && this.enemies.has(enemyId)) {
+                    console.log(`[EnemyManager] Found dead zombie ${enemyId}, cleaning up`);
+                    cleanup();
+                }
+            };
+            
+            // Check death state every 5 seconds
+            const deathCheckInterval = setInterval(checkDeath, 5000);
+            
+            // Clean up the interval when entity is removed
+            const originalCleanup = cleanup;
+            const enhancedCleanup = () => {
+                clearInterval(deathCheckInterval);
+                originalCleanup();
+            };
+            
+            // Replace the cleanup function with enhanced version
+            enemy.off('DESPAWNED', cleanup);
+            enemy.on('DESPAWNED', enhancedCleanup);
+        }
 
         console.log(`[EnemyManager] Registered enemy ${enemyId} on plot ${plotId}, plot enemies: ${this.getEnemyCountInPlot(plotId)}, total: ${this.enemies.size}`);
     }
@@ -158,6 +199,8 @@ export class EnemyManager {
         const enemy = this.enemies.get(enemyId);
         if (enemy) {
             const plotId = (enemy as any)._plotId;
+            
+            console.log(`[EnemyManager] Unregistering enemy ${enemyId} from plot ${plotId}`);
             
             // Remove from main map
             this.enemies.delete(enemyId);
@@ -172,9 +215,40 @@ export class EnemyManager {
                 }
             }
             
+            // Update counters
             this.updateCounters();
-            console.log(`[EnemyManager] Unregistered enemy ${enemyId} from plot ${plotId}, remaining: ${this.enemies.size}`);
+            
+            console.log(`[EnemyManager] Enemy ${enemyId} unregistered. Plot ${plotId} now has ${this.getEnemyCountInPlot(plotId)} enemies, total: ${this.enemies.size}`);
+        } else {
+            console.warn(`[EnemyManager] Attempted to unregister non-existent enemy ${enemyId}`);
         }
+    }
+
+    /**
+     * Manually clean up all dead zombies (useful for debugging/maintenance)
+     */
+    public cleanupDeadZombies(): number {
+        let cleanedCount = 0;
+        const toRemove: string[] = [];
+        
+        for (const [enemyId, enemy] of this.enemies.entries()) {
+            if (enemy instanceof ZombieEntity) {
+                const isDead = (enemy as any)._isDead || false;
+                if (isDead) {
+                    console.log(`[EnemyManager] Found dead zombie ${enemyId}, marking for cleanup`);
+                    toRemove.push(enemyId);
+                    cleanedCount++;
+                }
+            }
+        }
+        
+        // Remove dead zombies
+        for (const enemyId of toRemove) {
+            this.unregisterEnemy(enemyId);
+        }
+        
+        console.log(`[EnemyManager] Cleaned up ${cleanedCount} dead zombies`);
+        return cleanedCount;
     }
 
     /**
@@ -187,11 +261,11 @@ export class EnemyManager {
     /**
      * Get all enemies in a specific plot
      */
-    public getEnemiesInPlot(plotId: string): EnemyEntity[] {
+    public getEnemiesInPlot(plotId: string): Entity[] {
         const enemyIds = this.enemiesByPlot.get(plotId);
         if (!enemyIds) return [];
         
-        const enemies: EnemyEntity[] = [];
+        const enemies: Entity[] = [];
         for (const enemyId of enemyIds) {
             const enemy = this.enemies.get(enemyId);
             if (enemy) {
@@ -204,7 +278,7 @@ export class EnemyManager {
     /**
      * Get enemies by type in a specific plot
      */
-    public getEnemiesByTypeInPlot<T extends EnemyEntity>(plotId: string, type: new (...args: any[]) => T): T[] {
+    public getEnemiesByTypeInPlot<T extends Entity>(plotId: string, type: new (...args: any[]) => T): T[] {
         return this.getEnemiesInPlot(plotId).filter(enemy => enemy instanceof type) as T[];
     }
 
@@ -233,8 +307,8 @@ export class EnemyManager {
         count: number, 
         radius: number = 3, 
         variant: 'normal' | 'fast' | 'strong' = 'normal'
-    ): EnemyEntity[] {
-        const spawnedEnemies: EnemyEntity[] = [];
+    ): Entity[] {
+        const spawnedEnemies: Entity[] = [];
         
         for (let i = 0; i < count; i++) {
             // Check if we can spawn more on this plot
@@ -284,7 +358,15 @@ export class EnemyManager {
                 zombies++;
             }
             
-            if (enemy.isDeadState) {
+            // Check dead state based on entity type
+            let isDead = false;
+            if (enemy instanceof ZombieEntity) {
+                isDead = (enemy as any)._isDead || false; // ZombieEntity uses _isDead
+            } else if ('isDeadState' in enemy) {
+                isDead = (enemy as any).isDeadState; // EnemyEntity uses isDeadState
+            }
+            
+            if (isDead) {
                 dead++;
             } else {
                 alive++;
@@ -329,7 +411,15 @@ export class EnemyManager {
                 this.globalCounters.zombies++;
             }
             
-            if (enemy.isDeadState) {
+            // Check dead state based on entity type
+            let isDead = false;
+            if (enemy instanceof ZombieEntity) {
+                isDead = (enemy as any)._isDead || false; // ZombieEntity uses _isDead
+            } else if ('isDeadState' in enemy) {
+                isDead = (enemy as any).isDeadState; // EnemyEntity uses isDeadState
+            }
+            
+            if (isDead) {
                 this.globalCounters.dead++;
             } else {
                 this.globalCounters.alive++;
@@ -342,21 +432,21 @@ export class EnemyManager {
     /**
      * Get all enemies (across all plots)
      */
-    public getAllEnemies(): EnemyEntity[] {
+    public getAllEnemies(): Entity[] {
         return Array.from(this.enemies.values());
     }
 
     /**
      * Get enemies by type (across all plots)
      */
-    public getEnemiesByType<T extends EnemyEntity>(type: new (...args: any[]) => T): T[] {
+    public getEnemiesByType<T extends Entity>(type: new (...args: any[]) => T): T[] {
         return this.getAllEnemies().filter(enemy => enemy instanceof type) as T[];
     }
 
     /**
      * Get enemies within a radius of a position (across all plots)
      */
-    public getEnemiesInRadius(center: Vector3Like, radius: number): EnemyEntity[] {
+    public getEnemiesInRadius(center: Vector3Like, radius: number): Entity[] {
         return this.getAllEnemies().filter(enemy => {
             const dx = enemy.position.x - center.x;
             const dy = enemy.position.y - center.y;
@@ -369,8 +459,8 @@ export class EnemyManager {
     /**
      * Get the nearest enemy to a position (across all plots)
      */
-    public getNearestEnemy(position: Vector3Like): EnemyEntity | null {
-        let nearestEnemy: EnemyEntity | null = null;
+    public getNearestEnemy(position: Vector3Like): Entity | null {
+        let nearestEnemy: Entity | null = null;
         let nearestDistance = Infinity;
 
         for (const enemy of this.enemies.values()) {
@@ -518,5 +608,47 @@ export class EnemyManager {
             this.randomSpawnTimer = this.randomSpawnInterval;
         }
         console.log(`[EnemyManager] Random spawning ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    /**
+     * Debug method to show current enemy counts
+     */
+    public debugShowCounts(): void {
+        console.log('=== ENEMY MANAGER DEBUG INFO ===');
+        console.log(`Total enemies tracked: ${this.enemies.size}/${this.maxEnemiesTotal}`);
+        console.log(`Plots with enemies: ${this.enemiesByPlot.size}`);
+        
+        for (const [plotId, enemyIds] of this.enemiesByPlot.entries()) {
+            const plotStats = this.getPlotStats(plotId);
+            console.log(`Plot ${plotId}: ${enemyIds.size}/${this.maxEnemiesPerPlot} (${plotStats.alive} alive, ${plotStats.dead} dead, ${plotStats.zombies} zombies)`);
+            
+            // List each enemy in the plot
+            for (const enemyId of enemyIds) {
+                const enemy = this.enemies.get(enemyId);
+                if (enemy) {
+                    let status = 'unknown';
+                    if (enemy instanceof ZombieEntity) {
+                        const isDead = (enemy as any)._isDead || false;
+                        const isRespawning = (enemy as any).isRespawning || false;
+                        status = isDead ? 'dead' : (isRespawning ? 'respawning' : 'alive');
+                    }
+                    console.log(`  - ${enemyId}: ${enemy.constructor.name} (${status})`);
+                } else {
+                    console.log(`  - ${enemyId}: MISSING ENTITY!`);
+                }
+            }
+        }
+        console.log('=== END ENEMY DEBUG INFO ===');
+    }
+
+    // Expose cleanup methods globally for console debugging
+    public exposeDebugMethods(): void {
+        (globalThis as any).enemyManagerDebug = {
+            showCounts: () => this.debugShowCounts(),
+            cleanupDead: () => this.cleanupDeadZombies(),
+            clearPlot: (plotId: string) => this.clearPlotEnemies(plotId),
+            getStats: (plotId: string) => this.getPlotStats(plotId)
+        };
+        console.log('[EnemyManager] Debug methods exposed to globalThis.enemyManagerDebug');
     }
 } 

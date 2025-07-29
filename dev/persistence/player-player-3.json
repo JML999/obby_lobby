@@ -1,5 +1,14 @@
 {
   "obby": {
-    "plotData": null
+    "plotData": null,
+    "levelData": {
+      "level": 1,
+      "xp": 10,
+      "totalXP": 10,
+      "firstTimeFlags": [],
+      "loginStreak": 1,
+      "lastLoginDate": "Mon Jul 28 2025",
+      "completedCourses": {}
+    }
   }
 }

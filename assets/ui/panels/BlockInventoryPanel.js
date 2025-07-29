@@ -15,6 +15,10 @@ class BlockInventoryPanel {
         this.currentPlayerState = 'LOBBY';
         this.isEnabled = false;
         
+        // Level-based unlocking
+        this.playerLevel = 1;
+        this.unlockedBlocks = ['platform', 'start', 'finish', 'sand', 'ice']; // Fun blocks available from start
+        
         // Define available blocks and obstacles
         this.initializeBlocks();
         this.initializeObstacles();
@@ -40,11 +44,23 @@ class BlockInventoryPanel {
             window.hytopia.onData((data) => {
                 if (data.type === 'playerStateChanged') {
                     this.onPlayerStateChanged(data.state, data.plotIndex, data.isMobile, data.mobileControls);
+                } else if (data.type === 'levelUpdate') {
+                    this.onLevelUpdate(data);
                 }
             });
         }
         
         console.log('[BlockInventoryPanel] Initialized successfully.');
+    }
+
+    onLevelUpdate(data) {
+        this.playerLevel = data.level || 1;
+        console.log('[BlockInventoryPanel] Player level updated to:', this.playerLevel);
+        
+        // Update the grid if inventory is open
+        if (this.inventoryOpen) {
+            this.generateBlockGrid();
+        }
     }
 
     onPlayerStateChanged(newState, plotIndex, isMobile, mobileControls) {
@@ -84,45 +100,42 @@ class BlockInventoryPanel {
     }
 
     initializeBlocks() {
-        // Obbys Creator Block Types with point costs
+        // Obbys Creator Block Types with point costs and level requirements
         this.availableBlocks = [
-            // Required blocks (0 points)
-            { id: 100, name: 'start', textureUri: 'blocks/start.png', cost: 0, type: 'start' },
-            { id: 101, name: 'goal', textureUri: 'blocks/goal.png', cost: 0, type: 'goal' },
+            // Level 1 - Fun blocks available from start
+            { id: 100, name: 'start', textureUri: 'blocks/start.png', cost: 0, type: 'start', levelRequired: 1 },
+            { id: 101, name: 'goal', textureUri: 'blocks/goal.png', cost: 0, type: 'finish', levelRequired: 1 },
+            { id: 1, name: 'platform', textureUri: 'blocks/stone-bricks.png', cost: 1, type: 'platform', levelRequired: 1 },
+            { id: 17, name: 'sand', textureUri: 'blocks/sand.png', cost: 1, type: 'sand', levelRequired: 1 },
+            { id: 9, name: 'ice', textureUri: 'blocks/ice.png', cost: 1, type: 'ice', levelRequired: 1 },
             
-            // Basic movement blocks (1 point each)
-            { id: 1, name: 'platform', textureUri: 'blocks/stone-bricks.png', cost: 1, type: 'platform' },
-            { id: 9, name: 'ice', textureUri: 'blocks/ice.png', cost: 1, type: 'ice' },
-            { id: 17, name: 'sand', textureUri: 'blocks/sand.png', cost: 1, type: 'sand' },
-            { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines' },
+            // Level 3 - Hazard blocks
+            { id: 21, name: 'lava', textureUri: 'blocks/lava.png', cost: 2, type: 'lava', levelRequired: 3 },
             
-            // Hazard blocks (2 points each)
-            { id: 21, name: 'lava', textureUri: 'blocks/lava.png', cost: 2, type: 'void-sand' },
+            // Level 4 - Conveyor blocks (2 points each)
+            { id: 104, name: 'conveyor backward', textureUri: 'blocks/conveyor-z-.png', cost: 2, type: 'conveyor-z-', levelRequired: 4 },
+            { id: 105, name: 'conveyor forward', textureUri: 'blocks/conveyor-z+.png', cost: 2, type: 'conveyor-z+', levelRequired: 4 },
+            { id: 109, name: 'conveyor left', textureUri: 'blocks/conveyor-x-.png', cost: 2, type: 'conveyor-x-', levelRequired: 4 },
+            { id: 110, name: 'conveyor right', textureUri: 'blocks/conveyor-x+.png', cost: 2, type: 'conveyor-x+', levelRequired: 4 },
             
-            // Conveyor blocks (2 points each) - relative to player facing
-            { id: 104, name: 'conveyor backward', textureUri: 'blocks/conveyor-z-', cost: 2, type: 'conveyor-backward' },
-            { id: 105, name: 'conveyor forward', textureUri: 'blocks/conveyor-z+', cost: 2, type: 'conveyor-forward' },
-            { id: 109, name: 'conveyor left', textureUri: 'blocks/conveyor-x-', cost: 2, type: 'conveyor-left' },
-            { id: 110, name: 'conveyor right', textureUri: 'blocks/conveyor-x+', cost: 2, type: 'conveyor-right' },
-            
-            // Special blocks (3 points each)
-            { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass' }
+            // Level 5 - Special blocks
+            { id: 19, name: 'stone', textureUri: 'blocks/stone.png', cost: 1, type: 'checkpoint', levelRequired: 5 },
+            { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'disappearing', levelRequired: 5 },
+            { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'bounce', levelRequired: 5 }
         ];
     }
 
     initializeObstacles() {
-        // Define obstacles with size variants
+        // Define obstacles with level requirements - all unlock by level 5
         this.availableObstacles = [
-            // Jump Pad (renamed from Bounce Pad, only small size)
-            { id: 'bounce_pad_small', name: 'Jump Pad', size: '', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
+            // Level 5 - All obstacles unlock at "mid-game"
+            { id: 'bounce_pad_small', name: 'Jump Pad', size: '', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png', levelRequired: 5 },
+            { id: 'rotating_beam_small', name: 'Rotating Beam', size: '', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png', levelRequired: 5 },
             
-            // Rotating Beam (only small size for now)
-            { id: 'rotating_beam_small', name: 'Rotating Beam', size: '', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png' },
-            
-            // Enemies - Zombies (using size field to store variant)
-            { id: 'zombie_normal', name: 'Zombie', size: 'normal', type: 'zombie', sizeId: 'normal', icon: 'ui/icons/target.png' },
-            { id: 'zombie_fast', name: 'Fast Zombie', size: 'fast', type: 'zombie', sizeId: 'fast', icon: 'ui/icons/target.png' },
-            { id: 'zombie_strong', name: 'Strong Zombie', size: 'strong', type: 'zombie', sizeId: 'strong', icon: 'ui/icons/target.png' }
+            // Enemies - Zombies (moved to level 5 instead of level 8)
+            { id: 'zombie_normal', name: 'Zombie', size: 'normal', type: 'zombie', sizeId: 'normal', icon: 'ui/icons/target.png', levelRequired: 5 },
+            { id: 'zombie_fast', name: 'Fast Zombie', size: 'fast', type: 'zombie', sizeId: 'fast', icon: 'ui/icons/target.png', levelRequired: 5 },
+            { id: 'zombie_strong', name: 'Strong Zombie', size: 'strong', type: 'zombie', sizeId: 'strong', icon: 'ui/icons/target.png', levelRequired: 5 }
         ];
     }
 
@@ -190,36 +203,84 @@ class BlockInventoryPanel {
         grid.innerHTML = '';
 
         const items = this.currentTab === 'blocks' ? this.availableBlocks : this.availableObstacles;
+        const unlockedItems = items.filter(item => item.levelRequired <= this.playerLevel);
+        const lockedItems = items.filter(item => item.levelRequired > this.playerLevel);
 
-        items.forEach((item, index) => {
-            const slot = document.createElement('div');
-            slot.className = 'backpack-slot';
-            slot.dataset.itemId = item.id;
-            slot.dataset.itemName = item.name;
-            slot.dataset.itemType = this.currentTab;
-            slot.title = item.name;
-
-            const content = document.createElement('div');
-            content.className = 'backpack-slot-content';
-
-            if (this.currentTab === 'blocks') {
-                // Block display
-                const blockImage = document.createElement('img');
-                blockImage.className = 'backpack-item-icon';
-                blockImage.src = this.getBlockIconPath(item);
-                blockImage.alt = item.name;
-                content.appendChild(blockImage);
-            } else {
-                // Obstacle display with text name instead of image
-                const obstacleText = document.createElement('div');
-                obstacleText.className = 'backpack-obstacle-text';
-                obstacleText.textContent = item.name;
-                content.appendChild(obstacleText);
-            }
-
-            slot.appendChild(content);
+        // Show unlocked items first
+        unlockedItems.forEach((item, index) => {
+            const slot = this.createItemSlot(item, false);
             grid.appendChild(slot);
         });
+
+        // Show locked items with visual indication
+        lockedItems.forEach((item, index) => {
+            const slot = this.createItemSlot(item, true);
+            grid.appendChild(slot);
+        });
+
+        // If no unlocked items exist in current tab, show level up message
+        if (unlockedItems.length === 0) {
+            this.showLevelUpMessage(grid);
+        }
+    }
+
+    createItemSlot(item, isLocked) {
+        const slot = document.createElement('div');
+        slot.className = isLocked ? 'backpack-slot locked' : 'backpack-slot';
+        slot.dataset.itemId = item.id;
+        slot.dataset.itemName = item.name;
+        slot.dataset.itemType = this.currentTab;
+        slot.dataset.levelRequired = item.levelRequired;
+        
+        // Update tooltip for locked items
+        slot.title = isLocked 
+            ? `${item.name} (Level ${item.levelRequired} required)` 
+            : item.name;
+
+        const content = document.createElement('div');
+        content.className = 'backpack-slot-content';
+
+        if (this.currentTab === 'blocks') {
+            // Block display
+            const blockImage = document.createElement('img');
+            blockImage.className = 'backpack-item-icon';
+            blockImage.src = this.getBlockIconPath(item);
+            blockImage.alt = item.name;
+            content.appendChild(blockImage);
+        } else {
+            // Obstacle display with text name instead of image
+            const obstacleText = document.createElement('div');
+            obstacleText.className = 'backpack-obstacle-text';
+            obstacleText.textContent = item.name;
+            content.appendChild(obstacleText);
+        }
+
+        // Add level requirement indicator for locked items
+        if (isLocked) {
+            const levelIndicator = document.createElement('div');
+            levelIndicator.className = 'level-requirement';
+            levelIndicator.textContent = `L${item.levelRequired}`;
+            content.appendChild(levelIndicator);
+        }
+
+        slot.appendChild(content);
+        return slot;
+    }
+
+    showLevelUpMessage(grid) {
+        const messageSlot = document.createElement('div');
+        messageSlot.className = 'backpack-slot level-up-message';
+        
+        const content = document.createElement('div');
+        content.className = 'backpack-slot-content';
+        
+        const message = document.createElement('div');
+        message.className = 'level-up-text';
+        message.innerHTML = `<div class="level-up-icon">🔒</div><div>Level up to unlock ${this.currentTab}!</div>`;
+        content.appendChild(message);
+        
+        messageSlot.appendChild(content);
+        grid.appendChild(messageSlot);
     }
 
     generateHotbarPreview() {
@@ -383,6 +444,18 @@ class BlockInventoryPanel {
     }
 
     selectItem(slot) {
+        // Prevent selecting locked items
+        if (slot.classList.contains('locked')) {
+            const requiredLevel = slot.dataset.levelRequired;
+            console.log(`[BlockInventoryPanel] Cannot select locked item - requires level ${requiredLevel}, current level: ${this.playerLevel}`);
+            return;
+        }
+
+        // Prevent selecting level-up message slots
+        if (slot.classList.contains('level-up-message')) {
+            return;
+        }
+
         // Remove previous selection
         const previousSelected = this.inventoryElement.querySelector('.backpack-slot.selected');
         if (previousSelected) {
@@ -534,6 +607,16 @@ class BlockInventoryPanel {
 
     startDrag(slot, event) {
         event.preventDefault();
+        
+        // Prevent dragging locked items
+        if (slot.classList.contains('locked')) {
+            return;
+        }
+
+        // Prevent dragging level-up message slots
+        if (slot.classList.contains('level-up-message')) {
+            return;
+        }
         
         const itemId = slot.dataset.itemId;
         const itemName = slot.dataset.itemName;
@@ -907,6 +990,26 @@ class BlockInventoryPanel {
                 position: relative;
                 box-shadow: inset 0 1px 2.5px rgba(0,0,0,0.7);
             }
+            .backpack-slot.locked {
+                background: rgba(0, 0, 0, 0.8);
+                border-color: #666;
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+            .backpack-slot.locked .backpack-item-icon,
+            .backpack-slot.locked .backpack-obstacle-text {
+                filter: grayscale(100%) brightness(0.4);
+            }
+            .backpack-slot.level-up-message {
+                grid-column: 1 / -1;
+                width: auto;
+                height: auto;
+                min-height: var(--backpack-slot-size);
+                background: rgba(255, 165, 0, 0.1);
+                border: 1.5px solid #FFA500;
+                cursor: default;
+                padding: 8px;
+            }
             .backpack-slot-content {
                 width: 100%;
                 height: 100%;
@@ -944,6 +1047,32 @@ class BlockInventoryPanel {
                 justify-content: center;
                 overflow: hidden;
                 text-overflow: ellipsis;
+            }
+            .level-requirement {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                background: rgba(255, 0, 0, 0.8);
+                color: white;
+                font-size: 8px;
+                font-weight: bold;
+                padding: 1px 3px;
+                border-radius: 3px;
+                line-height: 1;
+                text-shadow: none;
+            }
+            .level-up-text {
+                text-align: center;
+                color: #FFA500;
+                font-size: 10px;
+                font-weight: 600;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            .level-up-icon {
+                font-size: 16px;
             }
             .backpack-hotbar-container {
                 background: linear-gradient(145deg, #2a2a2a, #1e1e1e);

@@ -91,26 +91,5 @@ export class GreeterNpc extends DialogNpc {
         }, hideDelay);
     }
 
-    private async startBuildMode(player: Player, plotIndex: number) {
-        console.log(`[GreeterNpc] Starting build mode for player ${player.id} on plot ${plotIndex}`);
 
-        // Set player state to BUILDING
-        this.stateManager.setPlayerState(player.id, PlayerGameState.BUILDING, plotIndex, player);
-
-        // Initialize plot for building without teleporting
-        const success = await this.plotBuildManager.activateBuildMode(player, plotIndex);
-
-        if (!success) {
-            // Reset state if build mode activation failed
-            this.stateManager.setPlayerState(player.id, PlayerGameState.LOBBY, undefined, player);
-            if (player.world) {
-                player.world.chatManager.sendPlayerMessage(player, '❌ Failed to enter build mode!', 'FF0000');
-            }
-        } else {
-            if (player.world) {
-                player.world.chatManager.sendPlayerMessage(player, `🔨 Build mode activated! Start creating your obby course!`, '00FF00');
-                player.world.chatManager.sendPlayerMessage(player, `💡 Tip: Press F to toggle fly mode, press 2 to undo`, 'FFFF00');
-            }
-        }
-    }
 } 

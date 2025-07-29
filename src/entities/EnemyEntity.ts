@@ -184,12 +184,14 @@ export abstract class EnemyEntity extends Entity {
             this.currentTarget = this.findNearestPlayer();
             if (!this.currentTarget) {
                 this.onIdleBehavior();
+                console.log(`[EnemyEntity] No target found, idling. Position:`, this.position);
                 return;
             }
         }
 
         // Check if target is still valid and in range
         if (!this.currentTarget.isSpawned || this.getDistanceToTarget() > this.detectionRange * 1.5) {
+            console.log(`[EnemyEntity] Lost target or out of range. Target:`, this.currentTarget?.position, 'Self:', this.position);
             this.currentTarget = null;
             this.isAggressive = false;
             this.onIdleBehavior();
@@ -198,7 +200,7 @@ export abstract class EnemyEntity extends Entity {
 
         // Check if target is outside roaming area - if so, lose aggression
         if (this.roamingArea && !this.isWithinRoamingArea(this.currentTarget.position)) {
-            // Target moved outside our allowed area, stop chasing
+            console.log(`[EnemyEntity] Target outside roaming area. Target:`, this.currentTarget.position, 'Self:', this.position);
             this.currentTarget = null;
             this.isAggressive = false;
             this.onIdleBehavior();
@@ -206,6 +208,7 @@ export abstract class EnemyEntity extends Entity {
         }
 
         // Move towards target
+        console.log(`[EnemyEntity] Moving towards target. Target:`, this.currentTarget.position, 'Self:', this.position);
         this.moveTowardsTarget();
     }
 
@@ -222,6 +225,7 @@ export abstract class EnemyEntity extends Entity {
 
         const controller = this.controller as SimpleEntityController;
         const distance = this.getDistanceToTarget();
+        console.log(`[EnemyEntity] moveTowardsTarget: distance to target: ${distance}, attackRange: ${this.attackRange}`);
 
         if (distance > this.attackRange) {
             // Calculate desired position towards target
@@ -261,6 +265,7 @@ export abstract class EnemyEntity extends Entity {
             // Move towards the (possibly constrained) target
             controller.move(targetPosition, this.moveSpeed);
             controller.face(this.currentTarget.position, this.moveSpeed * 2);
+            console.log(`[EnemyEntity] Moving to:`, targetPosition, 'Current:', this.position);
 
             // Start movement animation
             if (!this.modelLoopedAnimations.has('walk') && !this.modelLoopedAnimations.has('run')) {
@@ -270,6 +275,7 @@ export abstract class EnemyEntity extends Entity {
         } else {
             // Face target but don't move closer
             controller.face(this.currentTarget.position, this.moveSpeed * 2);
+            console.log(`[EnemyEntity] In attack range. Attempting attack.`);
             
             // Switch to idle/attack stance
             if (this.modelLoopedAnimations.has('walk') || this.modelLoopedAnimations.has('run')) {

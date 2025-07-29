@@ -760,6 +760,19 @@
         }
       ]
     },
-    "cash": 5
+    "cash": 7,
+    "levelData": {
+      "level": 1,
+      "xp": 20,
+      "totalXP": 20,
+      "firstTimeFlags": [
+        "FIRST_COMPLETE"
+      ],
+      "loginStreak": 1,
+      "lastLoginDate": "Mon Jul 28 2025",
+      "completedCourses": {
+        "plot_5": "Mon Jul 28 2025"
+      }
+    }
   }
 }

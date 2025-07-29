@@ -13,11 +13,21 @@ import { PlayerStateManager, PlayerGameState } from './PlayerGameState';
 import { ParkingLotPopulator } from './ParkingLotPopulator';
 import { GreeterNpc } from './entities/GreeterNpc';
 import { type NpcConfig } from './entities/DialogNpc';
+import { WorldContext } from './WorldContext'; // Phase 1: Add context wrapper
+import { NewWorldContext } from './NewWorldContext'; // Phase 3: New context implementation
+import { SystemManager } from './SystemManager'; // All phases: System orchestrator
+import { FEATURE_FLAGS, isEnabled } from './FeatureFlags'; // Phase 1: Feature flags for safe rollback
 // import { TrafficManager } from './TrafficManager'; // TODO: Enable for next version - Traffic system ready but disabled for production
 
 export default class ObbyRegion extends GameRegion {
   public id: string;
   public world: World;
+  
+  // Phase 1-4: Context managed by SystemManager
+  private context: WorldContext | NewWorldContext | null = null;
+  private systemManager: SystemManager;
+  
+  // Keep all existing manager references for backward compatibility
   private plotManager: PlotManager;
   private blockPlacementManager: BlockPlacementManager;
   private obstaclePlacementManager: ObstaclePlacementManager;
@@ -39,6 +49,12 @@ export default class ObbyRegion extends GameRegion {
     
     console.log(`[ObbyRegion] Created region ${this.id} with world ${this.world.name}`);
     
+    // TEMPORARILY DISABLED: SystemManager for debugging glass block lag
+    // this.systemManager = SystemManager.getInstance();
+    // this.context = this.systemManager.getWorldContext(this.world, this.id);
+    this.context = null; // Force legacy mode
+    console.log(`[ObbyRegion] 🔧 FORCED Legacy System Mode - Region: ${this.id}, World: ${this.world.name} (SystemManager disabled)`)
+    
     // Load the map
     this.world.loadMap(generateObbyHubMap());
     console.log(`[ObbyRegion] Loaded map for region ${this.id}`);
@@ -58,11 +74,18 @@ export default class ObbyRegion extends GameRegion {
     // TODO: Enable for next version - Traffic system ready but disabled for production
     // this.trafficManager = new TrafficManager(this.world);
     
-    // Initialize managers for this world
+    // FORCED Legacy System Initialization (SystemManager disabled)
+    console.log(`[ObbyRegion] 🔧 Legacy System Initialization - Region: ${this.id}`);
     this.obstaclePlacementManager.initializeWorld(this.world);
     this.obstacleCollisionManager.initializeWorld(this.world);
     this.plotSaveManager.initializeWorld(this.world);
     this.blockPlacementManager.initializeWorld(this.world);
+    console.log(`[ObbyRegion] ✅ Legacy systems initialized manually for region ${this.id}`);
+    
+    // Initialize SimpleLevelingSystem with this world
+    const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    levelingSystem.initialize(this.world);
     
     // Initialize EnemyPlacementManager
     const { EnemyPlacementManager } = require('./EnemyPlacementManager');
@@ -132,7 +155,24 @@ export default class ObbyRegion extends GameRegion {
     }
     
     // Get player's assigned plot (should already be assigned by GameManager)
-    const playerPlot = this.plotManager.getPlayerPlot(player.id);
+    const playerPlot = this.plotManager.getPlayerPlot(player.id); // Current approach
+    
+    // Phase 1: Optional compatibility check with new context approach
+    if (isEnabled('enableWorldContext') && isEnabled('logContextCompatibility') && this.context) {
+      const playerPlotViaContext = this.context.plotManager.getPlayerPlot(player.id); // New approach
+      
+      // Verify they return identical results (avoiding circular reference issue)
+      const plotsMatch = playerPlot?.plotIndex === playerPlotViaContext?.plotIndex && 
+                        playerPlot?.ownerId === playerPlotViaContext?.ownerId;
+      console.log(`[ObbyRegion] Phase 1: Plot lookup compatibility check: ${plotsMatch ? '✅ IDENTICAL' : '❌ MISMATCH'}`);
+      
+      if (!plotsMatch) {
+        console.error(`[ObbyRegion] COMPATIBILITY ISSUE DETECTED:`);
+        console.error(`[ObbyRegion] Current approach result: plotIndex=${playerPlot?.plotIndex}, ownerId=${playerPlot?.ownerId}`);
+        console.error(`[ObbyRegion] Context approach result: plotIndex=${playerPlotViaContext?.plotIndex}, ownerId=${playerPlotViaContext?.ownerId}`);
+      }
+    }
+    
     if (!playerPlot) {
       console.error(`[ObbyRegion] Player ${player.id} joined region but has no assigned plot!`);
       return;
@@ -170,16 +210,8 @@ export default class ObbyRegion extends GameRegion {
       });
     }, 100);
 
-    // Auto-load player's saved obby if they have one (with delay to ensure world is fully initialized)
-    setTimeout(() => {
-      this.autoLoadPlayerObby(player, playerPlot.plotIndex);
-    }, 2000); // 2 seconds should be sufficient
-
-    // Send detailed chat messages after a delay (welcome message is now handled in ObbyPlayerEntity.onUIReady)
-    setTimeout(() => {
-      const displayNumber = this.getDisplayNumber(playerPlot.plotIndex);
-      this.sendDetailedInstructions(player, displayNumber);
-    }, 4000); // Wait 4 seconds for animated welcome message to finish
+    // Coordinate all welcome messages in a clean sequence
+    this.startWelcomeSequence(player, playerPlot.plotIndex);
   }
 
   protected handlePlayerLeave(player: Player): void {
@@ -222,6 +254,9 @@ export default class ObbyRegion extends GameRegion {
     if (this.getPlayerCount() === 0) {
       // this.trafficManager?.stop(); // Disabled for production
       console.log(`[ObbyRegion] Traffic system stopped for empty region ${this.id}`);
+      
+      // Cleanup context if world becomes empty
+      this.systemManager.cleanupWorldContext(this.world.name);
     }
   }
 
@@ -304,7 +339,7 @@ export default class ObbyRegion extends GameRegion {
 
   private async autoLoadPlayerObby(player: Player, plotIndex: number): Promise<void> {
     try {
-      console.log(`[ObbyRegion] Processing plot assignment for player ${player.id}`);
+      // Logging is now handled in startWelcomeSequence for better coordination
       
       // IMPORTANT: Only auto-load for players in LOBBY state
       // Players who are already BUILDING or PLAYING shouldn't have their data auto-loaded
@@ -357,11 +392,33 @@ export default class ObbyRegion extends GameRegion {
         // Load the player's saved obby onto their assigned plot
         await this.plotSaveManager.loadPlayerObby(player, plotId);
         
-        this.world.chatManager.sendPlayerMessage(player, '🔄 Your saved obby has been loaded!', '00FF00');
+        // Use toast for positive plot loading feedback
+        const displayNumber = this.getDisplayNumber(plotIndex);
+        try {
+          player.ui.sendData({
+            type: 'achievementPopup',
+            title: `🔄 Plot ${displayNumber} - Obby Loaded`,
+            bonus: 'Your saved obby has been loaded and is ready!',
+            duration: 3000
+          });
+        } catch (error) {
+          this.world.chatManager.sendPlayerMessage(player, `🔄 Plot ${displayNumber}: Your saved obby has been loaded!`, '00FF00');
+        }
         console.log(`[ObbyRegion] Successfully auto-loaded obby for player ${player.id} onto plot ${plotId}`);
       } else {
         console.log(`[ObbyRegion] Player ${player.id} has no saved obby data - plot is ready for building`);
-        this.world.chatManager.sendPlayerMessage(player, '🏠 Your plot is ready for building!', '00FF00');
+        // Use toast for positive plot ready feedback
+        const displayNumber = this.getDisplayNumber(plotIndex);
+        try {
+          player.ui.sendData({
+            type: 'achievementPopup',
+            title: `🏠 Plot ${displayNumber} - Ready to Build`,
+            bonus: 'Your plot is ready for building!',
+            duration: 3000
+          });
+        } catch (error) {
+          this.world.chatManager.sendPlayerMessage(player, `🏠 Plot ${displayNumber}: Your plot is ready for building!`, '00FF00');
+        }
       }
     } catch (error) {
       console.error(`[ObbyRegion] Error processing plot assignment for player ${player.id}:`, error);
@@ -369,11 +426,169 @@ export default class ObbyRegion extends GameRegion {
     }
   }
 
-  private sendDetailedInstructions(player: Player, plotNumber: number): void {
-    this.world.chatManager.sendPlayerMessage(player, `Welcome! You have been assigned to plot ${plotNumber}.`, '00FF00');
-    this.world.chatManager.sendPlayerMessage(player, '🏠 You can build in your assigned plot!', 'FFD700');
-    this.world.chatManager.sendPlayerMessage(player, '🔨 Walk into your plot entrance to see build options', 'FFD700');
-    this.world.chatManager.sendPlayerMessage(player, 'Or walk to other plots to play!', 'FFD700');
+  private sendWelcomeMessage(player: Player, plotNumber: number): void {
+    try {
+      player.ui.sendData({
+        type: 'achievementPopup',
+        title: '🏠 Welcome to the Obby Builder!',
+        bonus: 'Walk into your plot entrance to build, or explore other plots to play!',
+        duration: 3000
+      });
+    } catch (error) {
+      // Minimal fallback to chat if toast fails
+      this.world.chatManager.sendPlayerMessage(player, `Welcome! You have been assigned to plot ${plotNumber}.`, '00FF00');
+    }
+  }
 
+  /**
+   * Coordinate all welcome messages in a clean, timed sequence
+   * New Timeline (toast only, no animated text):
+   * 0s: Player spawns
+   * 1s: Welcome message - 3s duration
+   * 4.5s: Plot assignment/loading message - 3s duration
+   * 8s: Daily XP gain (if applicable) - 4s duration
+   */
+  private async startWelcomeSequence(player: Player, plotIndex: number): Promise<void> {
+    const displayNumber = this.getDisplayNumber(plotIndex);
+    
+    // Load player's XP/level data first, then process login
+    await this.plotSaveManager.loadPlayerLevelData(player);
+    
+    // Initialize leveling system and get login data immediately
+    const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    const loginResult = levelingSystem.onPlayerLogin(player.id, player);
+    
+    // Don't update XP bar immediately - wait for UI to be ready
+    
+    // Step 1: Welcome message (1 second delay)
+    setTimeout(() => {
+      console.log(`[ObbyRegion] 👋 Sending welcome message for ${player.id}`);
+      this.sendWelcomeMessage(player, displayNumber);
+      
+      // Step 2: Plot assignment/loading (3.5s after welcome)
+      setTimeout(() => {
+        console.log(`[ObbyRegion] 🏠 Processing plot assignment for ${player.id}`);
+        this.autoLoadPlayerObby(player, plotIndex);
+        
+        // Step 3: Daily XP gain (3.5s after plot message, only if XP was gained)
+        if (loginResult.xpGained > 0) {
+          setTimeout(() => {
+            console.log(`[ObbyRegion] 🎁 Showing daily login bonus for ${player.id}`);
+            this.showDailyLoginXP(player, loginResult);
+            
+            // Step 4: Update XP bar after daily bonus is shown (1.5s after bonus)
+            setTimeout(() => {
+              console.log(`[ObbyRegion] 📊 Sending delayed XP UI update for ${player.id}`);
+              levelingSystem.sendLevelUIUpdate(player);
+            }, 1500);
+          }, 3500);
+        } else {
+          // No login bonus, update XP bar sooner (1.5s after plot message)
+          setTimeout(() => {
+            console.log(`[ObbyRegion] 📊 Sending XP UI update (no login bonus) for ${player.id}`);
+            levelingSystem.sendLevelUIUpdate(player);
+          }, 1500);
+        }
+      }, 3500);
+    }, 1000);
+  }
+
+  /**
+   * Show daily login XP notification to player using toast system
+   */
+  private showDailyLoginXP(player: Player, loginResult: { xpGained: number; message: string; isNewDay: boolean }): void {
+    try {
+      // Use the MessageManager for proper queuing and de-duplication
+      const { MessageManager } = require('./MessageManager');
+      const messageManager = new MessageManager();
+      
+      messageManager.sendRichGameMessage(
+        '🎁 Daily Login Bonus',
+        player,
+        {
+          bonus: loginResult.message,
+          duration: 4000
+        }
+      );
+      
+      console.log(`[ObbyRegion] Sent daily login XP toast notification to player ${player.id}: ${loginResult.message}`);
+    } catch (error) {
+      // Fallback to chat message if toast system fails
+      this.world.chatManager.sendPlayerMessage(player, `🎁 ${loginResult.message}`, '00FF00');
+      console.log(`[ObbyRegion] Fallback: Sent daily login XP as chat message to player ${player.id} due to error:`, error);
+    }
+  }
+
+  // === Phase 1: WorldContext Access ===
+  
+  /**
+   * Get the WorldContext for this region
+   * All Phases: Provides cleaner API managed by SystemManager
+   * 
+   * Usage examples (identical behavior to current system):
+   * - context.plotManager.getPlayerPlot(playerId) === this.plotManager.getPlayerPlot(playerId)
+   * - context.blockSystem.placeBlock(player, type, pos) === this.blockPlacementManager.placeBlock(player, type, pos, this.world)
+   */
+  public getContext(): WorldContext | NewWorldContext | null {
+    if (!this.context) {
+      console.warn(`[ObbyRegion] getContext() called but context was not initialized`);
+      return null;
+    }
+    
+    return this.context;
+  }
+  
+  /**
+   * Debug method to verify Phase 1 maintains identical behavior
+   * Compares context results with direct singleton calls
+   */
+  public verifyPhase1Compatibility(playerId: string): void {
+    if (!isEnabled('enableCompatibilityTests')) {
+      console.log(`[ObbyRegion] Phase 1 compatibility tests disabled via feature flag`);
+      return;
+    }
+    
+    if (!this.context) {
+      console.log(`[ObbyRegion] Phase 1 compatibility test skipped - context not initialized`);
+      return;
+    }
+    
+    console.log(`[ObbyRegion] Phase 1 Compatibility Check for player ${playerId}:`);
+    
+    try {
+      // Test plot manager compatibility
+      const oldWay = this.plotManager.getPlayerPlot(playerId);
+      const newWay = this.context.plotManager.getPlayerPlot(playerId);
+      const plotsMatch = oldWay?.plotIndex === newWay?.plotIndex && 
+                        oldWay?.ownerId === newWay?.ownerId;
+      console.log(`[ObbyRegion] Plot manager compatibility: ${plotsMatch ? '✅ PASS' : '❌ FAIL'}`);
+      
+      if (!plotsMatch && isEnabled('verboseLogging')) {
+        console.log(`[ObbyRegion] Old way result: plotIndex=${oldWay?.plotIndex}, ownerId=${oldWay?.ownerId}`);
+        console.log(`[ObbyRegion] New way result: plotIndex=${newWay?.plotIndex}, ownerId=${newWay?.ownerId}`);
+      }
+      
+      // Test build manager compatibility
+      const oldCurrentPlot = this.plotManager.getPlayerPlot(playerId)?.plotIndex;
+      const newCurrentPlot = this.context.plotManager.getPlayerPlot(playerId)?.plotIndex;
+      const plotIndexMatch = oldCurrentPlot === newCurrentPlot;
+      console.log(`[ObbyRegion] Build manager compatibility: ${plotIndexMatch ? '✅ PASS' : '❌ FAIL'}`);
+      
+      // Test world context info
+      const debugInfo = this.context.getDebugInfo();
+      if (isEnabled('verboseLogging')) {
+        console.log(`[ObbyRegion] Context debug info:`, debugInfo);
+      }
+      
+      const allPass = plotsMatch && plotIndexMatch;
+      console.log(`[ObbyRegion] Phase 1 compatibility verification: ${allPass ? '✅ ALL PASS' : '❌ ISSUES DETECTED'}`);
+      
+      if (!allPass) {
+        console.error(`[ObbyRegion] ⚠️  PHASE 1 COMPATIBILITY ISSUES DETECTED - Consider rolling back`);
+      }
+    } catch (error) {
+      console.error(`[ObbyRegion] Phase 1 compatibility check failed:`, error);
+    }
   }
 } 

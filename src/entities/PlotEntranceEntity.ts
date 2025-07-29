@@ -5,6 +5,8 @@ import { PlayerStateManager, PlayerGameState } from '../PlayerGameState';
 import { PlotBuildManager } from '../PlotBuildManager';
 import { PlotSaveManager } from '../PlotSaveManager';
 import { ObbyPlayManager } from '../ObbyPlayManager';
+import { SystemManager } from '../SystemManager';
+import type { WorldContext } from '../WorldContext';
 import { CollisionGroups } from '../CollisionGroups';
 import { MobileDetectionManager } from '../MobileDetectionManager';
 
@@ -56,6 +58,9 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         this.plotBuildManager = PlotBuildManager.getInstance();
         this.plotSaveManager = PlotSaveManager.getInstance();
         this.obbyPlayManager = ObbyPlayManager.getInstance();
+        
+        // Log WorldContext status for this plot
+        this.logWorldContextStatus();
     }
 
     // Helper method to convert plot index to clockwise display number
@@ -306,7 +311,7 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         if (!success) {
             // Play mode failed to start - send error message
             if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ Could not start play mode!', 'FF0000');
+                world.chatManager.sendPlayerMessage(player, '❌ Could not start play mode!');
             }
             return;
         }
@@ -320,7 +325,7 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         // Only allow owner to build
         if (this.owner !== player.id) {
             if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ You can only build on plots you own!', 'FF0000');
+                world.chatManager.sendPlayerMessage(player, '❌ You can only build on plots you own!');
             }
             return;
         }
@@ -335,7 +340,7 @@ export class PlotEntranceEntity extends SmartBlockEntity {
             // Reset state if build mode activation failed
             this.playerStateManager.setPlayerState(player.id, PlayerGameState.LOBBY, undefined, player);
             if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ Failed to enter build mode!', 'FF0000');
+                world.chatManager.sendPlayerMessage(player, '❌ Failed to enter build mode!');
             }
         } else {
             // Send UI message to potentially show build tutorial
@@ -344,10 +349,6 @@ export class PlotEntranceEntity extends SmartBlockEntity {
                 plotIndex: this.plotIndex
             });
             
-            if (world) {
-                world.chatManager.sendPlayerMessage(player, `🔨 Build mode activated! Start creating your obby course!`, '00FF00');
-                world.chatManager.sendPlayerMessage(player, `💡 Tip: Press F to toggle fly mode, press 2 to undo`, 'FFFF00');
-            }
         }
     }
 
@@ -368,14 +369,15 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         // Disable fly mode before exiting build mode
         this.plotBuildManager.disablePlayerFlyMode(player);
         
-        // Set player state back to LOBBY
-        this.playerStateManager.setPlayerState(player.id, PlayerGameState.LOBBY, undefined, player);
+        // Set player state back to LOBBY with proper plot index
+        console.log(`[PlotEntranceEntity] Exiting build mode for ${player.id}, returning to lobby for plot ${this.plotIndex}`);
+        this.playerStateManager.setPlayerState(player.id, PlayerGameState.LOBBY, this.plotIndex, player);
         
         // Clear player's active build plot without teleporting
         this.plotBuildManager.setPlayerActiveBuildPlot(player.id, null);
         
         if (world) {
-            world.chatManager.sendPlayerMessage(player, '🏠 Exited build mode', 'FFFF00');
+            world.chatManager.sendPlayerMessage(player, '🏠 Exited build mode - Welcome back to the lobby!');
         }
     }
 
@@ -386,127 +388,241 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         // Only allow owner to clear
         if (this.owner !== player.id) {
             if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ You can only clear plots you own!', 'FF0000');
+                world.chatManager.sendPlayerMessage(player, '❌ You can only clear plots you own!');
             }
             return;
         }
         
-        // Get plot boundaries from PlotBuildManager
-        const plotBoundaries = this.plotBuildManager.getPlotBoundaries(this.plotIndex);
+        console.log(`[PlotEntranceEntity] Clearing plot ${this.plotIndex} for player ${player.id}`);
         
-        if (!plotBoundaries) {
-            if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ Could not get plot boundaries!', 'FF0000');
+        const plotIdString = String(this.plotIndex);
+        
+        // Use the same working logic as PlotSaveManager.clearPlotWithBoundaries
+        // This focuses on user-placed blocks, not boundary scanning
+        
+        try {
+            const DELETE_BLOCK_ID = 106;
+            let blocksCleared = 0;
+            
+            // Use WorldContext if available, fallback to direct manager access
+            const context = this.getWorldContext();
+            
+            if (context) {
+                console.log(`[PlotEntranceEntity] 🧹 WorldContext Plot Clearing - Plot: ${this.plotIndex} (${plotIdString})`);
+                // Use context.saveSystem for clearing
+                await context.saveSystem.clearPlotPhysicalContent(plotIdString);
+                
+                // Get cleared count from build manager through context
+                const livePlacedBlocks = this.plotBuildManager.getPlotPlacedBlocks(this.plotIndex);
+                blocksCleared = livePlacedBlocks.length;
+                console.log(`[PlotEntranceEntity] ✅ WorldContext cleared ${blocksCleared} blocks from plot ${this.plotIndex}`);
+                
+                // Clear the build tracking data
+                this.plotBuildManager.clearPlotBuildData(this.plotIndex);
+            } else {
+                console.log(`[PlotEntranceEntity] 🔧 Legacy Plot Clearing - Plot: ${this.plotIndex} (${plotIdString})`);
+                // Legacy fallback - get blocks from live build tracking system
+                const plotBuildManager = this.plotBuildManager;
+                const livePlacedBlocks = plotBuildManager.getPlotPlacedBlocks(this.plotIndex);
+                
+                console.log(`[PlotEntranceEntity] Found ${livePlacedBlocks.length} live placed blocks to clear`);
+                
+                if (livePlacedBlocks.length > 0) {
+                // Validate block IDs before processing to prevent crashes
+                const { blockRegistry } = require('../BlockRegistry');
+                const validBlocks = livePlacedBlocks.filter(block => {
+                    const blockExists = blockRegistry.getBlock(block.blockId);
+                    if (!blockExists) {
+                        console.warn(`[PlotEntranceEntity] Skipping invalid block ID ${block.blockId} at position ${block.position.x},${block.position.y},${block.position.z}`);
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // First loop: Set ALL blocks to delete_block
+                for (const block of validBlocks) {
+                    world.chunkLattice.setBlock(block.position, DELETE_BLOCK_ID);
+                }
+                
+                // Wait 1 second before clearing to air
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Second loop: Set ALL blocks to air
+                for (const block of validBlocks) {
+                    world.chunkLattice.setBlock(block.position, 0);
+                }
+                
+                blocksCleared = validBlocks.length;
+                
+                // Clear the build tracking data
+                plotBuildManager.clearPlotBuildData(this.plotIndex);
+                }
             }
-            return;
+            
+            // Clear obstacles and enemies (keeping current implementation for now)
+            let obstaclesCleared = 0;
+            let zombiesCleared = 0;
+            
+            // Clear obstacles using saved data (obstacles aren't in live build tracking)
+            const playerObbyData = await this.plotSaveManager.getPlayerObby(player);
+            const plotData = playerObbyData?.plotData;
+            if (plotData && plotData.obstacles.length > 0) {
+                const plotCenter = plotData.plotCenter;
+                
+                // Convert saved obstacles to world positions
+                const obstaclesToRemove = plotData.obstacles.map(savedObstacle => ({
+                    position: {
+                        x: plotCenter.x + savedObstacle.relativePos.x,
+                        y: plotCenter.y + savedObstacle.relativePos.y,
+                        z: plotCenter.z + savedObstacle.relativePos.z
+                    },
+                    type: savedObstacle.type,
+                    id: savedObstacle.id
+                }));
+                
+                // Despawn the actual obstacle entities
+                for (const obstacle of obstaclesToRemove) {
+                    const obstacles = world.entityManager.getEntitiesByTag('obstacle');
+                    for (const entity of obstacles) {
+                        const entityPos = entity.position;
+                        const obstaclePos = obstacle.position;
+                        const distance = Math.sqrt(
+                            Math.pow(entityPos.x - obstaclePos.x, 2) +
+                            Math.pow(entityPos.y - obstaclePos.y, 2) +
+                            Math.pow(entityPos.z - obstaclePos.z, 2)
+                        );
+                        
+                        if (distance <= 2) { // Close enough to be the same obstacle
+                            entity.despawn();
+                            obstaclesCleared++;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Clear from collision manager tracking (fallback for any tracked obstacles)
+            const { ObstacleCollisionManager } = await import('../ObstacleCollisionManager');
+            const obstacleCollisionManager = ObstacleCollisionManager.getInstance();
+            obstacleCollisionManager.clearPlotObstacles(plotIdString);
+            
+            // Clear zombies using saved data
+            if (plotData && plotData.enemies && plotData.enemies.length > 0) {
+                const plotCenter = plotData.plotCenter;
+                
+                // Convert saved enemies to world positions
+                const enemiesToRemove = plotData.enemies.map(savedEnemy => ({
+                    position: {
+                        x: plotCenter.x + savedEnemy.relativePos.x,
+                        y: plotCenter.y + savedEnemy.relativePos.y,
+                        z: plotCenter.z + savedEnemy.relativePos.z
+                    },
+                    type: savedEnemy.type,
+                    variant: savedEnemy.variant
+                }));
+                
+                // Despawn the actual zombie entities
+                const allEntities = world.entityManager.getAllEntities();
+                const zombies = allEntities.filter(entity => entity.constructor.name === 'ZombieEntity');
+                
+                for (const enemy of enemiesToRemove) {
+                    for (const zombie of zombies) {
+                        const zombiePos = zombie.position;
+                        const enemyPos = enemy.position;
+                        const distance = Math.sqrt(
+                            Math.pow(zombiePos.x - enemyPos.x, 2) +
+                            Math.pow(zombiePos.y - enemyPos.y, 2) +
+                            Math.pow(zombiePos.z - enemyPos.z, 2)
+                        );
+                        
+                        if (distance <= 2) { // Close enough to be the same zombie
+                            zombie.despawn();
+                            zombiesCleared++;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Fallback: use boundary-based clearing
+                const { EnemyPlacementManager } = await import('../EnemyPlacementManager');
+                const enemyPlacementManager = EnemyPlacementManager.getInstance();
+                zombiesCleared = enemyPlacementManager.clearPlotEnemies(plotIdString);
+            }
+            
+            console.log(`[PlotEntranceEntity] Cleared ${zombiesCleared} zombies from plot ${this.plotIndex}`);
+            
+            // Clear the player's saved obby data (if any)
+            await this.plotSaveManager.clearPlayerObby(player, plotIdString);
+            
+            // Clear the scoreboard for this plot
+            const { ScoreboardManager } = await import('../ScoreboardManager');
+            const scoreboardManager = ScoreboardManager.getInstance();
+            scoreboardManager.clearPlotScoreboard(plotIdString, world);
+            
+            world.chatManager.sendPlayerMessage(player, `🗑️ Plot cleared! All blocks and obby data for ${this.getCurrentPlotName()} have been removed. (${blocksCleared} blocks, ${obstaclesCleared} obstacles, ${zombiesCleared} zombies cleared)`, 'FF0000');
+            console.log(`[PlotEntranceEntity] Successfully cleared plot ${this.plotIndex}: ${blocksCleared} blocks, ${obstaclesCleared} obstacles, ${zombiesCleared} zombies`);
+            
+        } catch (error) {
+            console.error(`[PlotEntranceEntity] Error clearing plot ${this.plotIndex}:`, error);
+            world.chatManager.sendPlayerMessage(player, '❌ Error occurred while clearing plot!', 'FF0000');
         }
-        
-        // Convert plot boundaries to the format expected by PlotSaveManager
-        // Use the actual properties from plotBoundaries instead of non-existent ones
-        const clearBoundaries = {
-            minX: plotBoundaries.minX,
-            maxX: plotBoundaries.maxX,
-            minY: plotBoundaries.minY,
-            maxY: plotBoundaries.maxY,
-            minZ: plotBoundaries.minZ,
-            maxZ: plotBoundaries.maxZ
-        };
-        
-        // Clear the player's saved obby data (if any)
-        await this.plotSaveManager.clearPlayerObby(player, this.plotIndex);
-        
-        // Clear the physical plot blocks using boundaries
-        await this.plotSaveManager.clearPlotWithBoundaries(player, clearBoundaries, this.plotIndex);
-        
-        // Clear the scoreboard for this plot
-        const { ScoreboardManager } = await import('../ScoreboardManager');
-        const scoreboardManager = ScoreboardManager.getInstance();
-        scoreboardManager.clearPlotScoreboard(this.plotIndex, world);
-        
-        // Don't change player state or teleport - just clear the plot
-        // The player can choose to enter build mode manually if they want
-        
-        if (world) {
-            world.chatManager.sendPlayerMessage(player, `🧹 Plot cleared successfully! You can now build a new course.`, '00FF00');
-        }
     }
 
-    // Method to check if player can build in this plot
-    canPlayerBuild(player: Player): boolean {
-        return this.owner === player.id && this.playerStateManager.isPlayerInState(player.id, PlayerGameState.BUILDING);
-    }
-
-    // Method to get plot boundaries
-    getPlotBoundaries(): { xStart: number; xEnd: number; zStart: number; zEnd: number } {
-        // Import the helper function dynamically to avoid circular imports
-        const { getPlotCoordinates } = require('../generateObbyHubMap');
-        return getPlotCoordinates(this.plotIndex);
-    }
-
-    // Method to release plot ownership
-    releasePlot() {
-        this.owner = undefined;
-        this.isOccupied = false;
-    }
-
-    // Get plot index
-    getPlotIndex(): number {
-        return this.plotIndex;
-    }
-
-    // Set plot owner
-    setOwner(ownerId: string | null) {
-        this.owner = ownerId || undefined;
-    }
-
-    // Get plot owner
-    getOwner(): string | undefined {
-        return this.owner;
-    }
-
-    /**
-     * Check if a player is on cooldown for a specific option
-     */
     private isPlayerOnCooldown(playerId: string, option: string): boolean {
         const playerCooldowns = this.playerCooldowns.get(playerId);
         if (!playerCooldowns) return false;
-        
         const cooldownEndTime = playerCooldowns.get(option);
         if (!cooldownEndTime) return false;
-        
         const now = Date.now();
         return now < cooldownEndTime;
     }
 
-    /**
-     * Get remaining cooldown time in milliseconds
-     */
-    private getRemainingCooldown(playerId: string, option: string): number {
-        const playerCooldowns = this.playerCooldowns.get(playerId);
-        if (!playerCooldowns) return 0;
-        
-        const cooldownEndTime = playerCooldowns.get(option);
-        if (!cooldownEndTime) return 0;
-        
-        const now = Date.now();
-        return Math.max(0, cooldownEndTime - now);
-    }
-
-    /**
-     * Set cooldown for a player's option
-     */
     private setPlayerCooldown(playerId: string, option: string): void {
         const cooldownDuration = this.OPTION_COOLDOWNS[option as keyof typeof this.OPTION_COOLDOWNS];
         if (!cooldownDuration) return;
-        
         if (!this.playerCooldowns.has(playerId)) {
             this.playerCooldowns.set(playerId, new Map());
         }
-        
         const playerCooldowns = this.playerCooldowns.get(playerId)!;
         const cooldownEndTime = Date.now() + cooldownDuration;
         playerCooldowns.set(option, cooldownEndTime);
     }
 
+    public setOwner(ownerId: string): void {
+        this.owner = ownerId;
+        console.log(`[PlotEntranceEntity] Plot ${this.plotIndex} ownership set to player ${ownerId}`);
+    }
 
-} 
+    public getOwner(): string | undefined {
+        return this.owner;
+    }
+
+    public getPlotIndex(): number {
+        return this.plotIndex;
+    }
+
+    /**
+     * Get the WorldContext for this plot's world (Phase 1 migration)
+     */
+    private getWorldContext(): WorldContext | null {
+        if (!this.world) return null;
+        return SystemManager.getInstance().getWorldContext(this.world) as WorldContext;
+    }
+
+    /**
+     * Log WorldContext integration status for this plot
+     */
+    private logWorldContextStatus(): void {
+        // We can't check world context until spawned since this.world is not set yet
+        setTimeout(() => {
+            const context = this.getWorldContext();
+            if (context) {
+                const systemType = SystemManager.getInstance().getWorldSystemType(this.world?.name || 'unknown');
+                console.log(`[PlotEntranceEntity] ✅ Plot ${this.plotIndex} - WorldContext active - System: ${systemType}`);
+                console.log(`[PlotEntranceEntity] 🏡 Plot ${this.plotIndex} systems - Save: ${!!context.saveSystem}, Plot: ${!!context.plotManager}`);
+            } else {
+                console.log(`[PlotEntranceEntity] ⚠️ Plot ${this.plotIndex} - WorldContext not available, using legacy systems`);
+            }
+        }, 100); // Small delay to ensure world is set
+    }
+}

@@ -512,6 +512,15 @@
         }
       ]
     },
-    "cash": 80
+    "cash": 49,
+    "levelData": {
+      "level": 1,
+      "xp": 10,
+      "totalXP": 10,
+      "firstTimeFlags": [],
+      "loginStreak": 1,
+      "lastLoginDate": "Mon Jul 28 2025",
+      "completedCourses": {}
+    }
   }
 }

@@ -103,7 +103,8 @@ export class ObstaclePlacementManager {
         position
       );
       
-      this.world.chatManager.sendPlayerMessage(player, `Placed ${obstacleType.name} (${obstacleType.size})`, '00FF00');
+      // Obstacle placement is self-evident - no toast needed
+      // Player can see the obstacle appear, redundant notification removed
       return true;
     } else {
       this.world.chatManager.sendPlayerMessage(player, 'Failed to place obstacle!', 'FF0000');
@@ -154,7 +155,8 @@ export class ObstaclePlacementManager {
         // Unregister from collision manager and get obstacle data
         const removedObstacleData = this.obstacleCollisionManager.unregisterObstacle(plotId, obstaclePos, searchRadius);
         
-        this.world.chatManager.sendPlayerMessage(player, `Removed ${obstacleName}`, 'FFA500');
+        // Obstacle removal is self-evident - no toast needed
+        // Player can see the obstacle disappear, redundant notification removed
         
         // Return obstacle data for cash refund
         if (removedObstacleData) {
@@ -169,7 +171,7 @@ export class ObstaclePlacementManager {
       }
     }
     
-    this.world.chatManager.sendPlayerMessage(player, 'No obstacle or enemy found to remove here!', 'FF0000');
+    // Don't send message here - let the controller handle unified messaging
     return { success: false };
   }
 

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "topia-helper": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "topia-mcp@latest",
+        "serve",
+        "--dir",
+        "/Users/justinlee/hyobi",
+        "--resources"
+      ],
+      "env": {}
+    }
+  }
+}

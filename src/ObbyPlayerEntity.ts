@@ -1,4 +1,4 @@
-import { Player, PlayerEntity, Vector3, PlayerUIEvent, EntityEvent, DefaultPlayerEntity, RigidBodyType, ColliderShape } from 'hytopia';
+import { Player, PlayerEntity, Vector3, PlayerUIEvent, EntityEvent, DefaultPlayerEntity, RigidBodyType, ColliderShape, Entity } from 'hytopia';
 import type { PlayerInput, World, PlayerCameraOrientation, DefaultPlayerEntityController } from 'hytopia';
 import { BlockPlacementManager } from './BlockPlacementManager';
 import { ObbyPlayerController } from './ObbyPlayerController';
@@ -22,6 +22,7 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
     public currentFlyEntity: any = null; // FlyEntity reference
     
     private hasShownBuildTutorialThisSession: boolean = false; // Track tutorial shown this session
+    private hasSpawnedTestParticle: boolean = false; // Track if we've spawned test particle
     
     constructor(player: Player, world: World, controller: ObbyPlayerController) {
         super({
@@ -56,8 +57,10 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
         this.playerStateManager = PlayerStateManager.getInstance();
         this.plotSaveManager = PlotSaveManager.getInstance();
         this.setupEventHandlers();
-        this.setupUIHandlers();
         this.setupInitialState();
+        
+        // Setup UI handlers with delay to ensure player.ui is ready
+        this.setupUIHandlersWhenReady();
         
         // Set collision groups for sensor colliders to ensure compatibility
         this.setCollisionGroupsForSensorColliders({
@@ -71,9 +74,14 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
             ]
         });
         
-        // Load the UI
+        // Load the UI (only if UI exists)
         try {
-            player.ui.load("ui/index.html");
+            if (player.ui) {
+                player.ui.load("ui/index.html");
+                console.log(`[ObbyPlayerEntity] UI loaded for player ${player.id}`);
+            } else {
+                console.warn(`[ObbyPlayerEntity] player.ui not available during construction for player ${player.id}, will retry later`);
+            }
         } catch (error) {
             console.error(`[ObbyPlayerEntity] Error loading UI for player: ${player.id}:`, error);
         }
@@ -100,7 +108,48 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
         this.on(EntityEvent.TICK, this.handleTickInput);
     }
 
+    private setupUIHandlersWhenReady() {
+        // Check if UI is ready immediately
+        if (this.player.ui) {
+            console.log(`[ObbyPlayerEntity] UI ready immediately for player ${this.player.id}`);
+            this.setupUIHandlers();
+            return;
+        }
+        
+        // If not ready, retry with exponential backoff
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const trySetupUI = () => {
+            attempts++;
+            console.log(`[ObbyPlayerEntity] Attempting UI setup (${attempts}/${maxAttempts}) for player ${this.player.id}`);
+            
+            if (this.player.ui) {
+                console.log(`[ObbyPlayerEntity] UI ready after ${attempts} attempts for player ${this.player.id}`);
+                this.setupUIHandlers();
+            } else if (attempts < maxAttempts) {
+                // Exponential backoff: 50ms, 100ms, 200ms, 400ms, etc.
+                const delay = 50 * Math.pow(2, attempts - 1);
+                console.log(`[ObbyPlayerEntity] UI not ready, retrying in ${delay}ms for player ${this.player.id}`);
+                setTimeout(trySetupUI, delay);
+            } else {
+                console.error(`[ObbyPlayerEntity] Failed to setup UI after ${maxAttempts} attempts for player ${this.player.id}`);
+            }
+        };
+        
+        // Start trying after a short delay
+        setTimeout(trySetupUI, 50);
+    }
+
     private setupUIHandlers() {
+        // Guard check to ensure UI exists
+        if (!this.player.ui) {
+            console.error(`[ObbyPlayerEntity] Cannot setup UI handlers - player.ui is undefined for player ${this.player.id}`);
+            return;
+        }
+        
+        console.log(`[ObbyPlayerEntity] Setting up UI handlers for player ${this.player.id}`);
+        
         this.player.ui.on(PlayerUIEvent.DATA, ({ playerUI, data }) => {
             this.handleUIEvent(this.player, data);
         });
@@ -327,30 +376,7 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
     }
 
     private sendWelcomeMessage(player: Player): void {
-        try {
-            // Get the player's assigned plot from PlotManager
-            const { PlotManager } = require('./PlotManager');
-            const plotManager = PlotManager.getInstance();
-            const playerPlot = plotManager.getPlayerPlot(player.id);
-            
-            if (playerPlot) {
-                // Use the same clockwise display number logic as PlotManager
-                const displayNumber = this.getDisplayNumber(playerPlot.plotIndex);
-                
-                // Show animated welcome message
-                this.showAnimatedText(
-                    `Welcome to OBBY LOBBY!`,
-                    `You can build on Plot ${displayNumber}`,
-                    3000,
-                    'success'
-                );
-                
-            } else {
-                console.warn(`[ObbyPlayerEntity] No plot found for player ${player.id}, skipping welcome message`);
-            }
-        } catch (error) {
-            console.error(`[ObbyPlayerEntity] Error sending welcome message to player ${player.id}:`, error);
-        }
+
     }
 
     /**
@@ -473,6 +499,31 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
             type: 'showSuccess',
             line1,
             line2,
+            duration
+        });
+    }
+
+    /**
+     * Show completion leaderboard with animated elements
+     * @param title Main title ("HIGH SCORE!", "COMPLETED!", etc.)
+     * @param metrics Object with time, xp, level info
+     * @param leaderboard Array of top 3 players with position, name, time
+     * @param playerScore Player's score if not in top 3
+     * @param duration Duration to show in milliseconds (default: 7000)
+     */
+    public showCompletionLeaderboard(
+        title: string, 
+        metrics: { time?: string; xp?: string; level?: string }, 
+        leaderboard: Array<{ position: number; name: string; time: string }>, 
+        playerScore?: { position: number; time: string }, 
+        duration: number = 7000
+    ): void {
+        this.player.ui.sendData({
+            type: 'showCompletionLeaderboard',
+            title,
+            metrics,
+            leaderboard,
+            playerScore,
             duration
         });
     }
@@ -647,6 +698,7 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
         // The controller now handles all mouse input for building
         // This tick handler can be used for other entity-specific logic if needed
         if (!this.world || !this.player?.input) return;
+        
         
         // Any additional entity-specific input handling can go here
     }

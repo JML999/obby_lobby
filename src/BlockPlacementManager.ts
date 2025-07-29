@@ -4,6 +4,7 @@ import { BlockBehaviorManager } from "./BlockBehaviorManager";
 import { PlotBoundaryManager } from "./PlotBoundaryManager";
 import { ObstacleCollisionManager } from "./ObstacleCollisionManager";
 import { PlotSaveManager } from "./PlotSaveManager";
+import { SimpleLevelingSystem } from "./SimpleLevelingSystem";
 
 export interface BlockType {
   id: number;
@@ -76,13 +77,32 @@ export class BlockPlacementManager {
     this.playerBuildModes.set(playerId, !currentMode);
     
     if (!currentMode) {
-      // Entering build mode
-      world.chatManager.sendPlayerMessage(player, '🔨 Build mode enabled!', 'FFD700');
-      world.chatManager.sendPlayerMessage(player, 'Left click to place blocks, right click to remove');
+      // Entering build mode - use toast notification
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: '🔨 Build Mode Enabled',
+          bonus: 'Left click to place blocks, right click to remove',
+          duration: 3000
+        });
+      } catch (error) {
+        // Fallback to chat if toast fails
+        world.chatManager.sendPlayerMessage(player, '🔨 Build mode enabled!', 'FFD700');
+        world.chatManager.sendPlayerMessage(player, 'Left click to place blocks, right click to remove');
+      }
       this.showBlockCatalog(player, world);
     } else {
-      // Exiting build mode
-      world.chatManager.sendPlayerMessage(player, '🏃 Build mode disabled!', 'FF6B6B');
+      // Exiting build mode - use toast notification
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: '🏃 Build Mode Disabled',
+          duration: 2000
+        });
+      } catch (error) {
+        // Fallback to chat if toast fails
+        world.chatManager.sendPlayerMessage(player, '🏃 Build mode disabled!', 'FF6B6B');
+      }
     }
   }
 
@@ -101,15 +121,99 @@ export class BlockPlacementManager {
       return false;
     }
     
+    // Check if player has unlocked this block type
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    const blockTypeName = this.getBlockTypeNameForLevel(blockId);
+    
+    if (blockTypeName && !levelingSystem.isBlockUnlocked(player.id, blockTypeName)) {
+      const nextUnlock = levelingSystem.getNextUnlock(player.id);
+      const playerLevel = levelingSystem.getPlayerLevel(player.id);
+      
+      if (world) {
+        world.chatManager.sendPlayerMessage(
+          player, 
+          `🔒 ${block.name} unlocks at Level ${this.getRequiredLevelForBlock(blockTypeName)}! You're Level ${playerLevel}`, 
+          'FF6B6B'
+        );
+      }
+      console.log(`[BlockPlacementManager] Block ${block.name} not unlocked for player ${player.id} (Level ${playerLevel})`);
+      return false;
+    }
+    
     const playerId = player.id.toString();
     this.playerSelectedBlocks.set(playerId, blockId);
     console.log(`[BlockPlacementManager] Successfully set block ${blockId} (${block.name}) for player ${playerId}`);
     
     if (world) {
-      world.chatManager.sendPlayerMessage(player, `Selected: ${block.name}`, '00FF00');
+      // Use toast for positive block selection feedback
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: `Selected: ${block.name}`,
+          duration: 1500
+        });
+      } catch (error) {
+        // Fallback to chat if toast fails
+        world.chatManager.sendPlayerMessage(player, `Selected: ${block.name}`, '00FF00');
+      }
     }
     
     return true;
+  }
+
+  // Helper method to map block IDs to leveling system block names
+  private getBlockTypeNameForLevel(blockId: number): string | null {
+    const blockToLevelMap: Record<number, string> = {
+      // Level 1 (starting blocks)
+      1: 'platform',    // platform
+      100: 'start',     // start block  
+      101: 'finish',    // goal block
+      
+      // Level 2
+      17: 'sand',       // sand
+      9: 'ice',         // ice
+      
+      // Level 3
+      21: 'lava',       // lava
+      
+      // Level 4 (conveyors)
+      104: 'conveyor-z-',
+      105: 'conveyor-z+', 
+      109: 'conveyor-x-',
+      110: 'conveyor-x+',
+      
+      // Level 5 (rest of basic blocks)
+      19: 'checkpoint',     // Using stone as checkpoint
+      6: 'disappearing',    // glass as disappearing
+      15: 'bounce',         // vines as bounce (placeholder)
+      
+      // Level 6
+      // 'rotating_bean' - not mapped to block ID yet
+      
+      // Level 7  
+      // 'jump_pad' - not mapped to block ID yet
+      
+      // Level 8
+      // 'zombie' - handled by entity system
+    };
+    
+    return blockToLevelMap[blockId] || null;
+  }
+
+  // Helper method to get required level for a block type
+  private getRequiredLevelForBlock(blockTypeName: string): number {
+    const levelMap: Record<string, number> = {
+      'platform': 1, 'start': 1, 'finish': 1,
+      'sand': 2, 'ice': 2,
+      'lava': 3,
+      'conveyor-z-': 4, 'conveyor-z+': 4, 'conveyor-x-': 4, 'conveyor-x+': 4,
+      'checkpoint': 5, 'disappearing': 5, 'bounce': 5,
+      'rotating_bean': 6,
+      'jump_pad': 7,
+      'zombie': 8
+    };
+    
+    return levelMap[blockTypeName] || 1;
   }
 
   // Get player's selected block
@@ -230,13 +334,19 @@ export class BlockPlacementManager {
     
     // Track the block placement if plotId is provided
     if (plotId) {
-      this.plotSaveManager.trackBlockPlacement(plotId, coordinate, actualBlockId);
+      this.plotSaveManager.trackBlockPlacement(plotId, coordinate, actualBlockId, world);
       // Also record user-placed block for efficient clearing
       this.plotSaveManager.trackUserPlacedBlock(world, coordinate, actualBlockId, player.id, plotId);
     }
     
-    // Send feedback
-    world.chatManager.sendPlayerMessage(player, `Placed ${blockType.name}`, '00FF00');
+    // Grant XP for block placement
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    levelingSystem.onBlockPlaced(player.id, player);
+    
+    // UI update is now handled inside onBlockPlaced -> addXP
+    
+    // Block placement is self-evident - no toast needed
+    // Player can see the block appear, redundant notification removed
     
     return true;
   }
@@ -268,7 +378,7 @@ export class BlockPlacementManager {
     
     if (currentBlockId === 0) {
       console.log(`[BlockPlacementManager] No block found at position (ID: 0)`);
-      world.chatManager.sendPlayerMessage(player, 'No block to remove here!', 'FF0000');
+      // Don't send message here - let the controller handle unified messaging
       return false;
     }
     
@@ -307,7 +417,7 @@ export class BlockPlacementManager {
     
     // Track the block removal if plotId is provided
     if (plotId) {
-      this.plotSaveManager.trackBlockPlacement(plotId, coordinate, 0);
+      this.plotSaveManager.trackBlockPlacement(plotId, coordinate, 0, world);
       // Also record user block removal for efficient clearing
       this.plotSaveManager.trackUserPlacedBlock(world, coordinate, 0, player.id, plotId);
     }
@@ -316,7 +426,8 @@ export class BlockPlacementManager {
     const blockType = this.BLOCK_CATALOG.find(b => b.id === currentBlockId);
     const blockName = blockType ? blockType.name : `Block ID ${currentBlockId}`;
     
-    world.chatManager.sendPlayerMessage(player, `Removed ${blockName}`, 'FFA500');
+    // Block removal is self-evident - no toast needed
+    // Player can see the block disappear, redundant notification removed
     console.log(`[BlockPlacementManager] Successfully removed block ${blockName} at`, coordinate);
     
     return true;

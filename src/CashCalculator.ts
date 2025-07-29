@@ -38,7 +38,7 @@ export class CashCalculator {
         // Add more entity types as needed
     };
 
-    // Default starting cash
+    // Default starting cash (Level 1)
     public static readonly DEFAULT_STARTING_CASH = 100;
 
     /**
@@ -115,5 +115,25 @@ export class CashCalculator {
      */
     public static getAllEntityCosts(): CashCosts['entities'] {
         return { ...this.ENTITY_COSTS };
+    }
+
+    /**
+     * Get cash allowance based on player level
+     * This will be integrated with the leveling system
+     */
+    public static getCashAllowanceForLevel(level: number): number {
+        // This maps to the SimpleLevelingSystem LEVEL_CONFIG
+        const levelCashMap: Record<number, number> = {
+            1: 100,
+            2: 150,
+            3: 200,
+            4: 250,
+            5: 300,
+            6: 400,
+            7: 600,
+            8: 1000
+        };
+        
+        return levelCashMap[level] || 100; // Default to level 1 if invalid level
     }
 } 

@@ -148,7 +148,7 @@ export class BlockRegistry {
         id: 6, name: 'glass', textureUri: 'blocks/glass.png', 
         category: 'obstacle', buildable: true, destructible: true, pointCost: 3,
         description: 'Disappearing glass block', transparent: true,
-        disappearAfterTime: 150, regenerateAfterTime: 5000
+        disappearAfterTime: 200, regenerateAfterTime: 4500
       },
       { 
         id: 7, name: 'grass', textureUri: 'blocks/grass', 

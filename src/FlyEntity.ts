@@ -44,7 +44,7 @@ export class FlyEntity extends Entity {
     }
 
     private handleSpawn() {
-        console.log("[FlyEntity] Fly entity spawned at:", this.position);
+       // console.log("[FlyEntity] Fly entity spawned at:", this.position);
     }
 
     private handleTick() {
@@ -55,7 +55,6 @@ export class FlyEntity extends Entity {
     public mountPlayer(player: PlayerEntity) {
         if (this.rider) return;
         
-        console.log("[FlyEntity] Mounting player as child entity");
         
         // Store reference to rider
         this.rider = player;
@@ -74,17 +73,24 @@ export class FlyEntity extends Entity {
             Quaternion.fromEuler(0, 0, 0)
         );
         
-        console.log("[FlyEntity] Player mounted as child entity for fly mode");
     }
 
     public dismountPlayer() {
         if (!this.rider) return;
         
-        console.log("[FlyEntity] Dismounting player from fly mode");
         
-        // Stop all movement
-        this.setLinearVelocity({ x: 0, y: 0, z: 0 });
-        this.setAngularVelocity({ x: 0, y: 0, z: 0 });
+        // Stop all movement (safely handle kinematic bodies)
+        if (this.rawRigidBody && this.rawRigidBody.bodyType() !== 2) { // 2 = KinematicPositionBased
+            try {
+                this.setLinearVelocity({ x: 0, y: 0, z: 0 });
+                this.setAngularVelocity({ x: 0, y: 0, z: 0 });
+            } catch (error) {
+                // Kinematic bodies don't support velocity setting - this is expected
+                console.log('[FlyEntity] Cannot set velocity on kinematic body (expected behavior)');
+            }
+        } else {
+            console.log('[FlyEntity] Skipping velocity reset on kinematic body');
+        }
         
         // Get reference to player before clearing
         const player = this.rider;
@@ -104,7 +110,6 @@ export class FlyEntity extends Entity {
             z: this.position.z
         });
         
-        console.log("[FlyEntity] Player dismounted from fly mode at:", player.position);
         
         // Clear rider reference
         this.rider = null;

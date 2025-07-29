@@ -12,6 +12,7 @@ export interface BlockBehavior {
     bounceForce?: number; // Bounce/jump force
     isDeadly?: boolean;
     isSlippery?: boolean;
+    isStartBlock?: boolean;
     isSandy?: boolean; // Flag for sand physics
     disappearAfterTime?: number; // Time in ms before block disappears
     regenerateAfterTime?: number; // Time in ms before block regenerates
@@ -35,7 +36,6 @@ export class BlockBehaviorManager {
     }
 
     private initializeBehaviors(): void {
-        console.log('[BlockBehaviorManager] Initializing behaviors from BlockRegistry...');
         
         // Get all blocks with special behaviors from the registry
         const blocksWithBehaviors = blockRegistry.getAllBlocks().filter(block => 
@@ -44,14 +44,11 @@ export class BlockBehaviorManager {
             block.isClimbable || block.disappearAfterTime || block.friction
         );
         
-        console.log(`[BlockBehaviorManager] Found ${blocksWithBehaviors.length} blocks with behaviors`);
         
         // Debug: Check if conveyor block is in the registry
         const conveyorBlock = blockRegistry.getBlock(104);
-        console.log(`[BlockBehaviorManager] Conveyor block in registry:`, conveyorBlock);
         
         // Debug: List all blocks with behaviors
-        console.log(`[BlockBehaviorManager] Blocks with behaviors:`, blocksWithBehaviors.map(b => `${b.name} (ID: ${b.id})`));
         
         // Set up behaviors for each block based on registry properties
         for (const block of blocksWithBehaviors) {
@@ -70,15 +67,18 @@ export class BlockBehaviorManager {
             // Add specific behaviors based on block type
             if (block.isStartBlock) {
                 behavior.onStandingOn = (player, world, blockPos) => {
-                    // Set spawn point for this player
-                    (player as any).spawnPoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
-                    console.log(`[BlockBehaviorManager] Spawn point set at: ${blockPos.x}, ${blockPos.y}, ${blockPos.z}`);
+                    // Set spawn point for this player - center on the block
+                    (player as any).spawnPoint = { 
+                        x: blockPos.x + 0.5,  // Center of block
+                        y: blockPos.y + 1.8,  // Above block with clearance
+                        z: blockPos.z + 0.5   // Center of block
+                    };
+                    console.log(`[BlockBehaviorManager] Set spawn point for player on start block at (${blockPos.x + 0.5}, ${blockPos.y + 1.8}, ${blockPos.z + 0.5})`);
                 };
             }
             
             if (block.isGoalBlock) {
                 behavior.onStandingOn = (player, world, blockPos) => {
-                    console.log('[BlockBehaviorManager] Player reached goal!');
                     
                     // Check if player is in play mode
                     const playerStateManager = require('./PlayerGameState').PlayerStateManager.getInstance();
@@ -87,7 +87,6 @@ export class BlockBehaviorManager {
                     if (currentState === require('./PlayerGameState').PlayerGameState.PLAYING) {
                         // Player is in play mode - trigger completion flow via their session
                         const obbyPlayManager = require('./ObbyPlayManager').ObbyPlayManager.getInstance();
-                        console.log('[BlockBehaviorManager] Player in play mode - triggering completion');
                         
                         // Get the player's session and trigger completion
                         const playerSession = obbyPlayManager.getPlayerSession(player.player.id);
@@ -109,10 +108,15 @@ export class BlockBehaviorManager {
                     // Set checkpoint for this player
                     (player as any).checkpoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
                     
+                    // Also set it on the controller for proper respawn handling
+                    const controller = (player as any).controller;
+                    if (controller && typeof controller.setCheckpoint === 'function') {
+                        controller.setCheckpoint({ x: blockPos.x, y: blockPos.y + 1, z: blockPos.z });
+                    }
+                    
                     // Show animated checkpoint text
                     player.showSuccess('CHECKPOINT!', 'Progress saved', 2000);
                     
-                    console.log(`[BlockBehaviorManager] Checkpoint set at: ${blockPos.x}, ${blockPos.y}, ${blockPos.z}`);
                 };
             }
             
@@ -120,7 +124,6 @@ export class BlockBehaviorManager {
                 behavior.onStandingOn = (player, world, blockPos) => {
                     // Set a flag on the player to use ice physics
                     (player as any).isOnIce = true;
-                    console.log('[BlockBehaviorManager] Ice flag set to true');
                 };
             }
             
@@ -128,7 +131,6 @@ export class BlockBehaviorManager {
                 behavior.onStandingOn = (player, world, blockPos) => {
                     // Set a flag on the player to use sand physics
                     (player as any).isOnSand = true;
-                    console.log('[BlockBehaviorManager] Sand flag set to true');
                 };
             }
             
@@ -140,12 +142,22 @@ export class BlockBehaviorManager {
             
             if (block.isDeadly) {
                 behavior.onTouch = (player, world, blockPos) => {
-                    // Get spawn point or checkpoint
-                    const spawnPoint = (player as any).checkpoint || (player as any).spawnPoint || { x: 0, y: 10, z: 0 };
+                    // Trigger death through the player controller's despawn/respawn system
+                    const playerController = (player as any).controller;
+                    if (playerController && typeof playerController.handleFall === 'function') {
+                        console.log('[BlockBehaviorManager] Deadly block touched, triggering despawn/respawn');
+                        playerController.handleFall(player);
+                    } else {
+                        // Fallback: old physics reset method
+                        console.warn('[BlockBehaviorManager] Player controller not found, using fallback respawn');
+                        const spawnPoint = (player as any).checkpoint || (player as any).spawnPoint || { x: 0, y: 10, z: 0 };
+                        this.resetPlayerPhysics(player);
+                        player.setPosition(spawnPoint);
+                        setTimeout(() => {
+                            player.applyImpulse({ x: 0, y: 5, z: 0 });
+                        }, 50);
+                    }
                     
-                    // Reset player to spawn/checkpoint
-                    player.setPosition(spawnPoint);
-                    player.applyImpulse({ x: 0, y: 5, z: 0 });
                     world.chatManager.sendPlayerMessage(player.player, '💀 You touched deadly blocks!', 'FF0000');
                 };
             }
@@ -154,7 +166,11 @@ export class BlockBehaviorManager {
                 behavior.onTouch = (player, world, blockPos) => {
                     const blockKey = `${blockPos.x},${blockPos.y},${blockPos.z}`;
                     
-                    // Always trigger disappearing, even if already triggered
+                    // Prevent multiple triggers of the same block
+                    if (this.disappearingBlocks.has(blockKey)) {
+                        return; // Block already triggered, ignore repeated touches
+                    }
+                    
                     this.disappearingBlocks.set(blockKey, {
                         blockId: block.id,
                         disappearTime: Date.now() + block.disappearAfterTime!,
@@ -163,12 +179,28 @@ export class BlockBehaviorManager {
                                     
                     // Schedule block removal
                     setTimeout(() => {
-                        world.chunkLattice.setBlock(blockPos, 0); // Remove block (air)
+                        console.log(`[DEBUG] Setting glass block to AIR at (${blockPos.x}, ${blockPos.y}, ${blockPos.z})`);
+                        const startTime = Date.now();
+                        
+                        // Defer setBlock to next frame to avoid tick interference
+                        setTimeout(() => {
+                            world.chunkLattice.setBlock(blockPos, 0); // Remove block (air)
+                            const endTime = Date.now();
+                            console.log(`[DEBUG] setBlock(AIR) took ${endTime - startTime}ms`);
+                        }, 0);
                         
                         // Schedule block regeneration
                         setTimeout(() => {
-                            world.chunkLattice.setBlock(blockPos, block.id); // Restore block
-                            this.disappearingBlocks.delete(blockKey);
+                            console.log(`[DEBUG] Setting glass block BACK to GLASS at (${blockPos.x}, ${blockPos.y}, ${blockPos.z})`);
+                            const startTime2 = Date.now();
+                            
+                            // Defer setBlock to next frame to avoid tick interference
+                            setTimeout(() => {
+                                world.chunkLattice.setBlock(blockPos, block.id); // Restore block
+                                const endTime2 = Date.now();
+                                console.log(`[DEBUG] setBlock(GLASS) took ${endTime2 - startTime2}ms`);
+                                this.disappearingBlocks.delete(blockKey);
+                            }, 0);
                         }, block.regenerateAfterTime || 3000);
                     }, block.disappearAfterTime);
                 };
@@ -177,7 +209,6 @@ export class BlockBehaviorManager {
 
             
             this.behaviors.set(block.id, behavior);
-            console.log(`[BlockBehaviorManager] Registered behavior for ${block.name} (ID: ${block.id})`);
         }
         
         // Also register basic blocks without special behaviors (for completeness)
@@ -238,14 +269,20 @@ export class BlockBehaviorManager {
             },
         });
         
-        console.log(`[BlockBehaviorManager] Initialized ${this.behaviors.size} total block behaviors`);
     }
 
     public checkBlockBehavior(player: ObbyPlayerEntity, world: World): void {
         if (!player.isSpawned) return;
+        
+        // DEBUG: Log how often this is called
+        if (Math.random() < 0.01) { // 1% sampling to avoid spam
+            const totalEntities = world.entityManager.getAllPlayerEntities().length;
+            console.log(`[DEBUG] checkBlockBehavior called for player ${player.player.id}, total entities: ${totalEntities}`);
+        }
 
         // Always check for vine collisions first (regardless of what block player is standing on)
         this.checkVineCollision(player, world);
+        
 
         // Get the block the player is standing on
         const playerPos = player.position;
@@ -257,7 +294,8 @@ export class BlockBehaviorManager {
 
         const blockBelowId = world.chunkLattice.getBlockId(blockBelowPos);
         if (!blockBelowId || blockBelowId === 0) return;
-
+        
+        
         // For conveyor blocks, use stricter detection to prevent triggering when jumping over
         let isOnConveyorBlock = false;
         if (blockBelowId === 104 || blockBelowId === 105 || blockBelowId === 109 || blockBelowId === 110) {
@@ -318,6 +356,17 @@ export class BlockBehaviorManager {
         if (behavior.onStandingOn && lastBlockId !== blockBelowId) {
             behavior.onStandingOn(player, world, blockBelowPos);
         }
+        
+        // Always update spawn point when standing on start block, even if we've been on it before
+        // This ensures players can reset their spawn point by revisiting the start block
+        if (behavior.isStartBlock) {
+            (player as any).spawnPoint = { 
+                x: blockBelowPos.x + 0.5,  // Center of block
+                y: blockBelowPos.y + 1.8,  // Above block with clearance
+                z: blockBelowPos.z + 0.5   // Center of block
+            };
+            console.log(`[BlockBehaviorManager] Updated spawn point for player on start block at (${blockBelowPos.x + 0.5}, ${blockBelowPos.y + 1.8}, ${blockBelowPos.z + 0.5})`);
+        }
 
         // Trigger onTouch for continuous effects - but use stricter rules for conveyors
         if (behavior.onTouch) {
@@ -363,41 +412,95 @@ export class BlockBehaviorManager {
 
     private checkVineCollision(player: ObbyPlayerEntity, world: World): void {
         const playerPos = player.position;
+        const wasClimbing = (player as any).isClimbing;
+        
+        // Get player's facing direction for logging
+        const playerRotation = player.rotation;
+        const playerYaw = Math.atan2(2 * (playerRotation.w * playerRotation.y + playerRotation.x * playerRotation.z), 
+                                      1 - 2 * (playerRotation.y * playerRotation.y + playerRotation.z * playerRotation.z));
+        const playerYawDegrees = (playerYaw * 180 / Math.PI + 360) % 360;
+        
+        // Get player velocity for context
+        const velocity = player.linearVelocity;
+        const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+        
+        // Removed vine debug log
         
         // Check for vines in all directions around the player
         const checkPositions = [
             // Same level - sides only
-            new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), // Right
-            new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), // Left
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 1)), // Front
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 1)), // Back
+            { pos: new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), name: "Right", relativeDir: "East" },
+            { pos: new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), name: "Left", relativeDir: "West" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 1)), name: "Front", relativeDir: "North" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 1)), name: "Back", relativeDir: "South" },
             
             // Check one level up - sides only
-            new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), // Right
-            new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), // Left  
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z + 1)), // Front
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z - 1)), // Back
+            { pos: new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), name: "Right+1", relativeDir: "East+1" },
+            { pos: new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), name: "Left+1", relativeDir: "West+1" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z + 1)), name: "Front+1", relativeDir: "North+1" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z - 1)), name: "Back+1", relativeDir: "South+1" }
         ];
         
         let foundVine = false;
-        for (const checkPos of checkPositions) {
-            const blockId = world.chunkLattice.getBlockId(checkPos);
+        let vineLocations = [];
+        let vineDirection = { x: 0, z: 0 }; // Add missing variable declaration
+        
+        for (const check of checkPositions) {
+            const blockId = world.chunkLattice.getBlockId(check.pos);
             if (blockId === 15) { // Vine block
-                foundVine = true;
-                console.log(`[VINE COLLISION] Player ${player.player.id} near vine at ${checkPos.x}, ${checkPos.y}, ${checkPos.z} - playerPos: ${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)}, velocity: x=${player.linearVelocity.x.toFixed(2)}, y=${player.linearVelocity.y.toFixed(2)}, z=${player.linearVelocity.z.toFixed(2)}`);
-                console.log(`[VINE COLLISION] Current state - isClimbing=${(player as any).isClimbing}, isOnConveyor=${(player as any).isOnConveyor}, isOnIce=${(player as any).isOnIce}`);
+                vineLocations.push(check.name);
                 
-                // Set climbing flag
-                (player as any).isClimbing = true;
+                // Calculate direction FROM player TO vine position (not vine orientation)
+                const directionToVine = {
+                    x: check.pos.x + 0.5 - playerPos.x, // Use center of vine block
+                    z: check.pos.z + 0.5 - playerPos.z
+                };
                 
-                console.log(`[VINE COLLISION] Set isClimbing=true for player ${player.player.id}`);
-                break;
+                // Calculate angle player should face to look AT the vine
+                const angleToVine = Math.atan2(directionToVine.x, directionToVine.z);
+                const angleToVineDegrees = (angleToVine * 180 / Math.PI + 360) % 360;
+                const angleDifference = Math.abs(((playerYawDegrees - angleToVineDegrees + 180) % 360) - 180);
+                
+                let playerRelativeDirection = "";
+                let isFacingVine = false;
+                
+                // Player must be facing TOWARD the vine (within 45 degrees) to climb
+                // Note: angleDifference near 180° means facing TOWARD the target
+                if (angleDifference > 135) {
+                    playerRelativeDirection = "FACING_VINE";
+                    isFacingVine = true;
+                } else if (angleDifference < 45) {
+                    playerRelativeDirection = "BACK_TO_VINE";
+                } else {
+                    playerRelativeDirection = "SIDE_TO_VINE";
+                }
+                
+                // Removed vine direction debug log
+                
+                // Only allow climbing if player is facing toward the vine
+                if (isFacingVine) {
+                    foundVine = true;
+                    vineDirection = directionToVine; // Use the calculated direction to vine
+                    // Valid climb: Player facing toward vine
+                } else {
+                    // No climb: Player not facing toward vine
+                }
             }
         }
         
-        if (!foundVine && (player as any).isClimbing) {
-            console.log(`[VINE COLLISION] No vine found - clearing isClimbing for player ${player.player.id}`);
+        if (foundVine && !wasClimbing) {
+            // Starting climb
+            (player as any).isClimbing = true;
+        } else if (foundVine && wasClimbing) {
+            // Continuing climb
+        } else if (!foundVine && wasClimbing) {
+            // Stopping climb - no more vines detected
             (player as any).isClimbing = false;
+        }
+        
+        // Log when vines are detected but no action taken
+        if (foundVine && vineLocations.length > 0) {
+            // Vine climbing state updated
         }
     }
 
@@ -440,4 +543,47 @@ export class BlockBehaviorManager {
     public cleanupPlayer(playerId: string): void {
         this.playerLastStandingBlock.delete(playerId);
     }
+    
+    /**
+     * Fully reset player physics state (legacy method - despawn/respawn is now preferred)
+     * @deprecated Use despawn/respawn pattern instead for cleaner state reset
+     */
+    public resetPlayerPhysics(player: ObbyPlayerEntity): void {
+        console.log('[BlockBehaviorManager] Using legacy physics reset (despawn/respawn is preferred)');
+        
+        // 1. Clear all velocities using SDK methods
+        player.setLinearVelocity({ x: 0, y: 0, z: 0 });
+        player.setAngularVelocity({ x: 0, y: 0, z: 0 });
+        
+        // 2. Clear any accumulated forces
+        if (player.rawRigidBody) {
+            // Reset all forces
+            player.rawRigidBody.resetForces(true);
+            player.rawRigidBody.resetTorques(true);
+            
+            // Reset damping to normal
+            player.rawRigidBody.setLinearDamping(0.5);
+            player.rawRigidBody.setAngularDamping(0.5);
+        }
+        
+        // 3. Reset all physics states
+        (player as any).isOnIce = false;
+        (player as any).isOnSand = false;
+        (player as any).isOnConveyor = false;
+        (player as any).isClimbing = false;
+        (player as any).conveyorDirection = undefined;
+        (player as any).conveyorStrength = undefined;
+        
+        // 4. Reset animations to idle (use proper method instead of direct assignment)
+        try {
+            player.stopAllModelLoopedAnimations();
+            player.startModelLoopedAnimations(['idle']);
+        } catch (error) {
+            // Ignore animation errors - not critical for physics reset
+            console.warn('[BlockBehaviorManager] Could not reset animations:', error);
+        }
+        
+        console.log('[BlockBehaviorManager] Legacy physics reset completed');
+    }
+
 } 

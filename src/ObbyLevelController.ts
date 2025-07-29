@@ -254,8 +254,20 @@ export class ObbyLevelController {
             }
             // Check if player hit a start block (respawn checkpoint)
             else if (blockId === 100) {
-                this.setPlayerCheckpoint({ x: checkPos.x + 0.5, y: checkPos.y + 1.8, z: checkPos.z + 0.5 });
-                console.log(`[ObbyLevelController] Checkpoint updated at start block (centered)`);
+                // Find the actual start block position from our stored blocks instead of using collision position
+                const actualStartBlock = this.findStartBlockPosition(checkPos);
+                if (actualStartBlock) {
+                    this.setPlayerCheckpoint({ 
+                        x: actualStartBlock.x + 0.5, 
+                        y: actualStartBlock.y + 1.8, 
+                        z: actualStartBlock.z + 0.5 
+                    });
+                    console.log(`[ObbyLevelController] Checkpoint updated at actual start block position (${actualStartBlock.x + 0.5}, ${actualStartBlock.y + 1.8}, ${actualStartBlock.z + 0.5})`);
+                } else {
+                    // Fallback to collision position if we can't find the stored block
+                    this.setPlayerCheckpoint({ x: checkPos.x + 0.5, y: checkPos.y + 1.8, z: checkPos.z + 0.5 });
+                    console.log(`[ObbyLevelController] Checkpoint updated at collision position (fallback)`);
+                }
                 return;
             }
             // Check if player hit a dangerous block (lava, etc.)
@@ -273,27 +285,37 @@ export class ObbyLevelController {
     private handlePlayerFall(): void {
         if (!this.isActive || !this.playerEntity || !this.currentPlayer) return;
 
-        console.log('[ObbyLevelController] Handling player fall');
+        console.log('[ObbyLevelController] Handling player fall - delegating to ObbyPlayerController');
 
-        // Stop the player
-        this.playerEntity.setLinearVelocity({ x: 0, y: 0, z: 0 });
-        this.playerEntity.setAngularVelocity({ x: 0, y: 0, z: 0 });
-
-        // Respawn at last checkpoint
-        const respawnPosition = this.lastValidPosition || this.startPosition;
-        if (respawnPosition) {
-            this.playerEntity.setPosition(respawnPosition);
-            
-            // Send respawn message
-            this.world.chatManager.sendPlayerMessage(
-                this.currentPlayer,
-                '💀 You fell! Respawning at checkpoint...',
-                'FF6B6B'
-            );
-
-            console.log(`[ObbyLevelController] Player respawned at ${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z}`);
+        // Use the ObbyPlayerController's comprehensive respawn system
+        const playerController = (this.playerEntity as any).controller;
+        if (playerController && typeof playerController.handleFall === 'function') {
+            console.log('[ObbyLevelController] Calling ObbyPlayerController.handleFall() for proper respawn');
+            playerController.handleFall(this.playerEntity);
         } else {
-            console.error('[ObbyLevelController] No respawn position available!');
+            // Fallback to old simple respawn if controller method not available
+            console.warn('[ObbyLevelController] ObbyPlayerController.handleFall() not found, using fallback respawn');
+            
+            // Stop the player
+            this.playerEntity.setLinearVelocity({ x: 0, y: 0, z: 0 });
+            this.playerEntity.setAngularVelocity({ x: 0, y: 0, z: 0 });
+
+            // Respawn at last checkpoint
+            const respawnPosition = this.lastValidPosition || this.startPosition;
+            if (respawnPosition) {
+                this.playerEntity.setPosition(respawnPosition);
+                
+                // Send respawn message
+                this.world.chatManager.sendPlayerMessage(
+                    this.currentPlayer,
+                    '💀 You fell! Respawning at checkpoint...',
+                    'FF6B6B'
+                );
+
+                console.log(`[ObbyLevelController] Player respawned at ${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z}`);
+            } else {
+                console.error('[ObbyLevelController] No respawn position available!');
+            }
         }
     }
 
@@ -310,6 +332,52 @@ export class ObbyLevelController {
 
         // Notify the play manager
         this.playManager.handlePlayerFinished();
+    }
+
+    /**
+     * Find the actual start block position near a collision point
+     */
+    private findStartBlockPosition(nearPosition: Vector3Like): Vector3Like | null {
+        // Get all user-placed blocks for this plot
+        const { PlotSaveManager } = require('./PlotSaveManager');
+        const plotSaveManager = PlotSaveManager.getInstance();
+        const userPlacedBlocks = plotSaveManager.getUserPlacedBlocksInPlot(this.world, this.plotId);
+        
+        // Find start blocks within a small radius of the collision point
+        const startBlocks = userPlacedBlocks.filter((block: any) => 
+            block.blockTypeId === 100 && 
+            Math.abs(block.position.x - nearPosition.x) <= 2 &&
+            Math.abs(block.position.y - nearPosition.y) <= 2 &&
+            Math.abs(block.position.z - nearPosition.z) <= 2
+        );
+        
+        if (startBlocks.length > 0) {
+            // Return the closest start block
+            let closest = startBlocks[0];
+            let minDistance = this.getDistance(startBlocks[0].position, nearPosition);
+            
+            for (const block of startBlocks) {
+                const distance = this.getDistance(block.position, nearPosition);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closest = block;
+                }
+            }
+            
+            return closest.position;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Calculate distance between two positions
+     */
+    private getDistance(pos1: Vector3Like, pos2: Vector3Like): number {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        const dz = pos1.z - pos2.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     /**

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{{CDN_ASSETS_URL}}/ui/styles.css">
     <link rel="stylesheet" href="{{CDN_ASSETS_URL}}/ui/styles/AnimatedText.css">
+    <link rel="stylesheet" href="{{CDN_ASSETS_URL}}/ui/styles/CompletionLeaderboard.css">
     <title>Obby Game UI</title>
     <script>
         console.log('Starting Obby UI initialization...');
@@ -79,6 +80,8 @@
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/BuildModePanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/PlayerOptionsPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/AnimatedTextPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/CompletionLeaderboardPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/AchievementPopupPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/YourPlotPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/CreativeModeHintPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/BuildTutorialPanel.js'),
@@ -200,6 +203,17 @@
         </div>
     </div>
     
+    <!-- Completion Leaderboard Panel -->
+    <div id="completion-leaderboard-panel" style="display: none;">
+        <div id="completion-leaderboard-overlay" class="completion-leaderboard-overlay">
+            <div class="completion-title-text"></div>
+            <div class="completion-metrics-header"></div>
+            <div class="completion-metrics"></div>
+            <div class="completion-leaderboard"></div>
+            <div class="completion-player-score"></div>
+        </div>
+    </div>
+    
     <!-- Container for block inventory -->
     <div id="inventory-container"></div>
     
@@ -226,6 +240,9 @@
     
     <!-- Container for mobile NPC options -->
     <div id="mobile-npc-options-container"></div>
+    
+    <!-- Container for achievement popup toasts -->
+    <div id="achievement-popup-panel"></div>
 
     <!-- UI Templates for SceneUI -->
     <!-- Removed npc-dialogue template: now injected by NpcDialoguePanel.js -->

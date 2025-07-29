@@ -12,6 +12,10 @@ import { ObstacleCollisionManager } from "./ObstacleCollisionManager";
 import { ObbyPlayManager } from "./ObbyPlayManager";
 import { CashCalculator } from "./CashCalculator";
 import { PlotSaveManager } from "./PlotSaveManager";
+import { MobileDetectionManager } from "./MobileDetectionManager";
+import { SystemManager } from "./SystemManager";
+import type { WorldContext } from "./WorldContext";
+
 
 // --- Lobby checkpoint positions ---
 const LOBBY_CHECKPOINTS = [
@@ -38,7 +42,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     private _stepAudio: Audio | undefined; // Step audio for animations
     
     // Fall detection and respawn properties
-    private fallThresholdY: number = -5; // Y position threshold for considering a fall
+    private fallThresholdY: number = -2; // Y position threshold for considering a fall
     private lastCheckpointPosition: Vector3Like | null = null;
     private fallDetectionEnabled: boolean = false; // Disabled by default, enabled in play mode
     private isRespawning: boolean = false;
@@ -74,11 +78,25 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         this.obbyPlayManager = ObbyPlayManager.getInstance();
         this.plotSaveManager = PlotSaveManager.getInstance();
         
+        // TEMPORARILY DISABLED: WorldContext integration for debugging
+        // this.logWorldContextStatus();
+        
         // Initialize the collision manager
         ObstacleCollisionManager.getInstance();
         
         // Disable auto-face-forward to prevent interference with friction behavior
         this.faceForwardOnStop = false;
+    }
+
+
+    /**
+     * Restrict player movement by disabling all movement inputs
+     */
+    private restrictMovement(input: PlayerInput): void {
+        input.w = false;
+        input.a = false;
+        input.s = false;
+        input.d = false;
     }
 
     /**
@@ -111,6 +129,14 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             this.checkForFall(playerEntity);
         }
         
+        // Restrict movement during respawn (2.5 seconds after death)
+        if (this.isRespawning) {
+            this.restrictMovement(input);
+            // Only restrict horizontal movement, allow gravity on Y-axis
+            const currentVel = playerEntity.linearVelocity;
+            playerEntity.setLinearVelocity({ x: 0, y: currentVel.y, z: 0 });
+        }
+        
         // Handle movement pausing (used during countdown, etc.)
         if (this.pauseMovement) {
             playerEntity.setLinearVelocity({ x: 0, y: 0, z: 0 });
@@ -123,11 +149,12 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         
         // Update last key state immediately to prevent rapid toggling
         this.lastKeyState = { f: originalInput.f, c: originalInput.c };
+       let m = MobileDetectionManager.getInstance().isPlayerMobile(playerEntity.player.id);
         
         // If in fly mode, forward input to the FlyEntity instead of processing normally
         if (this.currentFlyEntity && playerEntity.isFlying) {
             // In building mode, prevent shift (sprint) and space (jump) from interfering with building
-            if (isBuilding && playerEntity.isFlying) {
+            if (isBuilding && playerEntity.isFlying && m) {
                 input.sh = false; // Disable sprint
                 input.sp = false; // Disable jump
             }
@@ -153,6 +180,8 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         const isOnSand = (playerEntity as any).isOnSand === true;
         const isOnConveyor = (playerEntity as any).isOnConveyor === true;
         const isClimbing = (playerEntity as any).isClimbing === true;
+        
+        // Sand state is tracked via isOnSand flag
         
         // Log state transitions for debugging
         // if (isClimbing || isOnConveyor || isOnIce) {
@@ -181,9 +210,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             // Then override with conveyor physics
             this.applyConveyorPhysics(entity, input, cameraOrientation, deltaTimeMs);
         } else if (isOnSand) {
-            super.tickWithPlayerInput(entity, input, cameraOrientation, deltaTimeMs);
-            
-            // Then override with sand physics
+            // Don't call super - handle all physics in sand method
             this.applySandPhysics(entity, input, cameraOrientation, deltaTimeMs);
         } else {
             // Use normal movement when not on special surfaces
@@ -290,25 +317,26 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     private applySandPhysics(entity: DefaultPlayerEntity, input: PlayerInput, cameraOrientation: PlayerCameraOrientation, deltaTimeMs: number): void {
         const { w, a, s, d, sp, sh } = input;
         const { yaw } = cameraOrientation;
+        
+        // Set reduced jump velocity for sand on the entity's controller
+        const controller = entity.controller;
+        const originalJumpVelocity = (controller as any).jumpVelocity;
+        const sandJumpVelocity = 8; // 75% of normal jump
+        (controller as any).jumpVelocity = sandJumpVelocity;
+        
+        // Call parent to handle all physics and animations
+        super.tickWithPlayerInput(entity, input, cameraOrientation, deltaTimeMs);
+        
+        // Restore normal jump velocity after processing
+        (controller as any).jumpVelocity = originalJumpVelocity;
+        
+        // Now override horizontal movement for sand slowness
         const currentVelocity = entity.linearVelocity;
-        
-        // Handle jumping with reduced height on sand
-        let newVelocityY = currentVelocity.y;
-        if (sp && this.canJump(this)) {
-            if (this.isGrounded && currentVelocity.y > -0.001 && currentVelocity.y <= 3) {
-                newVelocityY = this.jumpVelocity * 0.8; // 20% lower jump on sand
-                
-                // Clear sand state when jumping to allow proper state transitions
-                (entity as any).isOnSand = false;
-            }
-        }
-        
-        // Calculate target velocity with reduced speed on sand
-        const targetVelocity = this._calculateSandMovement(!!w, !!a, !!s, !!d, yaw, !!sh);
+        const targetVelocity = this._calculateSandMovement(!!w, !!a, !!s, !!d, yaw, !!sh, false);
         
         // Apply sand physics with slower movement and higher friction
-        const sandFriction = 0.2; // Very high friction (sticky)
-        const sandSpeedMultiplier = 0.5; // 50% slower movement (very sticky)
+        const sandFriction = 0.1; // Extremely high friction (super sticky)
+        const sandSpeedMultiplier = 0.3; // 70% slower movement (very sticky)
         
         let newVelocityX = currentVelocity.x;
         let newVelocityZ = currentVelocity.z;
@@ -323,28 +351,19 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             newVelocityZ *= sandFriction;
         }
         
-        // Apply the sand velocity while preserving vertical velocity
+        // Apply the sand velocity while preserving Y from parent physics
         entity.setLinearVelocity({
             x: newVelocityX,
-            y: newVelocityY,
+            y: currentVelocity.y, // Keep Y from parent (includes jump/gravity)
             z: newVelocityZ,
         });
-        
-        // Apply rotation (same as normal controller)
-        if (yaw !== undefined) {
-            const halfYaw = yaw / 2;
-            entity.setRotation({
-                x: 0,
-                y: Math.fround(Math.sin(halfYaw)),
-                z: 0,
-                w: Math.fround(Math.cos(halfYaw)),
-            });
-        }
-        
-        const totalSpeed = Math.sqrt(newVelocityX * newVelocityX + newVelocityZ * newVelocityZ);
     }
 
-    private _calculateSandMovement(w: boolean, a: boolean, s: boolean, d: boolean, yaw: number, isRunning: boolean): { x: number, z: number } {
+    private _calculateSandMovement(w: boolean, a: boolean, s: boolean, d: boolean, yaw: number, isRunning: boolean, isJumping: boolean): { 
+        x: number, 
+        z: number, 
+        jumpMultiplier: number 
+    } {
         const velocity = isRunning ? this.runVelocity : this.walkVelocity;
         let moveDirectionX = 0;
         let moveDirectionZ = 0;
@@ -364,7 +383,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         if (d) {
             moveDirectionX += velocity * Math.cos(yaw);
             moveDirectionZ -= velocity * Math.sin(yaw);
-        }
+        } 
         
         // Normalize for diagonals
         const length = Math.sqrt(moveDirectionX * moveDirectionX + moveDirectionZ * moveDirectionZ);
@@ -374,12 +393,29 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             moveDirectionZ *= factor;
         }
         
-        return { x: moveDirectionX, z: moveDirectionZ };
+        // Add jump penalty for sand
+        let jumpMultiplier = 1.0; // Default normal jump
+        if (isJumping) {
+            jumpMultiplier = 0.75; // 50% penalty on sand (half height)
+        }
+        
+        return { 
+            x: moveDirectionX, 
+            z: moveDirectionZ, 
+            jumpMultiplier: jumpMultiplier 
+        };
     }
 
     private applyClimbingPhysics(entity: DefaultPlayerEntity, input: PlayerInput, cameraOrientation: PlayerCameraOrientation, deltaTimeMs: number): void {
         const { w, a, s, d, sp, sh } = input;
-        const { yaw } = cameraOrientation;
+        let { yaw } = cameraOrientation;
+        
+        // Override yaw with locked rotation if climbing
+        if ((entity as any).climbingRotationLocked && (entity as any).climbingStartRotation) {
+            const lockedRotation = (entity as any).climbingStartRotation;
+            yaw = Math.atan2(2 * (lockedRotation.w * lockedRotation.y + lockedRotation.x * lockedRotation.z), 
+                            1 - 2 * (lockedRotation.y * lockedRotation.y + lockedRotation.z * lockedRotation.z));
+        }
         
         // Position-based climbing to prevent physics interference
         const climbSpeed = 0.03; // Reduced from 0.1 to 0.05 for slower climbing
@@ -887,13 +923,19 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                     return;
                 }
                 
-                // Place block
+                // TEMPORARILY USING LEGACY: Direct block placement without WorldContext
+                console.log(`[ObbyPlayerController] 🔧 Legacy Block Placement - Block: ${selectedBlockId}, Position: (${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z})`);
                 const success = this.blockPlacementManager.placeBlock(
                     playerEntity.player, 
                     targetPosition,
                     this.world, // Pass world parameter
                     plotId // Pass plotId for boundary checking
                 );
+                if (success) {
+                    console.log(`[ObbyPlayerController] ✅ Legacy block placement successful`);
+                } else {
+                    console.log(`[ObbyPlayerController] ❌ Legacy block placement failed`);
+                }
                 
                 if (success) {
                     // Deduct cash and update UI
@@ -962,7 +1004,8 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                 const blockId = this.world.chunkLattice.getBlockId(targetPosition);
                 
                 if (blockId !== 0) {
-                    // Block exists, try to remove it
+                    // TEMPORARILY USING LEGACY: Direct block removal without WorldContext
+                    console.log(`[ObbyPlayerController] Falling back to legacy block removal`);
                     const success = this.blockPlacementManager.removeBlock(
                         playerEntity.player, 
                         targetPosition,
@@ -978,7 +1021,12 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                         this.updatePlayerCashUI(playerEntity.player, newCash);
                     }
                 } else {
-                    // No block or obstacle found
+                    // No block or obstacle found - show single unified message
+                    this.world.chatManager.sendPlayerMessage(
+                        playerEntity.player,
+                        'Nothing to remove here!',
+                        'FF0000'
+                    );
                 }
             }
         } else {
@@ -1438,56 +1486,126 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         // Skip fall detection if disabled or on cooldown
         if (!this.fallDetectionEnabled || this.isRespawning) return;
 
-        // Check if player has fallen below threshold
-        if (entity.position.y < this.fallThresholdY) {
+        // Two-stage fall detection
+        const forceResetThreshold = -2;  // Start force reset early
+        const respawnThreshold = -10;     // Actually respawn much lower
+        
+        // Stage 1: Apply force reset at -2
+        if (entity.position.y < forceResetThreshold && !this.isDead) {
+            const currentVel = entity.linearVelocity;
+            console.log(`[VELOCITY_DEBUG] Player reached force reset threshold (Y=${entity.position.y.toFixed(2)}), starting early force clear`);
+            console.log(`[VELOCITY_DEBUG] Current velocity at threshold: (${currentVel.x.toFixed(3)}, ${currentVel.y.toFixed(3)}, ${currentVel.z.toFixed(3)})`);
+            this.isDead = true;
+            
+            // Store position at Y=-2 for better checkpoint detection
+            (entity as any).lastPositionBeforeFall = {
+                x: entity.position.x,
+                y: entity.position.y,
+                z: entity.position.z
+            };
+            
+            // Start clearing forces early while falling
+            entity.setLinearVelocity({ x: 0, y: entity.linearVelocity.y, z: 0 });
+            if (entity.rawRigidBody) {
+                entity.rawRigidBody.resetForces(true);
+                entity.rawRigidBody.resetTorques(true);
+            }
+            
+            // Track time to respawn
+            (entity as any).forceResetStartTime = Date.now();
+        }
+        
+        // Stage 2: Actually respawn at -10
+        if (entity.position.y < respawnThreshold && this.isDead) {
+            console.log(`[VELOCITY_DEBUG] Player reached respawn threshold (Y=${entity.position.y.toFixed(2)}), calling handleFall()`);
             this.handleFall(entity);
         }
     }
 
     /**
-     * Handle player fall (respawn at checkpoint)
+     * Handle player fall using despawn/respawn pattern
      */
     public handleFall(entity: ObbyPlayerEntity): void {
-        if (!entity.isSpawned || !entity.world || this.isDead) return;
+        if (!entity.isSpawned || !entity.world) return;
 
-        this.isDead = true;
+        // Calculate decay time if we have it
+        const forceResetTime = (entity as any).forceResetStartTime;
+        if (forceResetTime) {
+            const decayTime = Date.now() - forceResetTime;
+            console.log(`[VELOCITY_DEBUG] Force decay time: ${decayTime}ms (from Y=-2 to Y=-10)`);
+        }
         
-        // Stop the player
-        entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
-        entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
+        // Prevent multiple respawns
+        if (this.isRespawning) {
+            console.log(`[ObbyPlayerController] Already respawning player ${entity.player.id}, ignoring duplicate fall`);
+            return;
+        }
+
+        console.log(`[ObbyPlayerController] Player ${entity.player.id} died at Y=${entity.position.y.toFixed(2)}, using despawn/respawn pattern`);
+
+        // Log player velocity before death
+        const preDeathVel = entity.linearVelocity;
+        console.log(`[VELOCITY_DEBUG] Player velocity BEFORE death: (${preDeathVel.x.toFixed(3)}, ${preDeathVel.y.toFixed(3)}, ${preDeathVel.z.toFixed(3)})`);
 
         // --- Custom respawn logic for lobby/build mode ---
         const playerId = entity.player.id;
         const playerState = this.playerStateManager.getCurrentState(playerId);
+        console.log(`[RESPAWN_DEBUG] Player ${playerId} state: ${playerState}`);
+        
         if (playerState === PlayerGameState.LOBBY || playerState === PlayerGameState.BUILDING) {
-            console.log(`[DEBUG] Lobby/build mode fall detected for player ${playerId} at (${entity.position.x}, ${entity.position.y}, ${entity.position.z})`);
-            // Find closest checkpoint
-            const deathPos = entity.position;
-            let closest = LOBBY_CHECKPOINTS[0];
-            let minDist = Number.POSITIVE_INFINITY;
-            for (const cp of LOBBY_CHECKPOINTS) {
-                const dx = cp.x - deathPos.x;
-                const dy = cp.y - deathPos.y;
-                const dz = cp.z - deathPos.z;
-                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = cp;
+            console.log(`[RESPAWN_DEBUG] ===== LOBBY/BUILD MODE RESPAWN =====`);
+            console.log(`[RESPAWN_DEBUG] Player ${playerId} fell at: (${entity.position.x.toFixed(2)}, ${entity.position.y.toFixed(2)}, ${entity.position.z.toFixed(2)})`);
+            
+            // Check if player has any spawn point or checkpoint set
+            const entitySpawnPoint = (entity as any).spawnPoint;
+            const entityCheckpoint = (entity as any).checkpoint;
+            const controllerCheckpoint = this.lastCheckpointPosition;
+            
+            console.log(`[RESPAWN_DEBUG] Entity spawn point: ${entitySpawnPoint ? `(${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})` : 'null'}`);
+            console.log(`[RESPAWN_DEBUG] Entity checkpoint: ${entityCheckpoint ? `(${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})` : 'null'}`);
+            console.log(`[RESPAWN_DEBUG] Controller checkpoint: ${controllerCheckpoint ? `(${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})` : 'null'}`);
+            
+            // Priority order: 1) Controller checkpoint, 2) Entity checkpoint, 3) Entity spawn point, 4) Closest lobby checkpoint
+            let respawnPos = null;
+            
+            if (controllerCheckpoint) {
+                console.log(`[RESPAWN_DEBUG] Using controller checkpoint: (${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})`);
+                respawnPos = { x: controllerCheckpoint.x, y: controllerCheckpoint.y + 3, z: controllerCheckpoint.z };
+            } else if (entityCheckpoint) {
+                console.log(`[RESPAWN_DEBUG] Using entity checkpoint: (${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})`);
+                respawnPos = { x: entityCheckpoint.x, y: entityCheckpoint.y + 3, z: entityCheckpoint.z };
+            } else if (entitySpawnPoint) {
+                console.log(`[RESPAWN_DEBUG] Using entity spawn point: (${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})`);
+                // Don't add extra height to spawn point as it's already set correctly
+                respawnPos = { x: entitySpawnPoint.x, y: entitySpawnPoint.y, z: entitySpawnPoint.z };
+            } else {
+                console.log(`[RESPAWN_DEBUG] No player-specific spawn points found, calculating closest lobby checkpoint`);
+                
+                // Check if player is near a start block they might have fallen from
+                const nearbyStartBlock = this.findNearbyStartBlock(entity.position);
+                if (nearbyStartBlock) {
+                    console.log(`[RESPAWN_DEBUG] Found nearby start block at (${nearbyStartBlock.x}, ${nearbyStartBlock.y}, ${nearbyStartBlock.z}), using as respawn point`);
+                    respawnPos = {
+                        x: nearbyStartBlock.x + 0.5,
+                        y: nearbyStartBlock.y + 1.8,
+                        z: nearbyStartBlock.z + 0.5
+                    };
+                } else {
+                    // Use current position but add +10 to Y for checkpoint calculation
+                    const checkpointCalcPos = { 
+                        x: entity.position.x, 
+                        y: entity.position.y + 10, 
+                        z: entity.position.z 
+                    };
+                    
+                    respawnPos = this.calculateClosestLobbyCheckpoint(checkpointCalcPos);
                 }
             }
-            // Respawn slightly above checkpoint
-            const safeCheckpoint = closest || LOBBY_CHECKPOINTS[0] || { x: 0, y: 10, z: 0 };
-            const respawnPos = { x: safeCheckpoint.x, y: safeCheckpoint.y + 2, z: safeCheckpoint.z };
-            entity.setPosition(respawnPos);
-            entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
-            entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
-            // Optional: send a message
-            entity.world.chatManager.sendPlayerMessage(entity.player, '💀 You fell! Respawning at nearest checkpoint...', 'FF6B6B');
-            // Reset respawning flag after a short delay
-            setTimeout(() => {
-                this.isRespawning = false;
-                this.isDead = false;
-            }, 1000);
+            
+            console.log(`[RESPAWN_DEBUG] Final lobby/build respawn position: (${respawnPos.x}, ${respawnPos.y}, ${respawnPos.z})`);
+            console.log(`[RESPAWN_DEBUG] ===== END LOBBY/BUILD MODE RESPAWN =====`);
+            
+            this.performInstantRespawn(entity, respawnPos);
             return;
         }
         // --- Default: respawn at last checkpoint (e.g. in play mode) ---
@@ -1495,25 +1613,151 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     }
 
     /**
-     * Respawn player at their last checkpoint
+     * Respawn player at their last checkpoint using despawn/respawn approach
      */
     public respawnAtCheckpoint(entity: ObbyPlayerEntity): void {
         if (!entity || !entity.world) return;
         
-        this.isDead = false;
+        const playerId = entity.player.id;
+        const playerState = this.playerStateManager.getCurrentState(playerId);
+        
+        console.log(`[RESPAWN_DEBUG] ===== PLAY MODE RESPAWN =====`);
+        console.log(`[RESPAWN_DEBUG] Player ${playerId} state: ${playerState}`);
+        console.log(`[RESPAWN_DEBUG] Player fell at: (${entity.position.x.toFixed(2)}, ${entity.position.y.toFixed(2)}, ${entity.position.z.toFixed(2)})`);
+        
+        // Check all possible respawn sources
+        const controllerCheckpoint = this.lastCheckpointPosition;
+        const entityCheckpoint = (entity as any).checkpoint;
+        const entitySpawnPoint = (entity as any).spawnPoint;
+        const playerStateCheckpoint = this.playerStateManager.getLastCheckpoint(playerId);
+        
+        console.log(`[RESPAWN_DEBUG] Controller checkpoint: ${controllerCheckpoint ? `(${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})` : 'null'}`);
+        console.log(`[RESPAWN_DEBUG] Entity checkpoint: ${entityCheckpoint ? `(${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})` : 'null'}`);
+        console.log(`[RESPAWN_DEBUG] Entity spawn point: ${entitySpawnPoint ? `(${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})` : 'null'}`);
+        console.log(`[RESPAWN_DEBUG] PlayerState checkpoint: ${playerStateCheckpoint ? `(${playerStateCheckpoint.x}, ${playerStateCheckpoint.y}, ${playerStateCheckpoint.z})` : 'null'}`);
+        
+        // Priority order for play mode: 1) Controller checkpoint, 2) PlayerState checkpoint, 3) Entity checkpoint, 4) Entity spawn point, 5) Fallback
+        let respawnPosition = null;
+        
+        if (controllerCheckpoint) {
+            console.log(`[RESPAWN_DEBUG] Using controller checkpoint: (${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})`);
+            respawnPosition = {
+                x: controllerCheckpoint.x,
+                y: controllerCheckpoint.y + 1, // Add a bit of height for better spawning
+                z: controllerCheckpoint.z
+            };
+            console.log(`[RESPAWN_DEBUG] Final respawn position: (${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z})`);
+        } else if (playerStateCheckpoint) {
+            console.log(`[RESPAWN_DEBUG] Using PlayerState checkpoint`);
+            respawnPosition = {
+                x: playerStateCheckpoint.x,
+                y: playerStateCheckpoint.y + 3,
+                z: playerStateCheckpoint.z
+            };
+        } else if (entityCheckpoint) {
+            console.log(`[RESPAWN_DEBUG] Using entity checkpoint`);
+            respawnPosition = {
+                x: entityCheckpoint.x,
+                y: entityCheckpoint.y + 3,
+                z: entityCheckpoint.z
+            };
+        } else if (entitySpawnPoint) {
+            console.log(`[RESPAWN_DEBUG] Using entity spawn point`);
+            respawnPosition = {
+                x: entitySpawnPoint.x,
+                y: entitySpawnPoint.y + 3,
+                z: entitySpawnPoint.z
+            };
+        } else {
+            console.log(`[RESPAWN_DEBUG] No checkpoints or spawn points found, falling back to lobby checkpoint system`);
+            
+            // Use current position but add +10 to Y for checkpoint calculation
+            const checkpointCalcPos = { 
+                x: entity.position.x, 
+                y: entity.position.y + 10, 
+                z: entity.position.z 
+            };
+            
+            respawnPosition = this.calculateClosestLobbyCheckpoint(checkpointCalcPos);
+        }
+        
+        console.log(`[RESPAWN_DEBUG] Final play mode respawn position: (${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z})`);
+        console.log(`[RESPAWN_DEBUG] ===== END PLAY MODE RESPAWN =====`);
+        
+        this.performInstantRespawn(entity, respawnPosition);
+    }
+
+    /**
+     * Perform instant respawn (no forces to worry about!)
+     */
+    private performInstantRespawn(entity: ObbyPlayerEntity, respawnPosition: Vector3Like): void {
+        if (!entity || !entity.world || !entity.isSpawned) {
+            console.error('[ObbyPlayerController] Cannot perform respawn - invalid entity state');
+            return;
+        }
+
+        console.log(`[ObbyPlayerController] Performing instant respawn for player ${entity.player.id} at (${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z})`);
+        
+        // Validate respawn position
+        if (!respawnPosition || typeof respawnPosition.x !== 'number' || typeof respawnPosition.y !== 'number' || typeof respawnPosition.z !== 'number') {
+            console.error('[ObbyPlayerController] Invalid respawn position, using fallback');
+            respawnPosition = { x: 0, y: 10, z: 0 };
+        }
+        
+        // Prevent multiple concurrent respawns
+        if (this.isRespawning) {
+            console.warn(`[ObbyPlayerController] Already respawning player ${entity.player.id}, ignoring duplicate request`);
+            return;
+        }
+        
         this.isRespawning = true;
         
-        const respawnPosition = this.lastCheckpointPosition || { x: 0, y: 10, z: 0 };
-
-        entity.setPosition(respawnPosition);
-        entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
-        entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
-
+        console.log(`[VELOCITY_DEBUG] No forces were applied, so no force cleanup needed!`);
         
-        // Reset respawning flag after a short delay
+        // Clear horizontal velocities immediately after respawn, allow gravity on Y
+        entity.setLinearVelocity({ x: 0, y: 0, z: 0 }); // Start with all 0, then let gravity take over
+        entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
+        
+        // Reset basic physics states
+        (entity as any).isOnIce = false;
+        (entity as any).isOnSand = false;
+        (entity as any).isOnConveyor = false;
+        (entity as any).isClimbing = false;
+        
+        // Teleport to respawn position
+        console.log(`[VELOCITY_DEBUG] Teleporting player to respawn position: (${respawnPosition.x}, ${respawnPosition.y}, ${respawnPosition.z})`);
+        entity.setPosition(respawnPosition);
+        
+        // Movement will be disabled for 1.25 seconds via isRespawning flag
+        console.log(`[VELOCITY_DEBUG] Movement disabled for 1.25 seconds via isRespawning flag`);
+        
+        // Keep horizontal velocity at 0 for the first 100ms, allow gravity on Y
         setTimeout(() => {
+            if (entity.isSpawned) {
+                console.log(`[VELOCITY_DEBUG] Ensuring horizontal velocity stays at 0, allowing gravity`);
+                const currentVel = entity.linearVelocity;
+                entity.setLinearVelocity({ x: 0, y: currentVel.y, z: 0 }); // Preserve Y velocity for gravity
+                entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
+                
+                // Final velocity check
+                setTimeout(() => {
+                    const finalVel = entity.linearVelocity;
+                    console.log(`[VELOCITY_DEBUG] Final velocity check: (${finalVel.x.toFixed(3)}, ${finalVel.y.toFixed(3)}, ${finalVel.z.toFixed(3)})`);
+                    console.log(`[VELOCITY_DEBUG] SUCCESS: Clean respawn with natural gravity!`);
+                }, 200);
+            }
+        }, 100);
+        
+        // Send respawn message
+        entity.world.chatManager.sendPlayerMessage(entity.player, '💀 You died! Respawned.', 'FF6B6B');
+        
+        // Reset controller state after 1.25 seconds (re-enabling movement)
+        setTimeout(() => {
+            console.log(`[VELOCITY_DEBUG] Re-enabling movement after 1.25 seconds`);
             this.isRespawning = false;
-        }, 1000);
+            this.isDead = false;
+            console.log(`[ObbyPlayerController] Instant respawn completed for player ${entity.player.id}`);
+        }, 1250);
     }
 
     /**
@@ -1528,14 +1772,99 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
      */
     public setCheckpoint(position: Vector3Like): void {
         // Don't update the checkpoint if we're currently respawning
-        if (this.isRespawning) return;
+        if (this.isRespawning) {
+            console.log(`[CHECKPOINT_DEBUG] Ignoring checkpoint update during respawn`);
+            return;
+        }
+
+        console.log(`[CHECKPOINT_DEBUG] ===== SETTING CONTROLLER CHECKPOINT =====`);
+        console.log(`[CHECKPOINT_DEBUG] Input position: (${position.x}, ${position.y}, ${position.z})`);
+        console.log(`[CHECKPOINT_DEBUG] Previous checkpoint: ${this.lastCheckpointPosition ? `(${this.lastCheckpointPosition.x}, ${this.lastCheckpointPosition.y}, ${this.lastCheckpointPosition.z})` : 'null'}`);
 
         // Make sure we store a clean copy of the position
         this.lastCheckpointPosition = {
             x: position.x,
-            y: position.y + 0.5, // Add a small offset to avoid ground clipping
+            y: position.y + 3, // Spawn higher for more decay time
             z: position.z
         };
+        
+        console.log(`[CHECKPOINT_DEBUG] New checkpoint set: (${this.lastCheckpointPosition.x}, ${this.lastCheckpointPosition.y}, ${this.lastCheckpointPosition.z})`);
+        console.log(`[CHECKPOINT_DEBUG] ===== END SETTING CONTROLLER CHECKPOINT =====`);
+    }
+
+    /**
+     * Clear the current checkpoint
+     */
+    public clearCheckpoint(): void {
+        console.log(`[CHECKPOINT_DEBUG] ===== CLEARING CONTROLLER CHECKPOINT =====`);
+        console.log(`[CHECKPOINT_DEBUG] Previous checkpoint: ${this.lastCheckpointPosition ? `(${this.lastCheckpointPosition.x}, ${this.lastCheckpointPosition.y}, ${this.lastCheckpointPosition.z})` : 'null'}`);
+        this.lastCheckpointPosition = null;
+        console.log(`[CHECKPOINT_DEBUG] Checkpoint cleared`);
+        console.log(`[CHECKPOINT_DEBUG] ===== END CLEARING CONTROLLER CHECKPOINT =====`);
+    }
+
+    /**
+     * Find a nearby start block that the player might have fallen from
+     */
+    private findNearbyStartBlock(playerPosition: Vector3Like): Vector3Like | null {
+        const searchRadius = 15; // Search within 15 blocks horizontally
+        const searchHeight = 20; // Search up to 20 blocks above the player
+        
+        console.log(`[RESPAWN_DEBUG] Searching for start blocks near player position (${playerPosition.x.toFixed(2)}, ${playerPosition.y.toFixed(2)}, ${playerPosition.z.toFixed(2)})`);
+        
+        // Search in a cylinder above the player's position
+        for (let y = 0; y <= searchHeight; y++) {
+            for (let x = -searchRadius; x <= searchRadius; x++) {
+                for (let z = -searchRadius; z <= searchRadius; z++) {
+                    // Skip positions outside the circular search area
+                    const distance = Math.sqrt(x * x + z * z);
+                    if (distance > searchRadius) continue;
+                    
+                    const checkPos = {
+                        x: Math.floor(playerPosition.x) + x,
+                        y: Math.floor(playerPosition.y) + y,
+                        z: Math.floor(playerPosition.z) + z
+                    };
+                    
+                    const blockId = this.world.chunkLattice.getBlockId(checkPos);
+                    if (blockId === 100) { // Start block
+                        console.log(`[RESPAWN_DEBUG] Found start block at (${checkPos.x}, ${checkPos.y}, ${checkPos.z}), distance: ${distance.toFixed(2)}`);
+                        return checkPos;
+                    }
+                }
+            }
+        }
+        
+        console.log(`[RESPAWN_DEBUG] No start blocks found within search radius`);
+        return null;
+    }
+
+    /**
+     * Calculate the closest lobby checkpoint to a given position
+     */
+    private calculateClosestLobbyCheckpoint(fromPosition: Vector3Like): Vector3Like {
+        console.log(`[RESPAWN_DEBUG] Calculating closest lobby checkpoint from: (${fromPosition.x.toFixed(2)}, ${fromPosition.y.toFixed(2)}, ${fromPosition.z.toFixed(2)})`);
+        console.log(`[RESPAWN_DEBUG] Available lobby checkpoints: ${LOBBY_CHECKPOINTS.length}`);
+        
+        // Find closest checkpoint
+        let closest = LOBBY_CHECKPOINTS[0];
+        let minDist = Number.POSITIVE_INFINITY;
+        for (let i = 0; i < LOBBY_CHECKPOINTS.length; i++) {
+            const cp = LOBBY_CHECKPOINTS[i];
+            const dx = cp.x - fromPosition.x;
+            const dy = cp.y - fromPosition.y;
+            const dz = cp.z - fromPosition.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            console.log(`[RESPAWN_DEBUG] Checkpoint ${i}: (${cp.x}, ${cp.y}, ${cp.z}) - Distance: ${dist.toFixed(2)}`);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = cp;
+                console.log(`[RESPAWN_DEBUG] New closest checkpoint found: ${i}`);
+            }
+        }
+        
+        console.log(`[RESPAWN_DEBUG] Selected closest lobby checkpoint: (${closest.x}, ${closest.y}, ${closest.z}) with distance ${minDist.toFixed(2)}`);
+        return { x: closest.x, y: closest.y + 3, z: closest.z };
     }
 
     /**
@@ -1562,5 +1891,32 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         return this.playerEntity;
     }
 
+    /**
+     * Get WorldContext for this world if available
+     */
+    private getWorldContext(): WorldContext | null {
+        try {
+            const systemManager = SystemManager.getInstance();
+            const context = systemManager.getWorldContext(this.world);
+            return context;
+        } catch (error) {
+            console.warn(`[ObbyPlayerController] Failed to get WorldContext:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Log WorldContext integration status on startup
+     */
+    private logWorldContextStatus(): void {
+        const context = this.getWorldContext();
+        if (context) {
+            const systemType = SystemManager.getInstance().getWorldSystemType(this.world.name);
+            console.log(`[ObbyPlayerController] ✅ WorldContext active - System: ${systemType}, World: ${this.world.name}`);
+            console.log(`[ObbyPlayerController] 🔧 Available systems - Plot: ${!!context.plotManager}, Block: ${!!context.blockSystem}, Save: ${!!context.saveSystem}`);
+        } else {
+            console.log(`[ObbyPlayerController] ⚠️ WorldContext not available - Using legacy singletons for world: ${this.world.name}`);
+        }
+    }
 
 } 

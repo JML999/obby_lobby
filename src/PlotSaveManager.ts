@@ -4,6 +4,7 @@ import { ObstaclePlacementManager } from './ObstaclePlacementManager';
 import type { ScoreboardEntry } from './ScoreboardManager';
 import { CashCalculator } from './CashCalculator';
 import { PlayerObbyRegistry } from './PlayerObbyRegistry';
+import { SimpleLevelingSystem } from './SimpleLevelingSystem';
 
 export interface SavedBlock {
   relativePos: Vector3Like;  // Position relative to plot center
@@ -18,6 +19,14 @@ export interface SavedObstacle {
   config?: any; // Additional configuration (rotation speed, etc.)
 }
 
+export interface SavedEnemy {
+  id: string;
+  type: 'zombie'; // Currently only zombie type supported
+  variant: 'normal' | 'fast' | 'strong';
+  relativePos: Vector3Like;  // Position relative to plot center
+  spawnPoint: Vector3Like;   // Original spawn point (relative to plot center)
+}
+
 export interface PlotData {
   version: string;  // For future compatibility
   plotSize: { width: number; length: number; height: number };
@@ -25,6 +34,7 @@ export interface PlotData {
   plotSide: 'left' | 'right';  // Which side of the map this plot was built on
   blocks: SavedBlock[];
   obstacles: SavedObstacle[];
+  enemies?: SavedEnemy[];  // Zombie enemies (optional for backward compatibility)
   lastModified: number;
   creatorName: string;  // Username of who created this plot
   creatorId: string;    // Player ID of who created this plot
@@ -34,6 +44,7 @@ export interface PlotData {
 export interface PlayerObbyData {
   plotData: PlotData | null; // Single save per player
   cash: number; // Player's available cash for building
+  levelData?: any; // Player's leveling data from SimpleLevelingSystem
 }
 
 export class PlotSaveManager {
@@ -64,6 +75,55 @@ export class PlotSaveManager {
       PlotSaveManager.instance = new PlotSaveManager();
     }
     return PlotSaveManager.instance;
+  }
+
+  /**
+   * Get all user-placed blocks in a specific plot
+   */
+  getUserPlacedBlocksInPlot(world: World, plotId: string): Array<{position: Vector3Like, blockTypeId: number}> {
+    const worldId = world.name;
+    const userBlockMetadata = this.userBlockMetadata.get(worldId);
+    
+    if (!userBlockMetadata) {
+      return [];
+    }
+    
+    const plotBlocks: Array<{position: Vector3Like, blockTypeId: number}> = [];
+    
+    // Iterate through all user blocks and filter by plotId
+    for (const [positionKey, metadata] of userBlockMetadata.entries()) {
+      if (metadata.plotId === plotId) {
+        const [x, y, z] = positionKey.split(',').map(Number);
+        plotBlocks.push({
+          position: { x, y, z },
+          blockTypeId: metadata.blockTypeId
+        });
+      }
+    }
+    
+    return plotBlocks;
+  }
+
+  /**
+   * Get the user placed blocks set for a world (for internal use)
+   */
+  getUserPlacedSet(world: World): Set<string> {
+    const worldId = world.name;
+    if (!this.userPlacedBlocksByWorld.has(worldId)) {
+      this.userPlacedBlocksByWorld.set(worldId, new Set());
+    }
+    return this.userPlacedBlocksByWorld.get(worldId)!;
+  }
+
+  /**
+   * Get the user block metadata map for a world (for internal use)
+   */
+  getUserBlockMetadata(world: World): Map<string, any> {
+    const worldId = world.name;
+    if (!this.userBlockMetadata.has(worldId)) {
+      this.userBlockMetadata.set(worldId, new Map());
+    }
+    return this.userBlockMetadata.get(worldId)!;
   }
 
   private constructor() {
@@ -345,11 +405,18 @@ export class PlotSaveManager {
   }
 
   /**
-   * Get player's current cash
+   * Get player's current cash (now based on level)
    */
   public getPlayerCash(player: Player): number {
+    // Get cash allowance based on player's level
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    const maxCash = levelingSystem.getPlayerCashAllowance(player.id);
+    
     const playerData = this.playerObbyCache.get(player.id);
-    return playerData?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
+    const currentCash = playerData?.cash ?? maxCash;
+    
+    // Ensure cash doesn't exceed level allowance
+    return Math.min(currentCash, maxCash);
   }
 
   /**
@@ -438,6 +505,12 @@ export class PlotSaveManager {
         playerObbyData = { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH };
       }
       
+      // Load leveling data into the leveling system
+      const levelingSystem = SimpleLevelingSystem.getInstance();
+      if (playerObbyData.levelData) {
+        levelingSystem.loadPlayerSaveData(player.id, playerObbyData.levelData);
+      }
+      
       // Cache the result
       this.playerObbyCache.set(player.id, playerObbyData);
       
@@ -449,7 +522,7 @@ export class PlotSaveManager {
   }
 
   /**
-   * Calculate the correct cash balance based on loaded blocks and obstacles
+   * Calculate the correct cash balance based on loaded blocks, obstacles, and enemies
    */
   private calculateCashFromLoadedContent(plotData: PlotData): number {
     let totalCost = 0;
@@ -481,8 +554,17 @@ export class PlotSaveManager {
       totalCost += obstacleCost;
     }
     
+    // Calculate cost of all enemies (zombies)
+    if (plotData.enemies) {
+      for (const enemy of plotData.enemies) {
+        const enemyCost = CashCalculator.getEntityCost('zombie'); // Use zombie entity cost
+        totalCost += enemyCost;
+      }
+    }
+    
     const remainingCash = Math.max(0, CashCalculator.DEFAULT_STARTING_CASH - totalCost);
-    console.log(`[PlotSaveManager] Calculated cash for loaded content: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles, total cost: ${totalCost}, remaining cash: ${remainingCash}`);
+    const enemyCount = plotData.enemies?.length || 0;
+    console.log(`[PlotSaveManager] Calculated cash for loaded content: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles, ${enemyCount} enemies, total cost: ${totalCost}, remaining cash: ${remainingCash}`);
     
     return remainingCash;
   }
@@ -528,7 +610,8 @@ export class PlotSaveManager {
       }
 
       console.log(`[PlotSaveManager] Loading obby for player ${player.username} onto plot ${plotId}`);
-      console.log(`[PlotSaveManager] Loading ${plotData.blocks.length} blocks and ${plotData.obstacles.length} obstacles`);
+      const enemyCount = plotData.enemies?.length || 0;
+      console.log(`[PlotSaveManager] Loading ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles, and ${enemyCount} enemies`);
       
       // Calculate the correct cash balance based on loaded content
       const calculatedCash = this.calculateCashFromLoadedContent(plotData);
@@ -589,11 +672,21 @@ export class PlotSaveManager {
       
       if (needsTransformation) {
         console.log(`[PlotSaveManager] 🔄 Plot side transformation needed: saved on ${savedPlotSide} side, loading on ${currentPlotSide} side`);
-        this.world.chatManager.sendPlayerMessage(
-          player,
-          `🔄 Adapting your layout from ${savedPlotSide} side to ${currentPlotSide} side...`,
-          'FFAA00'
-        );
+        // Use toast for layout adaptation notification
+        try {
+          player.ui.sendData({
+            type: 'achievementPopup',
+            title: '🔄 Layout Adapting',
+            bonus: `From ${savedPlotSide} side to ${currentPlotSide} side...`,
+            duration: 3000
+          });
+        } catch (error) {
+          this.world.chatManager.sendPlayerMessage(
+            player,
+            `🔄 Adapting your layout from ${savedPlotSide} side to ${currentPlotSide} side...`,
+            'FFAA00'
+          );
+        }
       } else {
         console.log(`[PlotSaveManager] ✅ Plot sides match: ${savedPlotSide} → ${currentPlotSide}`);
       }
@@ -665,6 +758,40 @@ export class PlotSaveManager {
         }
       }
 
+      // Load enemies using relative positions (backward compatible)
+      if (plotData.enemies) {
+        const { EnemyPlacementManager } = await import('./EnemyPlacementManager');
+        const enemyPlacementManager = EnemyPlacementManager.getInstance();
+        enemyPlacementManager.initializeWorld(this.world);
+        
+        for (const savedEnemy of plotData.enemies) {
+          // Apply transformation if needed
+          const transformedRelativePos = needsTransformation 
+            ? this.transformCoordinatesForDifferentSide(savedEnemy.relativePos, newPlotCenter, plotId)
+            : savedEnemy.relativePos;
+          
+          const worldPos = {
+            x: newPlotCenter.x + transformedRelativePos.x,
+            y: newPlotCenter.y + transformedRelativePos.y,
+            z: newPlotCenter.z + transformedRelativePos.z
+          };
+          
+          const enemyId = `zombie_${savedEnemy.variant}`;
+          const success = enemyPlacementManager.placeEnemy(
+            player,
+            enemyId,
+            worldPos,
+            plotId
+          );
+          
+          if (!success) {
+            console.warn(`[PlotSaveManager] Failed to load enemy ${savedEnemy.type} (${savedEnemy.variant}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+          } else {
+            console.log(`[PlotSaveManager] Loaded enemy ${savedEnemy.type} (${savedEnemy.variant}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}] (relative [${savedEnemy.relativePos.x}, ${savedEnemy.relativePos.y}, ${savedEnemy.relativePos.z}])`);
+          }
+        }
+      }
+
       // Load scoreboard data if it exists
       if (plotData.scoreboard && plotData.scoreboard.length > 0) {
         const { ScoreboardManager } = await import('./ScoreboardManager');
@@ -675,9 +802,10 @@ export class PlotSaveManager {
         console.log(`[PlotSaveManager] No scoreboard data found in plot ${plotId}`);
       }
 
+      const loadedEnemyCount = plotData.enemies?.length || 0;
       this.world.chatManager.sendPlayerMessage(
         player,
-        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
+        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles${loadedEnemyCount > 0 ? `, ${loadedEnemyCount} enemies` : ''}${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
         '00FF00'
       );
 
@@ -696,6 +824,14 @@ export class PlotSaveManager {
     try {
       console.log(`[PlotSaveManager] Saving current plot for player ${player.username}`);
       this.world.chatManager.sendPlayerMessage(player, '❌ Plot save system needs plot boundaries - will be fixed!', 'FF0000');
+      
+      // Grant XP for course publishing
+      const levelingSystem = SimpleLevelingSystem.getInstance();
+      levelingSystem.onCoursePublished(player.id);
+      
+      // Save player XP/level data when they save their plot
+      await this.savePlayerLevelData(player);
+      
       return;
     } catch (error) {
       console.error(`[PlotSaveManager] Error saving plot data for ${player.username}:`, error);
@@ -758,6 +894,54 @@ export class PlotSaveManager {
         }
       }
 
+      // Collect enemies using entity tags
+      const enemies: SavedEnemy[] = [];
+      if (this.world && plotId) {
+        // Get plot boundaries to check which zombies are in this plot
+        const { PlotBoundaryManager } = await import('./PlotBoundaryManager');
+        const plotBoundaryManager = PlotBoundaryManager.getInstance();
+        const plotBoundaries = plotBoundaryManager.getCalculatedBoundaries(plotId);
+        
+        if (plotBoundaries) {
+          // Get ALL entities and filter for ZombieEntity type (more reliable than tags)
+          const allEntities = this.world.entityManager.getAllEntities();
+          const allZombies = allEntities.filter(entity => {
+            // Import check to avoid circular dependency
+            const entityName = entity.constructor.name;
+            return entityName === 'ZombieEntity';
+          });
+          const { ZombieEntity } = await import('./entities/ZombieEntity');
+          
+          for (const zombie of allZombies) {
+            const zombiePos = zombie.position;
+            
+            // Check if zombie is within plot boundaries
+            const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                           zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                           zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+            
+            if (isInPlot && zombie instanceof ZombieEntity) {
+              const relativePos = {
+                x: zombiePos.x - plotCenter.x,
+                y: zombiePos.y - plotCenter.y,
+                z: zombiePos.z - plotCenter.z
+              };
+              
+              // Use spawn point as relative position for consistency
+              const spawnPoint = relativePos; // For now, current position is spawn point
+              
+              enemies.push({
+                id: `zombie_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'zombie',
+                variant: zombie.getVariant() as 'normal' | 'fast' | 'strong',
+                relativePos,
+                spawnPoint
+              });
+            }
+          }
+        }
+      }
+
       // Get current scoreboard for this plot
       const { ScoreboardManager } = await import('./ScoreboardManager');
       const scoreboardManager = ScoreboardManager.getInstance();
@@ -766,7 +950,7 @@ export class PlotSaveManager {
       // Determine plot side based on plotId
       const plotSide = plotId ? this.getPlotSide(this.getPlotIndexFromId(plotId)) : 'left';
 
-      // Create the plot data with both blocks and obstacles
+      // Create the plot data with blocks, obstacles, and enemies
       const plotData: PlotData = {
         version: '1.0',
         plotSize: {
@@ -778,6 +962,7 @@ export class PlotSaveManager {
         plotSide,
         blocks,
         obstacles,
+        enemies, // Include enemies array
         lastModified: Date.now(),
         creatorName: player.username || player.id,  // Use username if available, fallback to ID
         creatorId: player.id,
@@ -788,26 +973,46 @@ export class PlotSaveManager {
       const currentCash = this.playerObbyCache.get(player.id)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
       this.playerObbyCache.set(player.id, { plotData, cash: currentCash });
 
-      // Save to player persistence
+      // Save to player persistence (including leveling data)
       const currentCashForSave = this.playerObbyCache.get(player.id)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
-      await player.setPersistedData({ obby: { plotData, cash: currentCashForSave } });
+      const levelingSystem = SimpleLevelingSystem.getInstance();
+      const levelData = levelingSystem.getPlayerSaveData(player.id);
+      
+      await player.setPersistedData({ 
+        obby: { 
+          plotData, 
+          cash: currentCashForSave,
+          levelData: levelData
+        } 
+      });
 
       // Also save to global registry for random loading in other worlds
       try {
-        await PlayerObbyRegistry.savePlayerObby(player, { plotData, cash: currentCashForSave });
+        await PlayerObbyRegistry.savePlayerObby(player, { 
+          plotData, 
+          cash: currentCashForSave,
+          levelData: levelData
+        });
         console.log(`[PlotSaveManager] Updated global obby registry for player ${player.id}`);
       } catch (error) {
         console.error(`[PlotSaveManager] Failed to update global obby registry for player ${player.id}:`, error);
         // Don't fail the whole save operation if global registry update fails
       }
 
-      console.log(`[PlotSaveManager] Saved plot for ${player.username}: ${blocks.length} blocks, ${obstacles.length} obstacles`);
+      console.log(`[PlotSaveManager] Saved plot for ${player.username}: ${blocks.length} blocks, ${obstacles.length} obstacles, ${enemies.length} enemies`);
+      
+      // Grant XP for course publishing
+      levelingSystem.onCoursePublished(player.id);
+      
+      // Send level UI update
+      levelingSystem.sendLevelUIUpdate(player);
+      
       // Use player's world to ensure message goes to correct region
       const targetWorld = player.world || this.world;
       if (targetWorld) {
         targetWorld.chatManager.sendPlayerMessage(
           player,
-          `💾 Plot saved: ${blocks.length} blocks, ${obstacles.length} obstacles!`,
+          `💾 Plot saved: ${blocks.length} blocks, ${obstacles.length} obstacles${enemies.length > 0 ? `, ${enemies.length} enemies` : ''}!`,
           '00AA00'
         );
       } else {
@@ -827,6 +1032,54 @@ export class PlotSaveManager {
   }
 
   /**
+   * Save player's XP and level data to persistent storage
+   */
+  public async savePlayerLevelData(player: Player): Promise<void> {
+    try {
+      const levelingSystem = SimpleLevelingSystem.getInstance();
+      const levelData = levelingSystem.getPlayerSaveData(player.id);
+      
+      // Get current persisted data to preserve existing data
+      const currentData = await player.getPersistedData() || {};
+      
+      // Update only the level data, preserving other data like obby plots
+      if (currentData.obby) {
+        currentData.obby.levelData = levelData;
+      } else {
+        currentData.obby = { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH, levelData: levelData };
+      }
+      
+      await player.setPersistedData(currentData);
+      console.log(`[PlotSaveManager] Saved level data for player ${player.id}: Level ${levelData.level}, Total XP: ${levelData.totalXP}`);
+      
+    } catch (error) {
+      console.error(`[PlotSaveManager] Error saving level data for player ${player.id}:`, error);
+    }
+  }
+
+  /**
+   * Load player's XP and level data from persistent storage
+   */
+  public async loadPlayerLevelData(player: Player): Promise<void> {
+    try {
+      const persistedData = await player.getPersistedData();
+      const levelData = persistedData?.obby?.levelData;
+      
+      if (levelData) {
+        const levelingSystem = SimpleLevelingSystem.getInstance();
+        levelingSystem.loadPlayerSaveData(player.id, levelData);
+        console.log(`[PlotSaveManager] Loaded level data for player ${player.id}: Level ${levelData.level}, Total XP: ${levelData.totalXP}`);
+      } else {
+        console.log(`[PlotSaveManager] No saved level data found for player ${player.id} - starting fresh`);
+      }
+      
+    } catch (error) {
+      console.error(`[PlotSaveManager] Error loading level data for player ${player.id}:`, error);
+    }
+  }
+
+
+  /**
    * Clear player's saved obby and physical plot
    */
   public async clearPlayerObby(player: Player, plotId: string): Promise<void> {
@@ -844,7 +1097,17 @@ export class PlotSaveManager {
       // Clear cache
       this.playerObbyCache.set(player.id, { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH });
       
-      this.world.chatManager.sendPlayerMessage(player, '🧹 Obby data and scoreboard cleared successfully!', '00FF00');
+      // Use toast for clear success notification
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: '🧹 Data Cleared',
+          bonus: 'Obby data and scoreboard cleared successfully!',
+          duration: 3000
+        });
+      } catch (error) {
+        this.world.chatManager.sendPlayerMessage(player, '🧹 Obby data and scoreboard cleared successfully!', '00FF00');
+      }
       console.log(`[PlotSaveManager] Cleared obby data and scoreboard for player ${player.username}`);
 
     } catch (error) {
@@ -937,11 +1200,43 @@ export class PlotSaveManager {
         // Clear from collision manager tracking
         this.obstacleCollisionManager.clearPlotObstacles(plotId);
         
+        // Clear enemies (zombies) in the plot using entity tags
+        const allZombies = targetWorld.entityManager.getEntitiesByTag('zombie');
+        let zombiesCleared = 0;
+        
+        for (const zombie of allZombies) {
+          const zombiePos = zombie.position;
+          
+          // Check if zombie is within plot boundaries
+          const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                         zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                         zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+          
+          if (isInPlot) {
+            zombie.despawn();
+            zombiesCleared++;
+          }
+        }
+        
+        if (zombiesCleared > 0) {
+          console.log(`[PlotSaveManager] Cleared ${zombiesCleared} zombies from plot ${plotId}`);
+        }
+        
         // Clear tracked blocks for this plot - NOW WITH PLAYER'S WORLD FOR REGION AWARENESS
         this.clearTrackedBlocks(plotId, targetWorld);
       }
 
-      targetWorld.chatManager.sendPlayerMessage(player, `🧹 Plot cleared successfully! (${blocksCleared} blocks removed)`, '00FF00');
+      // Use toast for plot clear success notification
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: '🧹 Plot Cleared',
+          bonus: `${blocksCleared} blocks removed successfully!`,
+          duration: 3000
+        });
+      } catch (error) {
+        targetWorld.chatManager.sendPlayerMessage(player, `🧹 Plot cleared successfully! (${blocksCleared} blocks removed)`, '00FF00');
+      }
       console.log(`[PlotSaveManager] Cleared plot blocks and obstacles for player ${player.username} in world ${targetWorld.name}: ${blocksCleared} blocks, obstacles cleared`);
 
     } catch (error) {
@@ -954,6 +1249,9 @@ export class PlotSaveManager {
    * Handle player disconnect cleanup
    */
   public async handlePlayerDisconnect(player: Player): Promise<void> {
+    // Save level data before cleanup
+    await this.savePlayerLevelData(player);
+    
     // Remove from cache
     this.playerObbyCache.delete(player.id);
     console.log(`[PlotSaveManager] Cleaned up data for disconnected player ${player.id}`);
@@ -1198,6 +1496,30 @@ export class PlotSaveManager {
     
     // Clear from collision manager tracking
     this.obstacleCollisionManager.clearPlotObstacles(plotId);
+    
+    // Clear enemies (zombies) in the plot using entity tags
+    if (plotBoundaries) {
+      const allZombies = targetWorld.entityManager.getEntitiesByTag('zombie');
+      let zombiesCleared = 0;
+      
+      for (const zombie of allZombies) {
+        const zombiePos = zombie.position;
+        
+        // Check if zombie is within plot boundaries
+        const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                       zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                       zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+        
+        if (isInPlot) {
+          zombie.despawn();
+          zombiesCleared++;
+        }
+      }
+      
+      if (zombiesCleared > 0) {
+        console.log(`[PlotSaveManager] Cleared ${zombiesCleared} zombies from plot ${plotId}`);
+      }
+    }
     
     // Clear tracked blocks for this plot using target world
     this.clearTrackedBlocks(plotId, targetWorld);

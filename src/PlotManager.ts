@@ -201,7 +201,7 @@ export class PlotManager {
             }
 
             const entrancePos = entrance.position;
-            const entrancePlotIndex = entrance.getPlotIndex();
+            const entrancePlotIndex = plotIndex; // Use plotIndex from loop instead of entrance.getPlotIndex()
             
             if (!entrancePos) {
                 console.warn(`[PlotManager] spawnPlotNumbers: Could not get position for plot entrance ${plotIndex}`);
@@ -346,8 +346,8 @@ export class PlotManager {
             return;
         }
         
-        const entrance = mw.plotEntrances.find(e => e.getPlotIndex() === plotIndex);
-        if (entrance) {
+        const entrance = mw.plotEntrances[plotIndex]; // Use array indexing instead of find with getPlotIndex()
+        if (entrance && ownerId) {
             entrance.setOwner(ownerId);
         } else {
             console.warn(`[PlotManager] updatePlotEntranceOwnership: Plot entrance ${plotIndex} not found`);

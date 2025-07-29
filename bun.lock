@@ -4,8 +4,8 @@
     "": {
       "name": "hyobi",
       "dependencies": {
-        "@hytopia.com/assets": "^0.3.12",
-        "hytopia": "^0.6.27",
+        "@hytopia.com/assets": "^0.3.15",
+        "hytopia": "^0.7.14",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -35,7 +35,7 @@
 
     "@gltf-transform/functions": ["@gltf-transform/functions@4.2.0", "", { "dependencies": { "@gltf-transform/core": "^4.2.0", "@gltf-transform/extensions": "^4.2.0", "ktx-parse": "^1.0.0", "ndarray": "^1.0.19", "ndarray-lanczos": "^0.3.0", "ndarray-pixels": "^4.1.0" } }, "sha512-Umi/ATt5ktPBylD3a/l5oC1jPbZF60Xnm87qmVBJiLbRMcubN881WB2xP2d7je/UjVSd10fgIZ78GoS37Lpygg=="],
 
-    "@hytopia.com/assets": ["@hytopia.com/assets@0.3.12", "", {}, "sha512-36jNpkaqrsBQltUMEGn6Wg3wfqj8Y1RYvdTgsut4hDdLsHE1a94nQlZIhU5QicpKwy61T8XblLhuaipN8msAqA=="],
+    "@hytopia.com/assets": ["@hytopia.com/assets@0.3.15", "", {}, "sha512-LbZxhMiOl22hjwXXGz/3Y7XzfZPhj2uGU0kgxFMaV/RFjpQGqDRUXJ6E63GWRXZG+uhvX3dBOtz6MupWtQ50Fw=="],
 
     "@img/sharp-darwin-arm64": ["@img/sharp-darwin-arm64@0.33.5", "", { "optionalDependencies": { "@img/sharp-libvips-darwin-arm64": "1.0.4" }, "os": "darwin", "cpu": "arm64" }, "sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ=="],
 
@@ -281,7 +281,7 @@
 
     "hasown": ["hasown@2.0.2", "", { "dependencies": { "function-bind": "^1.1.2" } }, "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ=="],
 
-    "hytopia": ["hytopia@0.6.27", "", { "dependencies": { "@gltf-transform/cli": "4.1.1", "archiver": "^7.0.1", "mediasoup": "3.15.7", "sharp": "0.33.5", "ws": "^8.18.2" }, "bin": { "hytopia": "bin/scripts.mjs" } }, "sha512-AgAkhldvi0tENNIrEZ7EWSLDqStJWumQRQnOuQY3p6LapyL/TQmPNSwFy9nM+PrKeXqFgWbjx58q88e7MHzOEA=="],
+    "hytopia": ["hytopia@0.7.14", "", { "dependencies": { "@gltf-transform/cli": "4.1.1", "archiver": "^7.0.1", "sharp": "0.33.5", "ws": "^8.18.2" }, "optionalDependencies": { "mediasoup": "3.15.7" }, "bin": { "hytopia": "bin/scripts.mjs" } }, "sha512-0PzSH2ZpfjukhXkjXuLMj9QJzqVaK8uqs8LJF8SqdDtpBx3E5gCeeM7zVc0Jk1OVsb2ch52P9DWuG6NQnoFSNg=="],
 
     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
 

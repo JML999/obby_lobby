@@ -28,6 +28,11 @@ export class PlayerObbySession implements IObbyPlayManager {
     private gameState: ObbyGameState = 'Lobby';
     private levelController: ObbyLevelController | null = null;
     private startTime: number = 0;
+    
+    // XP tracking for scoreboard display
+    private xpGained: number = 0;
+    private leveledUp: boolean = false;
+    private newLevel: number = 1;
     private gameTimer: NodeJS.Timeout | null = null;
     private countdownTimer: NodeJS.Timeout | null = null;
     
@@ -66,6 +71,13 @@ export class PlayerObbySession implements IObbyPlayManager {
      */
     public async initialize(): Promise<boolean> {
         console.log(`[PlayerObbySession] Initializing session for player ${this.playerId}`);
+        
+        // Clear any existing checkpoint from previous courses
+        const playerEntity = this.getPlayerEntity();
+        if (playerEntity && playerEntity.controller) {
+            (playerEntity.controller as any).clearCheckpoint();
+            console.log(`[PlayerObbySession] Cleared previous checkpoint for player ${this.playerId} before starting new course`);
+        }
         
         // Create level controller for this session
         this.levelController = new ObbyLevelController(this.world, this.plotId, this);
@@ -106,6 +118,7 @@ export class PlayerObbySession implements IObbyPlayManager {
         const creatorText = creatorName ? `by ${creatorName}` : `Plot ${displayNumber}`;
         console.log(`[PlayerObbySession] Displaying text: "COURSE STARTING" / "${creatorText}"`);
         
+        // Show animated text for course starting
         playerEntity.showAnimatedText('COURSE STARTING', creatorText, 2000, 'default');
     }
 
@@ -132,41 +145,58 @@ export class PlayerObbySession implements IObbyPlayManager {
         // Pause player movement
         this.setPlayerMovementPaused(true);
 
-        // Use the animated text countdown sequence
+        // Use animated text countdown sequence
         if (playerEntity) {
             console.log(`[PlayerObbySession] Starting animated countdown sequence for player ${this.playerId}`);
-            playerEntity.runCountdownSequence(() => {
-                console.log(`[PlayerObbySession] Countdown complete for player ${this.playerId} - starting gameplay`);
+            playerEntity.runCountdownSequence();
+            
+            // Start playing after countdown completes
+            setTimeout(() => {
                 this.startPlaying();
-            });
+            }, (this.COUNTDOWN_DURATION + 1) * 1000); // 3 second countdown + 1 second for GO
         } else {
-            // Fallback countdown if no player entity
-            console.warn(`[PlayerObbySession] No player entity for animated countdown for player ${this.playerId} - using fallback`);
+            console.log(`[PlayerObbySession] No player entity found, using fallback countdown`);
             this.fallbackCountdown();
         }
     }
 
     /**
-     * Fallback countdown using chat messages
+     * Countdown using toast messages
      */
     private fallbackCountdown(): void {
         let countdownValue = this.COUNTDOWN_DURATION;
         
         const doCountdown = () => {
             if (countdownValue > 0) {
-                this.world.chatManager.sendPlayerMessage(
-                    this.player, 
-                    `🚀 Starting in ${countdownValue}...`, 
-                    'FFFF00'
-                );
+                try {
+                    this.player.ui.sendData({
+                        type: 'achievementPopup',
+                        title: `🚀 Starting in ${countdownValue}...`,
+                        duration: 1000
+                    });
+                } catch (error) {
+                    this.world.chatManager.sendPlayerMessage(
+                        this.player, 
+                        `🚀 Starting in ${countdownValue}...`, 
+                        'FFFF00'
+                    );
+                }
                 countdownValue--;
                 this.countdownTimer = setTimeout(doCountdown, 1000);
             } else {
-                this.world.chatManager.sendPlayerMessage(
-                    this.player, 
-                    '🏁 GO!', 
-                    '00FF00'
-                );
+                try {
+                    this.player.ui.sendData({
+                        type: 'achievementPopup',
+                        title: '🏁 GO!',
+                        duration: 1000
+                    });
+                } catch (error) {
+                    this.world.chatManager.sendPlayerMessage(
+                        this.player, 
+                        '🏁 GO!', 
+                        '00FF00'
+                    );
+                }
                 this.startPlaying();
             }
         };
@@ -191,12 +221,8 @@ export class PlayerObbySession implements IObbyPlayManager {
         // Initialize the level controller for gameplay
         this.levelController.startPlaying();
 
-        // Show timer UI
-        this.world.chatManager.sendPlayerMessage(
-            this.player,
-            '⏱️ Timer started! Reach the goal block to finish!',
-            'FFFFFF'
-        );
+        // Timer message now handled by animated text system
+        // No need for chat message as it would be spam
         
         // Start the timer UI updates
         this.startTimerUpdates();
@@ -216,12 +242,37 @@ export class PlayerObbySession implements IObbyPlayManager {
         const scoreboardManager = ScoreboardManager.getInstance();
         const scoreboardResult = scoreboardManager.addScore(this.plotId, this.player, completionTime, this.world);
 
-        // Show completion animation immediately
-        const playerEntity = this.getPlayerEntity();
-        if (playerEntity) {
-            const timeInSeconds = (completionTime / 1000).toFixed(2);
-            playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
-        }
+        // Grant XP for course completion and track XP gained
+        const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+        const levelingSystem = SimpleLevelingSystem.getInstance();
+        
+        // Check if this is the player's own course
+        const { PlotManager } = require('./PlotManager');
+        const plotManager = PlotManager.getInstance();
+        const plotOwner = plotManager.getPlotOwner(this.world, this.getPlotIndexFromId(this.plotId));
+        const isOwnCourse = plotOwner === this.playerId;
+        
+        // Get XP before completion to calculate gain
+        const beforeXP = levelingSystem.getXPProgress(this.playerId).totalXP;
+        const beforeLevel = levelingSystem.getPlayerLevel(this.playerId);
+        
+        levelingSystem.onCourseCompleted(this.playerId, this.plotId, isOwnCourse, this.player);
+        
+        // Get XP after completion to calculate gain
+        const afterXP = levelingSystem.getXPProgress(this.playerId).totalXP;
+        const afterLevel = levelingSystem.getPlayerLevel(this.playerId);
+        const xpGained = afterXP - beforeXP;
+        const leveledUp = afterLevel > beforeLevel;
+        
+        // Send level UI update
+        levelingSystem.sendLevelUIUpdate(this.player);
+        
+        // Store XP info for scoreboard display
+        this.xpGained = xpGained;
+        this.leveledUp = leveledUp;
+        this.newLevel = afterLevel;
+
+        // Completion notification will be handled by showResults method
 
         this.showResults({
             completed: true,
@@ -238,11 +289,7 @@ export class PlayerObbySession implements IObbyPlayManager {
 
         console.log(`[PlayerObbySession] Player ${this.playerId} failed: ${reason}`);
 
-        // Show failure animation immediately
-        const playerEntity = this.getPlayerEntity();
-        if (playerEntity) {
-            playerEntity.showWarning('COURSE FAILED!', reason, 3000);
-        }
+        // Failure notification will be handled by showResults method
 
         this.showResults({
             completed: false,
@@ -261,72 +308,83 @@ export class PlayerObbySession implements IObbyPlayManager {
 
         if (result.completed && result.completionTime) {
             const timeInSeconds = (result.completionTime / 1000).toFixed(2);
+            const playerEntity = this.getPlayerEntity();
+            
+            if (!playerEntity) {
+                // Fallback to chat if no player entity
+                this.world.chatManager.sendPlayerMessage(
+                    this.player,
+                    `COURSE COMPLETED! Time: ${timeInSeconds}s`,
+                    '00FF00'
+                );
+                return;
+            }
+            
+            // Prepare data for the new completion leaderboard UI
+            let title = 'COURSE COMPLETED!';
+            let leaderboard: Array<{ position: number; name: string; time: string }> = [];
+            let playerScore: { position: number; time: string } | undefined;
             
             // Show scoreboard results if available
             if (scoreboardResult) {
+                console.log(`[PlayerObbySession] DEBUG: scoreboardResult:`, scoreboardResult);
                 const { ScoreboardManager } = require('./ScoreboardManager');
                 const scoreboardManager = ScoreboardManager.getInstance();
                 
-                // Only show leaderboard achievements if the leaderboard was actually updated
-                if (scoreboardResult.wasUpdated) {
-                    // Create position-specific message and compact leaderboard
-                    const { primaryMessage, secondaryMessage } = this.createPositionBasedMessage(scoreboardResult, scoreboardManager);
-                    
-                    // Show position-specific message with leaderboard in animated text panel
-                    const playerEntity = this.getPlayerEntity();
-                    if (playerEntity) {
-                        playerEntity.showSuccess(
-                            primaryMessage,
-                            secondaryMessage,
-                            6000 // Show for 6 seconds to give time to read leaderboard
-                        );
-                    }
+                // Determine title based on performance - prioritize position over wasUpdated
+                if (scoreboardResult.isNewRecord) {
+                    title = 'NEW RECORD!';
+                } else if (scoreboardResult.position === 1) {
+                    title = '1ST PLACE!';
+                } else if (scoreboardResult.position === 2) {
+                    title = '2ND PLACE!';
+                } else if (scoreboardResult.position === 3) {
+                    title = '3RD PLACE!';
                 } else {
-                    // Leaderboard was not updated (worse time) - show simple completion
-                    const timeInSeconds = (scoreboardResult.playerTime / 1000).toFixed(2);
-                    const playerEntity = this.getPlayerEntity();
-                    if (playerEntity) {
-                        playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
-                    }
+                    title = 'COMPLETED!';
                 }
                 
-                // Also send to chat for reference
-                this.world.chatManager.sendPlayerMessage(
-                    this.player,
-                    `🎉 Course completed in ${timeInSeconds} seconds!`,
-                    '00FF00'
-                );
+                // Get leaderboard data and format it
+                const leaderboardLines = scoreboardManager.formatScoreboard(this.plotId, this.world);
+                console.log(`[PlayerObbySession] DEBUG: leaderboardLines:`, leaderboardLines);
+                leaderboard = this.parseLeaderboardForUI(leaderboardLines);
+                console.log(`[PlayerObbySession] DEBUG: parsed leaderboard:`, leaderboard);
                 
-                // No more achievement chat messages - just the animated panel
-            } else {
-                // No scoreboard data, just show completion
-                const playerEntity = this.getPlayerEntity();
-                if (playerEntity) {
-                    playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
+                // Add player score if not in top 3
+                if (scoreboardResult.position > 3) {
+                    playerScore = {
+                        position: scoreboardResult.position,
+                        time: (scoreboardResult.playerTime / 1000).toFixed(2) + 's'
+                    };
                 }
-                
-                this.world.chatManager.sendPlayerMessage(
-                    this.player,
-                    `🎉 Course completed in ${timeInSeconds} seconds!`,
-                    '00FF00'
-                );
             }
+            
+            // Prepare metrics
+            const metrics = {
+                time: timeInSeconds + 's',
+                xp: this.xpGained ? `+${this.xpGained}` : '0',
+                level: this.leveledUp ? `${this.newLevel}!` : `${this.newLevel}`
+            };
+            
+            // Show the new completion leaderboard UI
+            console.log(`[PlayerObbySession] DEBUG: Sending to UI - title: "${title}", metrics:`, metrics, `leaderboard:`, leaderboard, `playerScore:`, playerScore);
+            playerEntity.showCompletionLeaderboard(title, metrics, leaderboard, playerScore, 7000)
         } else {
-            // Course failed
+            // Course failed - show with animated text
             const playerEntity = this.getPlayerEntity();
             if (playerEntity) {
                 playerEntity.showWarning('COURSE FAILED!', 'Better luck next time!', 3000);
+            } else {
+                this.world.chatManager.sendPlayerMessage(
+                    this.player,
+                    'COURSE FAILED! Better luck next time!',
+                    'FF6B6B'
+                );
             }
-            
-            this.world.chatManager.sendPlayerMessage(
-                this.player,
-                '❌ Course failed! Better luck next time!',
-                'FF6B6B'
-            );
         }
 
-        // Return to lobby after delay (longer if showing leaderboard)
-        const displayDuration = (result.completed && scoreboardResult) ? 7000 : this.RESULTS_DISPLAY_DURATION;
+        // Return to lobby after delay (use consistent timing for new UI)
+        const displayDuration = result.completed ? 7000 : this.RESULTS_DISPLAY_DURATION;
         setTimeout(() => {
             this.returnToLobby();
         }, displayDuration);
@@ -359,11 +417,21 @@ export class PlayerObbySession implements IObbyPlayManager {
     public forceQuit(): void {
         console.log(`[PlayerObbySession] Force quitting session for player ${this.playerId}`);
         
-        this.world.chatManager.sendPlayerMessage(
-            this.player,
-            '🚪 Exited course',
-            'FFAA00'
-        );
+        // Use toast for course exit notification
+        try {
+            this.player.ui.sendData({
+                type: 'achievementPopup',
+                title: '🚪 Exited Course',
+                duration: 2000
+            });
+        } catch (error) {
+            // Fallback to chat if toast fails
+            this.world.chatManager.sendPlayerMessage(
+                this.player,
+                '🚪 Exited course',
+                'FFAA00'
+            );
+        }
         
         this.returnToLobby();
     }
@@ -390,6 +458,13 @@ export class PlayerObbySession implements IObbyPlayManager {
             this.levelController = null;
         }
         
+        // Clear controller checkpoint to prevent it from being used in lobby respawns
+        const playerEntity = this.getPlayerEntity();
+        if (playerEntity && playerEntity.controller) {
+            (playerEntity.controller as any).clearCheckpoint();
+            console.log(`[PlayerObbySession] Cleared controller checkpoint for player ${this.playerId}`);
+        }
+        
         // Reset game state
         this.gameState = 'Lobby';
         
@@ -401,10 +476,22 @@ export class PlayerObbySession implements IObbyPlayManager {
         const playManager = ObbyPlayManager.getInstance();
         playManager.removeSession(this.playerId);
         
-        // Reset player state to LOBBY
+        // Reset player state to LOBBY with proper plot index
         const { PlayerStateManager, PlayerGameState } = require('./PlayerGameState');
         const stateManager = PlayerStateManager.getInstance();
-        stateManager.setPlayerState(this.playerId, PlayerGameState.LOBBY, undefined, this.player);
+        
+        // Get the player's assigned plot index
+        const { PlotManager } = require('./PlotManager');
+        const plotManager = PlotManager.getInstance();
+        const playerPlot = plotManager.getPlayerPlot(this.playerId);
+        const playerPlotIndex = playerPlot ? playerPlot.plotIndex : undefined;
+        
+        stateManager.setPlayerState(this.playerId, PlayerGameState.LOBBY, playerPlotIndex, this.player);
+        
+        // Send level UI update when returning to lobby to ensure UI is current
+        const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+        const levelingSystem = SimpleLevelingSystem.getInstance();
+        levelingSystem.sendLevelUIUpdate(this.player);
     }
 
     /**
@@ -415,6 +502,15 @@ export class PlayerObbySession implements IObbyPlayManager {
         const compactLeaderboard = this.createCompactLeaderboard(leaderboardLines);
         
         let primaryMessage: string;
+        
+        // Create XP info string
+        let xpInfo = '';
+        if (this.xpGained && this.xpGained > 0) {
+            xpInfo = `+${this.xpGained} XP`;
+            if (this.leveledUp) {
+                xpInfo += ` | Level ${this.newLevel}!`;
+            }
+        }
         
         if (scoreboardResult.isNewRecord) {
             // 1st place - NEW RECORD!
@@ -431,10 +527,46 @@ export class PlayerObbySession implements IObbyPlayManager {
             primaryMessage = `✅ COMPLETED! ${timeInSeconds}s`;
         }
         
+        // Add XP info to secondary message for animated text display
+        let secondaryMessage = compactLeaderboard;
+        if (this.xpGained && this.xpGained > 0) {
+            const xpText = this.leveledUp 
+                ? `+${this.xpGained} XP | Level ${this.newLevel}!`
+                : `+${this.xpGained} XP`;
+            secondaryMessage += `\n\n${xpText}`;
+        }
+        
         return {
             primaryMessage,
-            secondaryMessage: compactLeaderboard
+            secondaryMessage
         };
+    }
+
+    /**
+     * Parse leaderboard lines for the new completion UI
+     */
+    private parseLeaderboardForUI(leaderboardLines: string[]): Array<{ position: number; name: string; time: string }> {
+        const leaderboard: Array<{ position: number; name: string; time: string }> = [];
+        
+        // Skip the "📊 LEADERBOARD" header line
+        const entries = leaderboardLines.slice(1);
+        
+        for (let i = 0; i < Math.min(entries.length, 3); i++) {
+            const entry = entries[i];
+            // Extract player name and time from format like "🥇 1. Player1 - 15.20s"
+            const match = entry.match(/[🥇🥈🥉]\s+\d+\.\s+(.+?)\s+-\s+(.+)/);
+            if (match) {
+                const playerName = match[1];
+                const time = match[2];
+                leaderboard.push({
+                    position: i + 1,
+                    name: playerName,
+                    time: time
+                });
+            }
+        }
+        
+        return leaderboard;
     }
 
     /**
@@ -512,5 +644,14 @@ export class PlayerObbySession implements IObbyPlayManager {
 
     public isPlaying(): boolean {
         return this.gameState === 'Playing';
+    }
+
+    /**
+     * Extract plot index from plotId (e.g., "plot_4" -> 4)
+     */
+    private getPlotIndexFromId(plotId: string): number {
+        const plotIndexStr = plotId.split('_')[1] ?? '0';
+        const plotIndex = parseInt(plotIndexStr);
+        return isNaN(plotIndex) ? 0 : plotIndex;
     }
 } 

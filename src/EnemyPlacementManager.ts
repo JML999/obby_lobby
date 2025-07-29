@@ -1,7 +1,6 @@
 import { Player, World, Vector3 } from 'hytopia';
 import type { Vector3Like } from 'hytopia';
 import { ZombieEntity } from './entities/ZombieEntity';
-import type { ZombieEntityOptions } from './entities/ZombieEntity';
 import { EnemyManager } from './EnemyManager';
 import { PlotBoundaryManager } from './PlotBoundaryManager';
 import { ObstacleCollisionManager } from './ObstacleCollisionManager';
@@ -106,6 +105,57 @@ export class EnemyPlacementManager {
             return { valid: false, reason: "World not initialized" };
         }
 
+        // --- BEGIN: Smart zombie placement check ---
+        const baseX = Math.floor(position.x);
+        const baseZ = Math.floor(position.z);
+        let placeY = Math.floor(position.y);
+        const world = this.world;
+        
+        if (world) {
+            // Find the highest solid block at this X,Z position
+            let foundSurface = false;
+            let surfaceY = placeY;
+            
+            // Start from the target Y and search downward for a solid surface
+            for (let y = placeY; y >= placeY - 10; y--) {
+                const blockId = world.chunkLattice.getBlockId({ x: baseX, y: y, z: baseZ });
+                if (blockId !== 0) {
+                    // Found a solid block - place zombie on top
+                    surfaceY = y + 1;
+                    foundSurface = true;
+                    break;
+                }
+            }
+            
+            if (!foundSurface) {
+                return {
+                    valid: false,
+                    reason: "No solid surface found below placement location!",
+                    suggestion: "Place the zombie above or near a solid block surface."
+                };
+            }
+            
+            // Check that there are at least 3 blocks of air space above the surface
+            for (let y = surfaceY; y < surfaceY + 3; y++) {
+                const blockId = world.chunkLattice.getBlockId({ x: baseX, y: y, z: baseZ });
+                if (blockId !== 0) {
+                    return {
+                        valid: false,
+                        reason: `Not enough air space! Block found at height ${y}`,
+                        suggestion: "Clear at least 3 blocks of space above the surface for zombie placement."
+                    };
+                }
+            }
+            
+            // Center the zombie on the block (0.5 offset from block edge)
+            position.x = baseX + 0.5;
+            position.y = surfaceY;
+            position.z = baseZ + 0.5;
+            
+            console.log(`[EnemyPlacementManager] Adjusted zombie placement to centered position: (${position.x}, ${position.y}, ${position.z})`);
+        }
+        // --- END: Smart zombie placement check ---
+
         // Calculate the 3x3 roaming area around the placement position
         const roamingAreaSize = enemyType.roamingAreaSize;
         const halfSize = Math.floor(roamingAreaSize / 2);
@@ -173,19 +223,17 @@ export class EnemyPlacementManager {
             variant: enemyType.variant,
             plotId: plotId || 'global',
             customOptions: {
-                roamingArea: {
-                    center: position,
-                    size: enemyType.roamingAreaSize
-                }
+                // Removed roamingArea - zombies now use aggro sensor only
             }
         });
 
         if (spawnedEnemy) {
+           
             // Register the enemy placement
             this.registerEnemyPlacement(plotId, enemyType, position, spawnedEnemy.id?.toString());
             
-            this.world.chatManager.sendPlayerMessage(player, `Placed ${enemyType.name}`, '00FF00');
-            this.world.chatManager.sendPlayerMessage(player, `💀 ${enemyType.name} will roam in a ${enemyType.roamingAreaSize}x${enemyType.roamingAreaSize} area`, 'FFAA00');
+            // Enemy placement is self-evident - no toast needed
+            // Player can see the enemy spawn, redundant notification removed
             return true;
         } else {
             this.world.chatManager.sendPlayerMessage(player, 'Failed to place enemy!', 'FF0000');
@@ -194,48 +242,100 @@ export class EnemyPlacementManager {
     }
 
     /**
-     * Remove an enemy at the target position
+     * Remove an enemy at the target position using entity tags
      */
     public removeEnemy(player: Player, position: Vector3Like, plotId?: string): { success: boolean; enemyType?: string; enemyVariant?: string } {
-        if (!this.world || !this.enemyManager) return { success: false };
-
-        // Find enemies near the target position
-        const enemies = plotId ? this.enemyManager.getEnemiesInPlot(plotId) : this.enemyManager.getAllEnemies();
-        const targetPos = new Vector3(position.x, position.y, position.z);
-        const searchRadius = 3; // Search radius for enemy removal
-
-        for (const enemy of enemies) {
-            const enemyPos = enemy.position;
-            const distance = Math.sqrt(
-                Math.pow(enemyPos.x - targetPos.x, 2) +
-                Math.pow(enemyPos.y - targetPos.y, 2) +
-                Math.pow(enemyPos.z - targetPos.z, 2)
-            );
-
-            console.log(`[EnemyPlacementManager] Checking enemy at ${enemyPos.x}, ${enemyPos.y}, ${enemyPos.z} - distance: ${distance.toFixed(2)}`);
-
-            if (distance <= searchRadius) {
-                // Found an enemy to remove
-                const enemyName = enemy.constructor.name;
-                const isZombie = enemy instanceof ZombieEntity;
-                const variant = isZombie ? enemy.getVariant() : 'normal';
-
-                enemy.despawn();
-
-                // Unregister from our tracking
-                this.unregisterEnemyPlacement(plotId, enemyPos);
-
-                this.world.chatManager.sendPlayerMessage(player, `Removed ${enemyName}`, 'FFA500');
-
-                return {
-                    success: true,
-                    enemyType: 'zombie',
-                    enemyVariant: variant
-                };
-            }
+        // CRITICAL: Use player's world instead of stored world for proper world instancing
+        const targetWorld = player.world || this.world;
+        if (!targetWorld) {
+            console.log(`[EnemyPlacementManager] ❌ No world available (player.world: ${!!player.world}, this.world: ${!!this.world})`);
+            return { success: false };
         }
 
-        this.world.chatManager.sendPlayerMessage(player, 'No enemy found to remove here!', 'FF0000');
+        console.log(`[EnemyPlacementManager] 🌍 Using world: ${targetWorld.name} (from ${player.world ? 'player.world' : 'this.world'})`);
+
+        // Get ALL entities and filter for ZombieEntity type (more reliable than tags)
+        const allEntities = targetWorld.entityManager.getAllEntities();
+        const zombies = allEntities.filter(entity => entity instanceof ZombieEntity);
+        const targetPos = new Vector3(position.x, position.y, position.z);
+        const searchRadius = 5; // Increased search radius for better detection
+
+        console.log(`[EnemyPlacementManager] 🔍 ZOMBIE REMOVAL DEBUG:`);
+        console.log(`[EnemyPlacementManager] Target position: (${targetPos.x.toFixed(1)}, ${targetPos.y.toFixed(1)}, ${targetPos.z.toFixed(1)})`);
+        console.log(`[EnemyPlacementManager] Search radius: ${searchRadius}`);
+        console.log(`[EnemyPlacementManager] Found ${zombies.length} zombies total in world`);
+
+        if (zombies.length === 0) {
+            console.log(`[EnemyPlacementManager] ❌ No zombies found in world using entity tags!`);
+            // Don't send message here - let the controller handle unified messaging
+            return { success: false };
+        }
+
+        // Sort zombies by distance to find the closest one
+        const zombiesWithDistance = zombies
+            .filter(zombie => zombie && zombie.position) // Filter out null/undefined
+            .map(zombie => {
+                const zombiePos = zombie.position;
+                const distance = Math.sqrt(
+                    Math.pow(zombiePos.x - targetPos.x, 2) +
+                    Math.pow(zombiePos.y - targetPos.y, 2) +
+                    Math.pow(zombiePos.z - targetPos.z, 2)
+                );
+                return { zombie, distance, position: zombiePos };
+            })
+            .sort((a, b) => a.distance - b.distance); // Sort by distance, closest first
+
+        console.log(`[EnemyPlacementManager] Sorted ${zombiesWithDistance.length} zombies by distance`);
+
+        // Log all zombies for debugging
+        zombiesWithDistance.forEach((item, i) => {
+            console.log(`[EnemyPlacementManager] Zombie ${i}: pos(${item.position.x.toFixed(1)}, ${item.position.y.toFixed(1)}, ${item.position.z.toFixed(1)}) distance=${item.distance.toFixed(2)} withinRadius=${item.distance <= searchRadius}`);
+        });
+
+        // Find the closest zombie within search radius
+        const closestWithinRadius = zombiesWithDistance.find(item => item.distance <= searchRadius);
+
+        if (closestWithinRadius) {
+            const { zombie, distance } = closestWithinRadius;
+            const isZombie = zombie instanceof ZombieEntity;
+            const variant = isZombie ? (zombie as ZombieEntity).getVariant() : 'normal';
+
+            console.log(`[EnemyPlacementManager] ✅ Removing closest zombie at distance ${distance.toFixed(2)}! Type: ${zombie.constructor.name}, Variant: ${variant}`);
+
+            // Check if zombie has EnemyManager reference and unregister it
+            const enemyManagerId = (zombie as any)._enemyManagerId;
+            const enemyPlotId = (zombie as any)._plotId;
+            
+            if (enemyManagerId && this.enemyManager) {
+                console.log(`[EnemyPlacementManager] Unregistering zombie ${enemyManagerId} from EnemyManager`);
+                // Call the unregisterEnemy method on EnemyManager
+                (this.enemyManager as any).unregisterEnemy(enemyManagerId);
+            }
+            
+            // Despawn the zombie (this automatically removes it from entity tag system)
+            zombie.despawn();
+
+            console.log(`[EnemyPlacementManager] Successfully removed zombie with variant: ${variant}`);
+            // Enemy removal is self-evident - no toast needed
+            // Player can see the enemy despawn, redundant notification removed
+
+            return {
+                success: true,
+                enemyType: 'zombie',
+                enemyVariant: variant
+            };
+        }
+
+        // Provide helpful debugging info
+        if (zombiesWithDistance.length > 0) {
+            const closest = zombiesWithDistance[0];
+            console.log(`[EnemyPlacementManager] ❌ No zombie within radius. Closest was ${closest.distance.toFixed(2)} blocks away at (${closest.position.x.toFixed(1)}, ${closest.position.y.toFixed(1)}, ${closest.position.z.toFixed(1)})`);
+            // Don't send detailed distance message - let controller handle unified messaging
+        } else {
+            console.log(`[EnemyPlacementManager] ❌ No zombies detected at all!`);
+            // Don't send message here - let the controller handle unified messaging
+        }
+
         return { success: false };
     }
 
@@ -298,7 +398,7 @@ export class EnemyPlacementManager {
     }
 
     /**
-     * Check collision with existing obstacles and enemies
+     * Check collision with existing obstacles and enemies using entity tags
      */
     private checkEnemyCollisions(
         plotId: string | undefined,
@@ -312,24 +412,72 @@ export class EnemyPlacementManager {
             return obstacleCheck;
         }
 
-        // Check collision with existing enemies
-        const existingEnemies = plotId ? 
-            this.getPlotEnemies(plotId) : 
-            Array.from(this.placedEnemies.values()).flat();
+        // Use entity tags to get all zombies in the world - more reliable than stored positions
+        if (!this.world) {
+            return { valid: false, reason: "World not available" };
+        }
 
-        const halfSize = Math.floor(roamingAreaSize / 2) + 1; // Add buffer
-        
-        for (const enemy of existingEnemies) {
-            const distance = Math.sqrt(
-                Math.pow(enemy.position.x - position.x, 2) +
-                Math.pow(enemy.position.z - position.z, 2)
-            );
+        // Get ALL entities and filter for ZombieEntity type (more reliable than tags)
+        const allEntities = this.world.entityManager.getAllEntities();
+        const existingZombies = allEntities.filter(entity => entity instanceof ZombieEntity);
+        console.log(`[EnemyPlacementManager] Found ${existingZombies.length} existing zombies by type checking`);
 
-            if (distance < halfSize * 2) {
+        // Check for max zombie limit (5 per plot or 50 total)
+        const maxZombiesPerPlot = 5;
+        const maxZombiesTotal = 50;
+
+        if (existingZombies.length >= maxZombiesTotal) {
+            return {
+                valid: false,
+                reason: `Maximum zombies reached (${maxZombiesTotal} total)`,
+                suggestion: "Remove some zombies before placing more"
+            };
+        }
+
+        // For plot-specific limits, count zombies in this plot if applicable
+        if (plotId) {
+            let zombiesInPlot = 0;
+            for (const zombie of existingZombies) {
+                // Simple boundary check - if zombie is within plot boundaries, count it
+                // This is more reliable than tracking separate data structures
+                const plotBoundaries = this.plotBoundaryManager.getCalculatedBoundaries(plotId);
+                if (plotBoundaries) {
+                    const zombiePos = zombie.position;
+                    const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                                   zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                                   zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+                    if (isInPlot) {
+                        zombiesInPlot++;
+                    }
+                }
+            }
+
+            if (zombiesInPlot >= maxZombiesPerPlot) {
                 return {
                     valid: false,
-                    reason: "Too close to another enemy",
-                    suggestion: "Enemies need more space between them"
+                    reason: `Maximum zombies per plot reached (${maxZombiesPerPlot})`,
+                    suggestion: "Remove some zombies from this plot before placing more"
+                };
+            }
+        }
+
+        // Simple distance check - ensure no zombie is within 1 block of placement position
+        const minDistance = 1.0; // 1 block minimum distance
+        
+        for (const zombie of existingZombies) {
+            const distance = Math.sqrt(
+                Math.pow(zombie.position.x - position.x, 2) +
+                Math.pow(zombie.position.y - position.y, 2) +
+                Math.pow(zombie.position.z - position.z, 2)
+            );
+
+            console.log(`[EnemyPlacementManager] Zombie at (${zombie.position.x.toFixed(1)}, ${zombie.position.y.toFixed(1)}, ${zombie.position.z.toFixed(1)}) - distance: ${distance.toFixed(2)}`);
+
+            if (distance < minDistance) {
+                return {
+                    valid: false,
+                    reason: "Another zombie is too close to this position",
+                    suggestion: "Place zombies at least 1 block apart"
                 };
             }
         }
@@ -448,31 +596,85 @@ export class EnemyPlacementManager {
      * Clear all enemies from a plot
      */
     public clearPlotEnemies(plotId: string): number {
-        const enemies = this.placedEnemies.get(plotId);
-        if (!enemies) return 0;
-
-        const count = enemies.length;
-        this.placedEnemies.delete(plotId);
-        
-        // Also clear from EnemyManager
-        if (this.enemyManager) {
-            this.enemyManager.clearPlotEnemies(plotId);
+        if (!this.world) {
+            console.warn(`[EnemyPlacementManager] Cannot clear plot enemies - world not initialized`);
+            return 0;
         }
 
-        console.log(`[EnemyPlacementManager] Cleared ${count} enemies from plot ${plotId}`);
-        return count;
+        // Get plot boundaries to find zombies within this plot
+        const plotBoundaries = this.plotBoundaryManager.getCalculatedBoundaries(plotId);
+        if (!plotBoundaries) {
+            console.warn(`[EnemyPlacementManager] Cannot clear plot enemies - no boundaries found for plot ${plotId}`);
+            return 0;
+        }
+
+        // Find and despawn all zombies in this plot (using type checking instead of tags)
+        const allEntities = this.world.entityManager.getAllEntities();
+        const zombies = allEntities.filter(entity => entity instanceof ZombieEntity);
+        
+        let zombiesCleared = 0;
+        for (const zombie of zombies) {
+            const zombiePos = zombie.position;
+            const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                           zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                           zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+            
+            if (isInPlot) {
+                // Check if zombie has EnemyManager reference and unregister it
+                const enemyManagerId = (zombie as any)._enemyManagerId;
+                if (enemyManagerId && this.enemyManager) {
+                    console.log(`[EnemyPlacementManager] Unregistering zombie ${enemyManagerId} from EnemyManager`);
+                    (this.enemyManager as any).unregisterEnemy(enemyManagerId);
+                }
+                
+                zombie.despawn();
+                zombiesCleared++;
+                console.log(`[EnemyPlacementManager] Despawned zombie at (${zombiePos.x.toFixed(1)}, ${zombiePos.y.toFixed(1)}, ${zombiePos.z.toFixed(1)}) from plot ${plotId}`);
+            }
+        }
+
+        // Clear tracking data
+        const enemies = this.placedEnemies.get(plotId);
+        if (enemies) {
+            this.placedEnemies.delete(plotId);
+        }
+
+        console.log(`[EnemyPlacementManager] Cleared ${zombiesCleared} zombies from plot ${plotId}`);
+        return zombiesCleared;
     }
 
     /**
-     * Get enemy statistics for a plot
+     * Get enemy statistics for a plot using entity tags
      */
     public getPlotEnemyStats(plotId: string): { total: number; byVariant: Record<string, number> } {
-        const enemies = this.getPlotEnemies(plotId);
-        const stats = { total: enemies.length, byVariant: {} as Record<string, number> };
+        if (!this.world) {
+            return { total: 0, byVariant: {} };
+        }
 
-        for (const enemy of enemies) {
-            const key = `${enemy.type}_${enemy.variant}`;
-            stats.byVariant[key] = (stats.byVariant[key] || 0) + 1;
+        // Get all zombies using entity tags
+        const allZombies = this.world.entityManager.getEntitiesByTag('zombie');
+        const stats = { total: 0, byVariant: {} as Record<string, number> };
+
+        // Get plot boundaries
+        const plotBoundaries = this.plotBoundaryManager.getCalculatedBoundaries(plotId);
+        if (!plotBoundaries) {
+            return stats;
+        }
+
+        // Count zombies within plot boundaries
+        for (const zombie of allZombies) {
+            const zombiePos = zombie.position;
+            const isInPlot = zombiePos.x >= plotBoundaries.minX && zombiePos.x <= plotBoundaries.maxX &&
+                           zombiePos.z >= plotBoundaries.minZ && zombiePos.z <= plotBoundaries.maxZ &&
+                           zombiePos.y >= plotBoundaries.minY && zombiePos.y <= plotBoundaries.maxY;
+
+            if (isInPlot) {
+                stats.total++;
+                const isZombie = zombie instanceof ZombieEntity;
+                const variant = isZombie ? (zombie as ZombieEntity).getVariant() : 'normal';
+                const key = `zombie_${variant}`;
+                stats.byVariant[key] = (stats.byVariant[key] || 0) + 1;
+            }
         }
 
         return stats;

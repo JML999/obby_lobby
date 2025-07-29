@@ -2,6 +2,7 @@ import { Player, PlayerManager, World } from 'hytopia';
 import GameRegion from './GameRegion';
 import ObbyRegion from './ObbyRegion';
 import { PlotManager } from './PlotManager';
+import { logFeatureFlagStatus } from './FeatureFlags';
 
 export default class GameManager {
   public static readonly instance = new GameManager();
@@ -36,6 +37,15 @@ export default class GameManager {
 
   public initialize(): void {
     console.log('[GameManager] Initializing GameManager...');
+    
+    // Phase 1: Log feature flag status for architecture refactoring
+    logFeatureFlagStatus();
+    
+    // Initialize SimpleLevelingSystem - this should be done early in the initialization process
+    // Note: The actual world initialization will happen later when regions are created
+    const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    console.log('[GameManager] SimpleLevelingSystem instance created');
     
     // Create the default region
     this.createDefaultRegion();

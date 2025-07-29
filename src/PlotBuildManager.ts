@@ -45,7 +45,6 @@ export class PlotBuildManager {
 
     public static getInstance(): PlotBuildManager {
         if (!PlotBuildManager.instance) {
-            console.log('[PlotBuildManager] getInstance: No instance exists, creating new one.');
             PlotBuildManager.instance = new PlotBuildManager();
         } else {
             console.log('[PlotBuildManager] getInstance: Returning existing instance.');
@@ -53,7 +52,6 @@ export class PlotBuildManager {
         // Log the current playerActiveBuildPlots map
         if (PlotBuildManager.instance) {
             const entries = Array.from(PlotBuildManager.instance.playerActiveBuildPlots.entries());
-            console.log('[PlotBuildManager] getInstance: Current playerActiveBuildPlots:', entries);
         }
         return PlotBuildManager.instance;
     }
@@ -73,7 +71,6 @@ export class PlotBuildManager {
             // Register plot with boundary manager
             this.registerPlotBoundaries(plotIndex);
             
-            console.log(`[PlotBuildManager] Initialized plot ${plotIndex} for owner ${ownerId}`);
         }
     }
 
@@ -101,7 +98,6 @@ export class PlotBuildManager {
             }
         );
 
-        console.log(`[PlotBuildManager] Registered plot ${plotIndex} boundaries: ${width}×${length} at (${centerX}, ${centerZ})`);
     }
 
     /**
@@ -135,10 +131,8 @@ export class PlotBuildManager {
     public setPlayerNearPlot(playerId: string, plotIndex: number | null): void {
         if (plotIndex === null) {
             this.playerNearPlots.delete(playerId);
-            console.log(`[PlotBuildManager] Player ${playerId} is no longer near any plot entrance`);
         } else {
             this.playerNearPlots.set(playerId, plotIndex);
-            console.log(`[PlotBuildManager] Player ${playerId} is now near plot ${plotIndex} entrance`);
         }
     }
 
@@ -150,12 +144,59 @@ export class PlotBuildManager {
     }
 
     /**
+     * Get all currently placed blocks in a plot from build history
+     */
+    public getPlotPlacedBlocks(plotIndex: number): Array<{position: Vector3, blockId: number}> {
+        const plotData = this.plotData.get(plotIndex);
+        if (!plotData) {
+            return [];
+        }
+
+        // Track the current state by applying all build history actions
+        const placedBlocks = new Map<string, number>(); // position key -> blockId
+        
+        for (const action of plotData.buildHistory) {
+            const posKey = `${action.position.x},${action.position.y},${action.position.z}`;
+            
+            if (action.action === 'place') {
+                placedBlocks.set(posKey, action.blockId);
+            } else if (action.action === 'remove') {
+                placedBlocks.delete(posKey);
+            }
+        }
+        
+        // Convert back to array format
+        const result: Array<{position: Vector3, blockId: number}> = [];
+        for (const [posKey, blockId] of placedBlocks.entries()) {
+            const [x, y, z] = posKey.split(',').map(Number);
+            result.push({
+                position: { x, y, z },
+                blockId: blockId
+            });
+        }
+        
+        return result;
+    }
+
+    /**
+     * Clear all build data for a plot
+     */
+    public clearPlotBuildData(plotIndex: number): number {
+        const plotData = this.plotData.get(plotIndex);
+        if (!plotData) {
+            return 0;
+        }
+        
+        const blocksCount = this.getPlotPlacedBlocks(plotIndex).length;
+        this.plotData.delete(plotIndex);
+        return blocksCount;
+    }
+
+    /**
      * Set which plot a player is actively building on (persists even when moving away from entrance)
      */
     public setPlayerActiveBuildPlot(playerId: string, plotIndex: number | null): void {
-        console.log(`[PlotBuildManager] setPlayerActiveBuildPlot called for playerId=${playerId}, plotIndex=${plotIndex}`);
         this.playerActiveBuildPlots.set(playerId, plotIndex);
-        console.log('[PlotBuildManager] playerActiveBuildPlots after set:', Array.from(this.playerActiveBuildPlots.entries()));
     }
 
     /**
@@ -163,8 +204,7 @@ export class PlotBuildManager {
      */
     public getPlayerActiveBuildPlot(playerId: string): number | null {
         const plotIndex = this.playerActiveBuildPlots.get(playerId) ?? null;
-        console.log(`[PlotBuildManager] getPlayerActiveBuildPlot for playerId=${playerId}: ${plotIndex}`);
-        console.log('[PlotBuildManager] playerActiveBuildPlots at get:', Array.from(this.playerActiveBuildPlots.entries()));
+  
         return plotIndex;
     }
 
@@ -189,7 +229,6 @@ export class PlotBuildManager {
         const world = player.world;
         if (!world) return false;
 
-        console.log(`[PlotBuildManager] Entering build mode for player ${player.id} on plot ${plotIndex}`);
 
         // Initialize plot data if needed
         this.initializePlot(plotIndex, player.id);
@@ -238,7 +277,6 @@ export class PlotBuildManager {
         const world = player.world;
         if (!world) return false;
 
-        console.log(`[PlotBuildManager] Activating build mode for player ${player.id} on plot ${plotIndex}`);
 
         // Initialize plot data if needed
         this.initializePlot(plotIndex, player.id);
@@ -246,7 +284,6 @@ export class PlotBuildManager {
         // Set player's current plot and active build plot
         this.setPlayerCurrentPlot(player.id, plotIndex);
         this.setPlayerActiveBuildPlot(player.id, plotIndex);
-        console.log(`[PlotBuildManager] Called setPlayerActiveBuildPlot for player ${player.id} with plotIndex ${plotIndex}`);
 
         // Load player's saved obby data onto this plot
         // const plotId = this.getPlotId(plotIndex);
@@ -272,7 +309,6 @@ export class PlotBuildManager {
             world.chatManager.sendPlayerMessage(player, limitsInfo, 'CCCCCC');
         }
 
-        console.log(`[PlotBuildManager] Build mode activated for player ${player.id} on plot ${plotIndex}`);
         return true;
     }
 
@@ -283,7 +319,6 @@ export class PlotBuildManager {
         const world = player.world;
         if (!world) return false;
 
-        console.log(`[PlotBuildManager] Exiting build mode for player ${player.id} from plot ${plotIndex}`);
 
         // Disable fly mode before exiting
         this.disablePlayerFlyMode(player);
@@ -306,7 +341,6 @@ export class PlotBuildManager {
             const playerEntity = playerEntities[0];
             if (playerEntity) {
                 playerEntity.setPosition(entrancePosition);
-                console.log(`[PlotBuildManager] Teleported player ${player.id} back to plot entrance at`, entrancePosition);
             }
         }
 
@@ -346,7 +380,6 @@ export class PlotBuildManager {
         const spawnY = 4; // Standard spawn height
 
         const spawnPosition = new Vector3(centerX, spawnY, centerZ);
-        console.log(`[PlotBuildManager] Calculated spawn position for plot ${plotIndex}:`, spawnPosition);
         return spawnPosition;
     }
 
@@ -359,7 +392,6 @@ export class PlotBuildManager {
             const playerEntity = playerEntities[0];
             if (playerEntity) {
                 playerEntity.setPosition(position);
-                console.log(`[PlotBuildManager] Teleported player ${player.id} to position:`, position);
             }
         }
     }
@@ -373,7 +405,6 @@ export class PlotBuildManager {
             const playerEntity = playerEntities[0] as any; // Cast to access controller
             if (playerEntity && playerEntity.controller) {
                 playerEntity.controller.enableFlyMode(playerEntity);
-                console.log(`[PlotBuildManager] Enabled fly mode for player ${player.id}`);
             }
         }
     }
@@ -387,7 +418,6 @@ export class PlotBuildManager {
             const playerEntity = playerEntities[0] as any; // Cast to access controller
             if (playerEntity && playerEntity.controller) {
                 playerEntity.controller.disableFlyMode(playerEntity);
-                console.log(`[PlotBuildManager] Disabled fly mode for player ${player.id}`);
             }
         }
     }
@@ -411,7 +441,6 @@ export class PlotBuildManager {
         world.chatManager.sendPlayerMessage(player, `💾 Plot ${displayNumber} saved successfully!`, '00FF00');
         world.chatManager.sendPlayerMessage(player, `📊 Build history: ${plotData.buildHistory.length} actions`, 'FFFFFF');
         
-        console.log(`[PlotBuildManager] Saved plot ${plotIndex} with ${plotData.buildHistory.length} build actions`);
         return true;
     }
 
@@ -458,11 +487,9 @@ export class PlotBuildManager {
             if (actionToUndo.action === 'place') {
                 // Undo place by removing the block
                 world.chunkLattice.setBlock(actionToUndo.position, actionToUndo.previousBlockId || 0);
-                console.log(`[PlotBuildManager] Undid block placement at`, actionToUndo.position);
             } else if (actionToUndo.action === 'remove') {
                 // Undo remove by placing the block back
                 world.chunkLattice.setBlock(actionToUndo.position, actionToUndo.blockId);
-                console.log(`[PlotBuildManager] Undid block removal at`, actionToUndo.position);
             }
 
             plotData.currentHistoryIndex--;
@@ -500,18 +527,15 @@ export class PlotBuildManager {
             if (actionToRedo.action === 'place') {
                 // Redo place by placing the block
                 world.chunkLattice.setBlock(actionToRedo.position, actionToRedo.blockId);
-                console.log(`[PlotBuildManager] Redid block placement at`, actionToRedo.position);
             } else if (actionToRedo.action === 'remove') {
                 // Redo remove by removing the block
                 world.chunkLattice.setBlock(actionToRedo.position, actionToRedo.previousBlockId || 0);
-                console.log(`[PlotBuildManager] Redid block removal at`, actionToRedo.position);
             }
 
             plotData.currentHistoryIndex++;
             world.chatManager.sendPlayerMessage(player, `↪️ Redid action`, '00FF00');
             return true;
         } catch (error) {
-            console.error(`[PlotBuildManager] Redo failed:`, error);
             world.chatManager.sendPlayerMessage(player, '❌ Redo failed!', 'FF0000');
             return false;
         }
@@ -544,7 +568,6 @@ export class PlotBuildManager {
             plotData.currentHistoryIndex = plotData.buildHistory.length - 1;
         }
 
-        console.log(`[PlotBuildManager] Added ${action.action} action to plot ${plotIndex} history (${plotData.buildHistory.length} total)`);
     }
 
     /**
