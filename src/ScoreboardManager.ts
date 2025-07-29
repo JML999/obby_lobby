@@ -214,6 +214,7 @@ export class ScoreboardManager {
     public getScoreboard(plotId: string, world?: { name?: string }): ScoreboardEntry[] {
         const regionAwareKey = this.getRegionAwarePlotKey(plotId, world);
         const scoreboard = this.plotScoreboards.get(regionAwareKey);
+        console.log(`[ScoreboardManager] getScoreboard for ${regionAwareKey}: found ${scoreboard?.entries?.length || 0} entries`);
         return scoreboard ? [...scoreboard.entries] : [];
     }
 

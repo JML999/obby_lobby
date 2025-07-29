@@ -4,6 +4,7 @@ import { BlockBehaviorManager } from "./BlockBehaviorManager";
 import { PlotBoundaryManager } from "./PlotBoundaryManager";
 import { ObstacleCollisionManager } from "./ObstacleCollisionManager";
 import { PlotSaveManager } from "./PlotSaveManager";
+import { SimpleLevelingSystem } from "./SimpleLevelingSystem";
 
 export interface BlockType {
   id: number;
@@ -133,6 +134,23 @@ export class BlockPlacementManager {
       return false;
     }
     
+    // Check if player has unlocked this block type based on level
+    const levelingSystem = SimpleLevelingSystem.getInstance();
+    const blockTypeName = this.getBlockTypeNameForLevel(blockId);
+    
+    if (blockTypeName && !levelingSystem.isBlockUnlocked(player.id, blockTypeName)) {
+      const playerLevel = levelingSystem.getPlayerLevel(player.id);
+      const requiredLevel = this.getRequiredLevelForBlock(blockTypeName);
+      
+      world.chatManager.sendPlayerMessage(
+        player, 
+        `🔒 ${blockType.name} unlocks at Level ${requiredLevel}! You're Level ${playerLevel}`, 
+        'FF6B6B'
+      );
+      console.log(`[BlockPlacementManager] Block ${blockType.name} not unlocked for player ${player.id} (Level ${playerLevel})`);
+      return false;
+    }
+    
     // Check if a start or goal block already exists in the plot
     if (plotId && (blockId === 100 || blockId === 101) && this.hasStartOrGoalBlock(plotId, blockId, world)) {
       const blockName = blockId === 100 ? 'start' : 'goal';
@@ -234,6 +252,11 @@ export class BlockPlacementManager {
       // Also record user-placed block for efficient clearing
       this.plotSaveManager.trackUserPlacedBlock(world, coordinate, actualBlockId, player.id, plotId);
     }
+    
+    // Grant XP for block placement
+    const xpSystem = SimpleLevelingSystem.getInstance();
+    xpSystem.onFirstBlockPlaced(player.id, player); // Handles first-time bonus
+    xpSystem.onBlockPlaced(player.id, player); // Always grant repeatable XP
     
     // Send feedback
     world.chatManager.sendPlayerMessage(player, `Placed ${blockType.name}`, '00FF00');
@@ -401,5 +424,44 @@ export class BlockPlacementManager {
     }
     
     return this.setSelectedBlock(player, block.id, world);
+  }
+
+  // Helper method to map block IDs to leveling system block names
+  private getBlockTypeNameForLevel(blockId: number): string | null {
+    const blockToLevelMap: Record<number, string> = {
+      // Level 1 (starting blocks)
+      1: 'platform',    // platform
+      100: 'start',     // start block  
+      101: 'finish',    // goal block
+      17: 'sand',       // sand
+      9: 'ice',         // ice
+      
+      // Level 3
+      21: 'lava',       // lava
+      
+      // Level 4 (conveyors)
+      104: 'conveyor-z-',
+      105: 'conveyor-z+', 
+      109: 'conveyor-x-',
+      110: 'conveyor-x+',
+      
+      // Level 5 (rest of blocks)  
+      15: 'bounce',         // vines as bounce (placeholder)
+      6: 'disappearing',    // glass as disappearing
+    };
+    
+    return blockToLevelMap[blockId] || null;
+  }
+
+  // Helper method to get required level for a block type
+  private getRequiredLevelForBlock(blockTypeName: string): number {
+    const levelMap: Record<string, number> = {
+      'platform': 1, 'start': 1, 'finish': 1, 'sand': 1, 'ice': 1,
+      'lava': 3,
+      'conveyor-z-': 4, 'conveyor-z+': 4, 'conveyor-x-': 4, 'conveyor-x+': 4,
+      'bounce': 5, 'disappearing': 5,
+    };
+    
+    return levelMap[blockTypeName] || 1;
   }
 } 

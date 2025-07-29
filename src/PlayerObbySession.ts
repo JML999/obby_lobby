@@ -2,6 +2,7 @@ import { Player, World, PlayerCameraMode } from 'hytopia';
 import type { Vector3Like } from 'hytopia';
 import { ObbyPlayerEntity } from './ObbyPlayerEntity';
 import { ObbyLevelController } from './ObbyLevelController';
+import { SimpleLevelingSystem } from './SimpleLevelingSystem';
 
 export type ObbyGameState = 'Lobby' | 'Starting' | 'Playing' | 'Results' | 'Failed';
 
@@ -216,12 +217,7 @@ export class PlayerObbySession implements IObbyPlayManager {
         const scoreboardManager = ScoreboardManager.getInstance();
         const scoreboardResult = scoreboardManager.addScore(this.plotId, this.player, completionTime, this.world);
 
-        // Show completion animation immediately
-        const playerEntity = this.getPlayerEntity();
-        if (playerEntity) {
-            const timeInSeconds = (completionTime / 1000).toFixed(2);
-            playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
-        }
+        // Animated text removed - using leaderboard UI instead
 
         this.showResults({
             completed: true,
@@ -262,32 +258,60 @@ export class PlayerObbySession implements IObbyPlayManager {
         if (result.completed && result.completionTime) {
             const timeInSeconds = (result.completionTime / 1000).toFixed(2);
             
-            // Show scoreboard results if available
+            // Grant XP for course completion
+            const levelingSystem = SimpleLevelingSystem.getInstance();
+            levelingSystem.onFirstCourseCompleted(this.playerId, this.player); // First-time bonus
+            levelingSystem.onCourseCompleted(this.playerId, this.plotId, this.player); // Per-course bonus
+            
+            // Show new completion leaderboard UI if available
             if (scoreboardResult) {
                 const { ScoreboardManager } = require('./ScoreboardManager');
                 const scoreboardManager = ScoreboardManager.getInstance();
                 
-                // Only show leaderboard achievements if the leaderboard was actually updated
-                if (scoreboardResult.wasUpdated) {
-                    // Create position-specific message and compact leaderboard
-                    const { primaryMessage, secondaryMessage } = this.createPositionBasedMessage(scoreboardResult, scoreboardManager);
+                // Show the new completion leaderboard UI
+                const playerEntity = this.getPlayerEntity();
+                if (playerEntity) {
+                    // Get leaderboard data
+                    const allScores = scoreboardManager.getScoreboard(this.plotId, this.world); // All scores
+                    console.log('[PlayerObbySession] Raw leaderboard data:', allScores);
+                    const leaderboard = allScores.slice(0, 3).map((score, index) => ({
+                        position: index + 1,
+                        name: score.playerName,
+                        time: (score.completionTime / 1000).toFixed(2) + 's'
+                    }));
+                    console.log('[PlayerObbySession] Formatted leaderboard:', leaderboard);
                     
-                    // Show position-specific message with leaderboard in animated text panel
-                    const playerEntity = this.getPlayerEntity();
-                    if (playerEntity) {
-                        playerEntity.showSuccess(
-                            primaryMessage,
-                            secondaryMessage,
-                            6000 // Show for 6 seconds to give time to read leaderboard
-                        );
+                    // Check if player made top 3
+                    const playerInTop3 = allScores.slice(0, 3).find(score => score.playerId === this.playerId);
+                    let playerScore = null;
+                    
+                    if (!playerInTop3 && allScores.length > 3) {
+                        // Player not in top 3, find their position
+                        const playerIndex = allScores.findIndex(score => score.playerId === this.playerId);
+                        
+                        if (playerIndex !== -1) {
+                            playerScore = {
+                                position: playerIndex + 1,
+                                time: (allScores[playerIndex].completionTime / 1000).toFixed(2) + 's'
+                            };
+                        }
                     }
-                } else {
-                    // Leaderboard was not updated (worse time) - show simple completion
-                    const timeInSeconds = (scoreboardResult.playerTime / 1000).toFixed(2);
-                    const playerEntity = this.getPlayerEntity();
-                    if (playerEntity) {
-                        playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
-                    }
+                    
+                    // Determine title based on result
+                    const title = scoreboardResult.wasUpdated ? 
+                        (scoreboardResult.newPosition === 1 ? 'HIGH SCORE!' : 'PERSONAL BEST!') : 
+                        'COMPLETED!';
+                    
+                    // Get player's level and XP info
+                    const xpProgress = levelingSystem.getXPProgress(this.playerId);
+                    const metrics = {
+                        time: timeInSeconds + 's',
+                        xp: '+5', // Standard course completion XP (first-time bonus already granted)
+                        level: `${xpProgress.level}`
+                    };
+                    
+                    // Show the new completion leaderboard UI
+                    playerEntity.showCompletionLeaderboard(title, metrics, leaderboard, playerScore, 7000);
                 }
                 
                 // Also send to chat for reference
@@ -299,11 +323,7 @@ export class PlayerObbySession implements IObbyPlayManager {
                 
                 // No more achievement chat messages - just the animated panel
             } else {
-                // No scoreboard data, just show completion
-                const playerEntity = this.getPlayerEntity();
-                if (playerEntity) {
-                    playerEntity.showSuccess('COURSE COMPLETED!', `Time: ${timeInSeconds}s`, 3000);
-                }
+                // No scoreboard data, just show completion message in chat
                 
                 this.world.chatManager.sendPlayerMessage(
                     this.player,
@@ -312,11 +332,7 @@ export class PlayerObbySession implements IObbyPlayManager {
                 );
             }
         } else {
-            // Course failed
-            const playerEntity = this.getPlayerEntity();
-            if (playerEntity) {
-                playerEntity.showWarning('COURSE FAILED!', 'Better luck next time!', 3000);
-            }
+            // Course failed - only show chat message
             
             this.world.chatManager.sendPlayerMessage(
                 this.player,

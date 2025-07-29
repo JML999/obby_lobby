@@ -1142,17 +1142,35 @@ export class PlotSaveManager {
       }
     }
 
-    // First loop: Set ALL blocks to delete_block (cloud texture)
-    for (const blockPos of blocksToClear) {
-      targetWorld.chunkLattice.setBlock(blockPos, DELETE_BLOCK_ID);
+    // First phase: Set blocks to delete_block in batches (cloud texture)
+    const BATCH_SIZE = 50;
+    console.log(`[PlotSaveManager] Clearing ${blocksToClear.length} blocks in batches of ${BATCH_SIZE}`);
+    
+    // Batch the delete block phase
+    for (let i = 0; i < blocksToClear.length; i += BATCH_SIZE) {
+      const batch = blocksToClear.slice(i, i + BATCH_SIZE);
+      for (const blockPos of batch) {
+        targetWorld.chunkLattice.setBlock(blockPos, DELETE_BLOCK_ID);
+      }
+      // Small delay between batches to prevent overwhelming clients
+      if (i + BATCH_SIZE < blocksToClear.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
     }
 
-    // Wait 1 second before clearing to air
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait 1.5 seconds before clearing to air (increased from 1 second)
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Second loop: Set ALL blocks to air
-    for (const blockPos of blocksToClear) {
-      targetWorld.chunkLattice.setBlock(blockPos, 0);
+    // Second phase: Set blocks to air in batches
+    for (let i = 0; i < blocksToClear.length; i += BATCH_SIZE) {
+      const batch = blocksToClear.slice(i, i + BATCH_SIZE);
+      for (const blockPos of batch) {
+        targetWorld.chunkLattice.setBlock(blockPos, 0);
+      }
+      // Small delay between batches
+      if (i + BATCH_SIZE < blocksToClear.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
     }
     
     // CRITICAL: Clear ALL tracking metadata for this plot to prevent ghost blocks

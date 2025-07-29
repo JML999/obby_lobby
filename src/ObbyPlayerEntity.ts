@@ -581,6 +581,40 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
     }
 
     /**
+     * Show completion leaderboard with animated elements
+     * @param title Main title ("HIGH SCORE!", "COMPLETED!", etc.)
+     * @param metrics Object with time, xp, level info
+     * @param leaderboard Array of top 3 players with position, name, time
+     * @param playerScore Player's score if not in top 3
+     * @param duration Duration to show in milliseconds (default: 7000)
+     */
+    public showCompletionLeaderboard(
+        title: string, 
+        metrics: { time?: string; xp?: string; level?: string }, 
+        leaderboard: Array<{ position: number; name: string; time: string }>, 
+        playerScore?: { position: number; time: string }, 
+        duration: number = 7000
+    ): void {
+        console.log('[ObbyPlayerEntity] Sending completion leaderboard data:', {
+            type: 'showCompletionLeaderboard',
+            title,
+            metrics,
+            leaderboard,
+            playerScore,
+            duration
+        });
+        
+        this.player.ui.sendData({
+            type: 'showCompletionLeaderboard',
+            title,
+            metrics,
+            leaderboard,
+            playerScore,
+            duration
+        });
+    }
+
+    /**
      * Run a full countdown sequence for this player (3, 2, 1, GO!)
      * @param onComplete Optional callback when countdown finishes
      */

@@ -15,6 +15,10 @@ class BlockInventoryPanel {
         this.currentPlayerState = 'LOBBY';
         this.isEnabled = false;
         
+        // Level-based unlocking
+        this.playerLevel = 1;
+        this.unlockedBlocks = ['platform', 'start', 'finish', 'sand', 'ice']; // Fun blocks available from start
+        
         // Define available blocks and obstacles
         this.initializeBlocks();
         this.initializeObstacles();
@@ -40,11 +44,23 @@ class BlockInventoryPanel {
             window.hytopia.onData((data) => {
                 if (data.type === 'playerStateChanged') {
                     this.onPlayerStateChanged(data.state, data.plotIndex, data.isMobile, data.mobileControls);
+                } else if (data.type === 'levelUpdate') {
+                    this.onLevelUpdate(data);
                 }
             });
         }
         
         console.log('[BlockInventoryPanel] Initialized successfully.');
+    }
+
+    onLevelUpdate(data) {
+        this.playerLevel = data.level || 1;
+        console.log('[BlockInventoryPanel] Player level updated to:', this.playerLevel);
+        
+        // Update the grid if inventory is open
+        if (this.inventoryOpen) {
+            this.generateBlockGrid();
+        }
     }
 
     onPlayerStateChanged(newState, plotIndex, isMobile, mobileControls) {
@@ -84,29 +100,27 @@ class BlockInventoryPanel {
     }
 
     initializeBlocks() {
-        // Obbys Creator Block Types with point costs
+        // Obbys Creator Block Types with point costs and level requirements
         this.availableBlocks = [
-            // Required blocks (0 points)
-            { id: 100, name: 'start', textureUri: 'blocks/start.png', cost: 0, type: 'start' },
-            { id: 101, name: 'goal', textureUri: 'blocks/goal.png', cost: 0, type: 'goal' },
+            // Level 1 - Required blocks (0 points)
+            { id: 100, name: 'start', textureUri: 'blocks/start.png', cost: 0, type: 'start', level: 1 },
+            { id: 101, name: 'goal', textureUri: 'blocks/goal.png', cost: 0, type: 'goal', level: 1 },
+            { id: 1, name: 'platform', textureUri: 'blocks/stone-bricks.png', cost: 1, type: 'platform', level: 1 },
+            { id: 17, name: 'sand', textureUri: 'blocks/sand.png', cost: 1, type: 'sand', level: 1 },
+            { id: 9, name: 'ice', textureUri: 'blocks/ice.png', cost: 1, type: 'ice', level: 1 },
             
-            // Basic movement blocks (1 point each)
-            { id: 1, name: 'platform', textureUri: 'blocks/stone-bricks.png', cost: 1, type: 'platform' },
-            { id: 9, name: 'ice', textureUri: 'blocks/ice.png', cost: 1, type: 'ice' },
-            { id: 17, name: 'sand', textureUri: 'blocks/sand.png', cost: 1, type: 'sand' },
-            { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines' },
+            // Level 3 - Hazard blocks
+            { id: 21, name: 'lava', textureUri: 'blocks/lava.png', cost: 2, type: 'void-sand', level: 3 },
             
-            // Hazard blocks (2 points each)
-            { id: 21, name: 'lava', textureUri: 'blocks/lava.png', cost: 2, type: 'void-sand' },
+            // Level 4 - Conveyor blocks
+            { id: 104, name: 'conveyor backward', textureUri: 'blocks/conveyor-z-', cost: 2, type: 'conveyor-backward', level: 4 },
+            { id: 105, name: 'conveyor forward', textureUri: 'blocks/conveyor-z+', cost: 2, type: 'conveyor-forward', level: 4 },
+            { id: 109, name: 'conveyor left', textureUri: 'blocks/conveyor-x-', cost: 2, type: 'conveyor-left', level: 4 },
+            { id: 110, name: 'conveyor right', textureUri: 'blocks/conveyor-x+', cost: 2, type: 'conveyor-right', level: 4 },
             
-            // Conveyor blocks (2 points each) - relative to player facing
-            { id: 104, name: 'conveyor backward', textureUri: 'blocks/conveyor-z-', cost: 2, type: 'conveyor-backward' },
-            { id: 105, name: 'conveyor forward', textureUri: 'blocks/conveyor-z+', cost: 2, type: 'conveyor-forward' },
-            { id: 109, name: 'conveyor left', textureUri: 'blocks/conveyor-x-', cost: 2, type: 'conveyor-left' },
-            { id: 110, name: 'conveyor right', textureUri: 'blocks/conveyor-x+', cost: 2, type: 'conveyor-right' },
-            
-            // Special blocks (3 points each)
-            { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass' }
+            // Level 5 - Special blocks
+            { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines', level: 5 },
+            { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass', level: 5 }
         ];
     }
 
@@ -187,12 +201,15 @@ class BlockInventoryPanel {
         const items = this.currentTab === 'blocks' ? this.availableBlocks : this.availableObstacles;
 
         items.forEach((item, index) => {
+            // Check if block is unlocked (obstacles don't have level requirements yet)
+            const isUnlocked = this.currentTab === 'obstacles' || !item.level || this.playerLevel >= item.level;
+            
             const slot = document.createElement('div');
-            slot.className = 'backpack-slot';
+            slot.className = `backpack-slot ${!isUnlocked ? 'locked' : ''}`;
             slot.dataset.itemId = item.id;
             slot.dataset.itemName = item.name;
             slot.dataset.itemType = this.currentTab;
-            slot.title = item.name;
+            slot.title = isUnlocked ? item.name : `${item.name} (Level ${item.level} required)`;
 
             const content = document.createElement('div');
             content.className = 'backpack-slot-content';
@@ -200,10 +217,18 @@ class BlockInventoryPanel {
             if (this.currentTab === 'blocks') {
                 // Block display
                 const blockImage = document.createElement('img');
-                blockImage.className = 'backpack-item-icon';
+                blockImage.className = `backpack-item-icon ${!isUnlocked ? 'locked-icon' : ''}`;
                 blockImage.src = this.getBlockIconPath(item);
                 blockImage.alt = item.name;
                 content.appendChild(blockImage);
+                
+                // Add lock overlay for locked items
+                if (!isUnlocked) {
+                    const lockOverlay = document.createElement('div');
+                    lockOverlay.className = 'lock-overlay';
+                    lockOverlay.innerHTML = '🔒';
+                    content.appendChild(lockOverlay);
+                }
             } else {
                 // Obstacle display with text name instead of image
                 const obstacleText = document.createElement('div');
@@ -378,6 +403,12 @@ class BlockInventoryPanel {
     }
 
     selectItem(slot) {
+        // Check if item is locked
+        if (slot.classList.contains('locked')) {
+            console.log('[BlockInventoryPanel] Cannot select locked item');
+            return;
+        }
+        
         // Remove previous selection
         const previousSelected = this.inventoryElement.querySelector('.backpack-slot.selected');
         if (previousSelected) {
@@ -901,6 +932,25 @@ class BlockInventoryPanel {
                 transition: all 0.2s ease;
                 position: relative;
                 box-shadow: inset 0 1px 2.5px rgba(0,0,0,0.7);
+            }
+            .backpack-slot.locked {
+                background: rgba(139, 69, 19, 0.3);
+                border-color: #8B4513;
+                cursor: not-allowed;
+                opacity: 0.7;
+            }
+            .backpack-item-icon.locked-icon {
+                opacity: 0.4;
+                filter: grayscale(100%) drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+            }
+            .lock-overlay {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                font-size: 8px;
+                color: #FFD700;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                z-index: 1;
             }
             .backpack-slot-content {
                 width: 100%;

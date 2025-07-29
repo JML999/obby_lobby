@@ -13,6 +13,7 @@ import { PlayerStateManager, PlayerGameState } from './PlayerGameState';
 import { ParkingLotPopulator } from './ParkingLotPopulator';
 import { GreeterNpc } from './entities/GreeterNpc';
 import { type NpcConfig } from './entities/DialogNpc';
+import { SimpleLevelingSystem } from './SimpleLevelingSystem';
 // import { TrafficManager } from './TrafficManager'; // TODO: Enable for next version - Traffic system ready but disabled for production
 
 export default class ObbyRegion extends GameRegion {
@@ -23,6 +24,7 @@ export default class ObbyRegion extends GameRegion {
   private obstaclePlacementManager: ObstaclePlacementManager;
   private obstacleCollisionManager: ObstacleCollisionManager;
   private plotSaveManager: PlotSaveManager;
+  private simpleLevelingSystem: SimpleLevelingSystem;
   // TODO: Enable for next version - Traffic system ready but disabled for production
   // private trafficManager?: TrafficManager;
   private maxPlayers: number = 5;
@@ -55,6 +57,7 @@ export default class ObbyRegion extends GameRegion {
     this.obstaclePlacementManager = ObstaclePlacementManager.getInstance();
     this.obstacleCollisionManager = ObstacleCollisionManager.getInstance();
     this.plotSaveManager = PlotSaveManager.getInstance();
+    this.simpleLevelingSystem = SimpleLevelingSystem.getInstance();
     // TODO: Enable for next version - Traffic system ready but disabled for production
     // this.trafficManager = new TrafficManager(this.world);
     
@@ -63,6 +66,8 @@ export default class ObbyRegion extends GameRegion {
     this.obstacleCollisionManager.initializeWorld(this.world);
     this.plotSaveManager.initializeWorld(this.world);
     this.blockPlacementManager.initializeWorld(this.world);
+    this.simpleLevelingSystem.initialize(this.world);
+    console.log(`[ObbyRegion] SimpleLevelingSystem initialized for region ${this.id}`);
     
     // Plot initialization is now handled automatically by PlotManager.assignPlayerToPlotInWorld()
     // when the first player is assigned to this region
@@ -119,6 +124,58 @@ export default class ObbyRegion extends GameRegion {
 
   protected handlePlayerJoin(player: Player): void {
     console.log(`[ObbyRegion] Player ${player.id} joined region ${this.id}`);
+    
+    // Grant daily login XP bonus and get welcome message data
+    const loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
+    console.log(`[ObbyRegion] Processed login bonus for player ${player.id}:`, loginResult);
+    
+    // Send welcome toast messages
+    setTimeout(() => {
+      try {
+        player.ui.sendData({
+          type: 'achievementPopup',
+          title: '🏠 Welcome to the Obby Builder!',
+          bonus: 'Walk into your plot entrance to build, or explore other plots to play!',
+          duration: 3000
+        });
+        console.log(`[ObbyRegion] Sent welcome message to player ${player.id}`);
+      } catch (error) {
+        console.error(`[ObbyRegion] Failed to send welcome message to player ${player.id}:`, error);
+      }
+      
+      // Show daily login bonus if applicable
+      if (loginResult.xpGained > 0) {
+        setTimeout(() => {
+          try {
+            const { MessageManager } = require('./MessageManager');
+            const messageManager = new MessageManager();
+            messageManager.sendRichGameMessage(
+              '🎁 Daily Login Bonus',
+              player,
+              {
+                bonus: loginResult.message,
+                duration: 4000
+              }
+            );
+            console.log(`[ObbyRegion] Sent daily login bonus message to player ${player.id}`);
+          } catch (error) {
+            console.error(`[ObbyRegion] Failed to send daily login bonus to player ${player.id}:`, error);
+          }
+        }, 3500); // 3.5 seconds after welcome message
+        
+        // Send XP UI update after daily bonus
+        setTimeout(() => {
+          this.simpleLevelingSystem.sendLevelUIUpdate(player);
+          console.log(`[ObbyRegion] Sent XP UI update (with login bonus) to player ${player.id}`);
+        }, 5000); // 5 seconds after spawn
+      } else {
+        // No login bonus, send XP UI update sooner
+        setTimeout(() => {
+          this.simpleLevelingSystem.sendLevelUIUpdate(player);
+          console.log(`[ObbyRegion] Sent XP UI update (no login bonus) to player ${player.id}`);
+        }, 2000); // 2 seconds after spawn
+      }
+    }, 1000); // 1 second after spawn
     
     // Start traffic system if this is the first player
     if (this.getPlayerCount() === 1) {
@@ -346,17 +403,59 @@ export default class ObbyRegion extends GameRegion {
       // Check if player has saved obby data
       const hasSavedObby = await this.plotSaveManager.hasPlayerObby(player);
       
+      const displayNumber = this.getDisplayNumber(plotIndex);
+      
       if (hasSavedObby) {
         console.log(`[ObbyRegion] Player ${player.id} has saved obby data, loading it...`);
         
         // Load the player's saved obby onto their assigned plot
         await this.plotSaveManager.loadPlayerObby(player, plotId);
         
-        this.world.chatManager.sendPlayerMessage(player, '🔄 Your saved obby has been loaded!', '00FF00');
+        // Use toast for positive plot loading feedback
+        try {
+          player.ui.sendData({
+            type: 'achievementPopup',
+            title: `🔄 Plot ${displayNumber} - Obby Loaded`,
+            bonus: 'Your saved obby has been loaded and is ready!',
+            duration: 3000
+          });
+          console.log(`[ObbyRegion] Sent plot loaded toast to player ${player.id}`);
+        } catch (error) {
+          // Fallback to chat if toast fails
+          this.world.chatManager.sendPlayerMessage(player, '🔄 Your saved obby has been loaded!', '00FF00');
+          console.error(`[ObbyRegion] Failed to send plot loaded toast:`, error);
+        }
+        
+        // Ensure XP UI is shown after plot is loaded
+        setTimeout(() => {
+          this.simpleLevelingSystem.sendLevelUIUpdate(player);
+          console.log(`[ObbyRegion] Sent XP UI update after plot loaded for player ${player.id}`);
+        }, 500);
+        
         console.log(`[ObbyRegion] Successfully auto-loaded obby for player ${player.id} onto plot ${plotId}`);
       } else {
         console.log(`[ObbyRegion] Player ${player.id} has no saved obby data - plot is ready for building`);
-        this.world.chatManager.sendPlayerMessage(player, '🏠 Your plot is ready for building!', '00FF00');
+        
+        // Use toast for positive plot ready feedback
+        try {
+          player.ui.sendData({
+            type: 'achievementPopup',
+            title: `🏠 Plot ${displayNumber} - Ready to Build`,
+            bonus: 'Your plot is ready for building!',
+            duration: 3000
+          });
+          console.log(`[ObbyRegion] Sent plot ready toast to player ${player.id}`);
+        } catch (error) {
+          // Fallback to chat if toast fails
+          this.world.chatManager.sendPlayerMessage(player, '🏠 Your plot is ready for building!', '00FF00');
+          console.error(`[ObbyRegion] Failed to send plot ready toast:`, error);
+        }
+        
+        // Ensure XP UI is shown after plot is ready
+        setTimeout(() => {
+          this.simpleLevelingSystem.sendLevelUIUpdate(player);
+          console.log(`[ObbyRegion] Sent XP UI update after plot ready for player ${player.id}`);
+        }, 500);
       }
     } catch (error) {
       console.error(`[ObbyRegion] Error processing plot assignment for player ${player.id}:`, error);
