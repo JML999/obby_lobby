@@ -85,12 +85,12 @@ class YourPlotPanel {
         
         // Create level display with XP progress bar
         this.levelContainer.innerHTML = `
-            <div style="background: rgba(255, 255, 255, 0.9); border: 2px solid #4CAF50; border-radius: 8px; padding: 6px 10px; display: inline-block;">
-                <div style="font-size: 12px; margin-bottom: 2px;">Level ${this.currentLevel}</div>
-                <div style="width: 120px; height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden;">
+            <div style="background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(76, 175, 80, 0.8); border-radius: 8px; padding: 6px 10px; display: inline-block;">
+                <div style="font-size: 12px; margin-bottom: 2px; color: #333; font-weight: bold;">Level ${this.currentLevel}</div>
+                <div style="width: 120px; height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
                     <div style="width: ${progressPercentage}%; height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); transition: width 0.3s ease;"></div>
                 </div>
-                <div style="font-size: 10px; color: #666; margin-top: 2px;">${this.currentXP}/${this.nextLevelXP} XP</div>
+                <div style="font-size: 10px; color: #333; margin-top: 2px; font-weight: bold;">${this.currentXP}/${this.nextLevelXP} XP</div>
             </div>
         `;
         

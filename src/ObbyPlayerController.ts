@@ -12,6 +12,7 @@ import { ObstacleCollisionManager } from "./ObstacleCollisionManager";
 import { ObbyPlayManager } from "./ObbyPlayManager";
 import { CashCalculator } from "./CashCalculator";
 import { PlotSaveManager } from "./PlotSaveManager";
+import { MobileDetectionManager } from "./MobileDetectionManager";
 
 // --- Lobby checkpoint positions ---
 const LOBBY_CHECKPOINTS = [
@@ -123,11 +124,12 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         
         // Update last key state immediately to prevent rapid toggling
         this.lastKeyState = { f: originalInput.f, c: originalInput.c };
+        let m = MobileDetectionManager.getInstance().isPlayerMobile(playerEntity.player.id);
         
         // If in fly mode, forward input to the FlyEntity instead of processing normally
         if (this.currentFlyEntity && playerEntity.isFlying) {
             // In building mode, prevent shift (sprint) and space (jump) from interfering with building
-            if (isBuilding && playerEntity.isFlying) {
+            if (isBuilding && playerEntity.isFlying && m) {
                 input.sh = false; // Disable sprint
                 input.sp = false; // Disable jump
             }
