@@ -70,9 +70,13 @@ export class BlockBehaviorManager {
             // Add specific behaviors based on block type
             if (block.isStartBlock) {
                 behavior.onStandingOn = (player, world, blockPos) => {
-                    // Set spawn point for this player
-                    (player as any).spawnPoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
-                    console.log(`[BlockBehaviorManager] Spawn point set at: ${blockPos.x}, ${blockPos.y}, ${blockPos.z}`);
+                    // Set spawn point for this player - center on the block
+                    (player as any).spawnPoint = { 
+                        x: blockPos.x + 0.5,  // Center of block
+                        y: blockPos.y + 1.8,  // Above block with clearance
+                        z: blockPos.z + 0.5   // Center of block
+                    };
+                    console.log(`[BlockBehaviorManager] Set spawn point for player on start block at (${blockPos.x + 0.5}, ${blockPos.y + 1.8}, ${blockPos.z + 0.5})`);
                 };
             }
             
@@ -108,6 +112,12 @@ export class BlockBehaviorManager {
                 behavior.onStandingOn = (player, world, blockPos) => {
                     // Set checkpoint for this player
                     (player as any).checkpoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
+                    
+                    // Also set it on the controller for proper respawn handling
+                    const controller = (player as any).controller;
+                    if (controller && typeof controller.setCheckpoint === 'function') {
+                        controller.setCheckpoint({ x: blockPos.x, y: blockPos.y + 1, z: blockPos.z });
+                    }
                     
                     // Show animated checkpoint text
                     player.showSuccess('CHECKPOINT!', 'Progress saved', 2000);
