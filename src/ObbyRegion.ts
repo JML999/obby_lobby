@@ -125,9 +125,49 @@ export default class ObbyRegion extends GameRegion {
   protected handlePlayerJoin(player: Player): void {
     console.log(`[ObbyRegion] Player ${player.id} joined region ${this.id}`);
     
-    // Grant daily login XP bonus and get welcome message data
-    const loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
-    console.log(`[ObbyRegion] Processed login bonus for player ${player.id}:`, loginResult);
+    // Variable to store login result for later use
+    let loginResult: { xpGained: number; message: string; isNewDay: boolean } | null = null;
+    
+    // Load player's saved level data asynchronously without blocking spawn
+    console.log(`[ObbyRegion] 🔄 Starting loadPlayerData for ${player.id}`);
+    this.simpleLevelingSystem.loadPlayerData(player).then(() => {
+      console.log(`[ObbyRegion] ✅ loadPlayerData completed for ${player.id}`);
+      
+      // Grant daily login XP bonus and get welcome message data
+      loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
+      console.log(`[ObbyRegion] Processed login bonus for player ${player.id}:`, loginResult);
+      
+      // Send XP UI update with loaded data
+      this.simpleLevelingSystem.sendLevelUIUpdate(player);
+      console.log(`[ObbyRegion] Sent XP UI update with loaded data to player ${player.id}`);
+      
+      // Show daily login bonus if applicable (moved here to ensure loginResult is available)
+      if (loginResult.xpGained > 0) {
+        setTimeout(() => {
+          try {
+            const { MessageManager } = require('./MessageManager');
+            const messageManager = new MessageManager();
+            messageManager.sendRichGameMessage(
+              '🎁 Daily Login Bonus',
+              player,
+              {
+                bonus: loginResult!.message,
+                duration: 4000
+              }
+            );
+            console.log(`[ObbyRegion] Sent daily login bonus message to player ${player.id}`);
+          } catch (error) {
+            console.error(`[ObbyRegion] Failed to send daily login bonus to player ${player.id}:`, error);
+          }
+        }, 4500); // 4.5 seconds after spawn to allow for welcome message
+      }
+    }).catch(error => {
+      console.error(`[ObbyRegion] ❌ Error loading player data for ${player.id}:`, error);
+      
+      // Fallback: still process login and send UI update with defaults
+      loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
+      this.simpleLevelingSystem.sendLevelUIUpdate(player);
+    });
     
     // Send welcome toast messages
     setTimeout(() => {
@@ -141,39 +181,6 @@ export default class ObbyRegion extends GameRegion {
         console.log(`[ObbyRegion] Sent welcome message to player ${player.id}`);
       } catch (error) {
         console.error(`[ObbyRegion] Failed to send welcome message to player ${player.id}:`, error);
-      }
-      
-      // Show daily login bonus if applicable
-      if (loginResult.xpGained > 0) {
-        setTimeout(() => {
-          try {
-            const { MessageManager } = require('./MessageManager');
-            const messageManager = new MessageManager();
-            messageManager.sendRichGameMessage(
-              '🎁 Daily Login Bonus',
-              player,
-              {
-                bonus: loginResult.message,
-                duration: 4000
-              }
-            );
-            console.log(`[ObbyRegion] Sent daily login bonus message to player ${player.id}`);
-          } catch (error) {
-            console.error(`[ObbyRegion] Failed to send daily login bonus to player ${player.id}:`, error);
-          }
-        }, 3500); // 3.5 seconds after welcome message
-        
-        // Send XP UI update after daily bonus
-        setTimeout(() => {
-          this.simpleLevelingSystem.sendLevelUIUpdate(player);
-          console.log(`[ObbyRegion] Sent XP UI update (with login bonus) to player ${player.id}`);
-        }, 5000); // 5 seconds after spawn
-      } else {
-        // No login bonus, send XP UI update sooner
-        setTimeout(() => {
-          this.simpleLevelingSystem.sendLevelUIUpdate(player);
-          console.log(`[ObbyRegion] Sent XP UI update (no login bonus) to player ${player.id}`);
-        }, 2000); // 2 seconds after spawn
       }
     }, 1000); // 1 second after spawn
     
@@ -206,9 +213,10 @@ export default class ObbyRegion extends GameRegion {
 
     // Create and spawn the player entity
     const controller = new ObbyPlayerController(this.world);
-    // Enable fall detection for lobby/build mode
+    // Enable fall detection for lobby/build mode with two-stage system
     controller.setFallDetectionEnabled(true);
-    controller.setFallThreshold(-5);
+    controller.setFallThreshold(-2);     // First stage: force reset
+    controller.setDeathThreshold(-10);   // Second stage: full respawn
     const playerEntity = new ObbyPlayerEntity(player, this.world, controller);
     playerEntity.spawn(this.world, spawnPos);
     console.log(`[ObbyRegion] Player entity spawned for ${player.id} in region ${this.id}`);

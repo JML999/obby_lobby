@@ -38,13 +38,16 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     private isFirstPersonMode: boolean = false; // Track camera mode
     private _stepAudio: Audio | undefined; // Step audio for animations
     
-    // Fall detection and respawn properties
-    private fallThresholdY: number = -5; // Y position threshold for considering a fall
+    // Fall detection and respawn properties - TWO STAGE SYSTEM
+    private fallThresholdY: number = -2; // First threshold for force reset
+    private deathThresholdY: number = -10; // Second threshold for actual respawn
     private lastCheckpointPosition: Vector3Like | null = null;
     private fallDetectionEnabled: boolean = false; // Disabled by default, enabled in play mode
     private isRespawning: boolean = false;
     private isDead: boolean = false;
     private pauseMovement: boolean = false;
+    private movementRestricted: boolean = false; // New: track movement restriction
+    private movementRestrictedUntil: number = 0; // New: when movement restriction ends
     private playerEntity?: ObbyPlayerEntity;
     
     // Ice skating physics properties
@@ -117,6 +120,19 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             playerEntity.setLinearVelocity({ x: 0, y: 0, z: 0 });
             // Still allow camera movement but block all input
             return;
+        }
+        
+        // Handle movement restriction (used after respawn)
+        if (this.movementRestricted && Date.now() < this.movementRestrictedUntil) {
+            // Block WASD movement but allow camera and other inputs
+            input.w = false;
+            input.a = false;
+            input.s = false;
+            input.d = false;
+        } else if (this.movementRestricted) {
+            // Movement restriction period has ended
+            this.movementRestricted = false;
+            this.movementRestrictedUntil = 0;
         }
         
         // Handle fly mode toggle first
@@ -1421,7 +1437,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     // ============== FALL DETECTION AND RESPAWN METHODS ==============
 
     /**
-     * Check if the player has fallen below the threshold
+     * Check if the player has fallen below the thresholds - TWO STAGE SYSTEM
      */
     private checkForFall(entity: ObbyPlayerEntity): void {
         if (!entity || !entity.isSpawned) return;
@@ -1429,60 +1445,70 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         // Skip fall detection if disabled or on cooldown
         if (!this.fallDetectionEnabled || this.isRespawning) return;
 
-        // Check if player has fallen below threshold
-        if (entity.position.y < this.fallThresholdY) {
+        const playerY = entity.position.y;
+        
+        // TWO-STAGE FALL DETECTION
+        if (playerY < this.deathThresholdY) {
+            // Stage 2: Below -10, trigger actual respawn
             this.handleFall(entity);
+        } else if (playerY < this.fallThresholdY) {
+            // Stage 1: Below -2, force reset position immediately
+            this.handleForceReset(entity);
         }
     }
 
     /**
-     * Handle player fall (respawn at checkpoint)
+     * Handle force reset at Y=-2 (first stage)
+     */
+    private handleForceReset(entity: ObbyPlayerEntity): void {
+        if (!entity.isSpawned || !entity.world || this.isRespawning) return;
+        
+        console.log(`[ObbyPlayerController] Force reset triggered at Y=${entity.position.y} for player ${entity.player.id}`);
+        
+        // Get respawn position with smart priority system
+        const respawnPos = this.getSmartRespawnPosition(entity);
+        
+        // Stop the player and reset position
+        entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
+        entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
+        entity.setPosition(respawnPos);
+        
+        // Restrict movement for 1.25 seconds
+        this.restrictMovement(1250);
+        
+        // Show message
+        entity.world.chatManager.sendPlayerMessage(entity.player, '⚡ Position reset!', 'FFAA00');
+    }
+
+    /**
+     * Handle player fall (respawn at checkpoint) - Y=-10 (second stage)
      */
     public handleFall(entity: ObbyPlayerEntity): void {
         if (!entity.isSpawned || !entity.world || this.isDead) return;
 
         this.isDead = true;
         
+        console.log(`[ObbyPlayerController] Full respawn triggered at Y=${entity.position.y} for player ${entity.player.id}`);
+        
         // Stop the player
         entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
         entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
 
-        // --- Custom respawn logic for lobby/build mode ---
-        const playerId = entity.player.id;
-        const playerState = this.playerStateManager.getCurrentState(playerId);
-        if (playerState === PlayerGameState.LOBBY || playerState === PlayerGameState.BUILDING) {
-            console.log(`[DEBUG] Lobby/build mode fall detected for player ${playerId} at (${entity.position.x}, ${entity.position.y}, ${entity.position.z})`);
-            // Find closest checkpoint
-            const deathPos = entity.position;
-            let closest = LOBBY_CHECKPOINTS[0];
-            let minDist = Number.POSITIVE_INFINITY;
-            for (const cp of LOBBY_CHECKPOINTS) {
-                const dx = cp.x - deathPos.x;
-                const dy = cp.y - deathPos.y;
-                const dz = cp.z - deathPos.z;
-                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = cp;
-                }
-            }
-            // Respawn slightly above checkpoint
-            const safeCheckpoint = closest || LOBBY_CHECKPOINTS[0] || { x: 0, y: 10, z: 0 };
-            const respawnPos = { x: safeCheckpoint.x, y: safeCheckpoint.y + 2, z: safeCheckpoint.z };
-            entity.setPosition(respawnPos);
-            entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
-            entity.setAngularVelocity({ x: 0, y: 0, z: 0 });
-            // Optional: send a message
-            entity.world.chatManager.sendPlayerMessage(entity.player, '💀 You fell! Respawning at nearest checkpoint...', 'FF6B6B');
-            // Reset respawning flag after a short delay
-            setTimeout(() => {
-                this.isRespawning = false;
-                this.isDead = false;
-            }, 1000);
-            return;
-        }
-        // --- Default: respawn at last checkpoint (e.g. in play mode) ---
-        this.respawnAtCheckpoint(entity);
+        // Get respawn position with smart priority system
+        const respawnPos = this.getSmartRespawnPosition(entity);
+        entity.setPosition(respawnPos);
+        
+        // Restrict movement for 1.25 seconds
+        this.restrictMovement(1250);
+        
+        // Show message
+        entity.world.chatManager.sendPlayerMessage(entity.player, '💀 You fell! Respawning...', 'FF6B6B');
+        
+        // Reset respawning flag after a short delay
+        setTimeout(() => {
+            this.isRespawning = false;
+            this.isDead = false;
+        }, 1000);
     }
 
     /**
@@ -1508,10 +1534,108 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     }
 
     /**
-     * Set the fall threshold Y position
+     * Get smart respawn position with priority system - ENHANCED WITH START BLOCK DETECTION
+     */
+    private getSmartRespawnPosition(entity: ObbyPlayerEntity): Vector3Like {
+        const playerId = entity.player.id;
+        const playerState = this.playerStateManager.getCurrentState(playerId);
+        
+        console.log(`[RESPAWN_DEBUG] ===== SMART RESPAWN POSITION CALCULATION =====`);
+        console.log(`[RESPAWN_DEBUG] Player ${playerId} state: ${playerState}`);
+        console.log(`[RESPAWN_DEBUG] Player fell at: (${entity.position.x.toFixed(2)}, ${entity.position.y.toFixed(2)}, ${entity.position.z.toFixed(2)})`);
+        
+        // Check all possible respawn sources
+        const controllerCheckpoint = this.lastCheckpointPosition;
+        const entityCheckpoint = (entity as any).checkpoint;
+        const entitySpawnPoint = (entity as any).spawnPoint;
+        
+        console.log(`[RESPAWN_DEBUG] Controller checkpoint: ${controllerCheckpoint ? `(${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})` : 'null'}`);
+        console.log(`[RESPAWN_DEBUG] Entity checkpoint: ${entityCheckpoint ? `(${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})` : 'null'}`);
+        console.log(`[RESPAWN_DEBUG] Entity spawn point: ${entitySpawnPoint ? `(${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})` : 'null'}`);
+        
+        // Priority 1: Controller checkpoint (from checkpoint blocks)
+        if (controllerCheckpoint) {
+            console.log(`[RESPAWN_DEBUG] Using controller checkpoint: (${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})`);
+            // Controller checkpoint is already properly centered, don't modify it
+            console.log(`[RESPAWN_DEBUG] Final checkpoint respawn position: (${controllerCheckpoint.x}, ${controllerCheckpoint.y}, ${controllerCheckpoint.z})`);
+            return controllerCheckpoint;
+        }
+        
+        // Priority 2: Entity checkpoint (backup checkpoint system)
+        if (entityCheckpoint) {
+            console.log(`[RESPAWN_DEBUG] Using entity checkpoint: (${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})`);
+            // Entity checkpoint is already properly centered, don't modify it
+            console.log(`[RESPAWN_DEBUG] Final entity checkpoint respawn position: (${entityCheckpoint.x}, ${entityCheckpoint.y}, ${entityCheckpoint.z})`);
+            return entityCheckpoint;
+        }
+        
+        // Priority 3: Entity spawn point (from start blocks)
+        if (entitySpawnPoint) {
+            console.log(`[RESPAWN_DEBUG] Using entity spawn point: (${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})`);
+            // Don't modify spawn point - it's already correctly positioned by BlockBehaviorManager
+            console.log(`[RESPAWN_DEBUG] Final spawn point respawn position: (${entitySpawnPoint.x}, ${entitySpawnPoint.y}, ${entitySpawnPoint.z})`);
+            return {
+                x: entitySpawnPoint.x,
+                y: entitySpawnPoint.y,
+                z: entitySpawnPoint.z
+            };
+        }
+        
+        // Priority 4: Search for nearby start blocks (ENHANCED LOGIC)
+        console.log(`[RESPAWN_DEBUG] No pre-set spawn points found, searching for nearby start blocks`);
+        const nearbyStartBlock = this.findNearbyStartBlock(entity.position);
+        if (nearbyStartBlock) {
+            console.log(`[RESPAWN_DEBUG] Found nearby start block at (${nearbyStartBlock.x}, ${nearbyStartBlock.y}, ${nearbyStartBlock.z}), using as respawn point`);
+            const respawnPos = {
+                x: nearbyStartBlock.x + 0.5,  // Center on block
+                y: nearbyStartBlock.y + 1.8,  // Above block with clearance
+                z: nearbyStartBlock.z + 0.5   // Center on block
+            };
+            console.log(`[RESPAWN_DEBUG] Final start block respawn position: (${respawnPos.x}, ${respawnPos.y}, ${respawnPos.z})`);
+            return respawnPos;
+        }
+        
+        // Priority 5: Lobby checkpoints (for lobby/build mode)
+        if (playerState === PlayerGameState.LOBBY || playerState === PlayerGameState.BUILDING) {
+            console.log(`[RESPAWN_DEBUG] No start blocks found, calculating closest lobby checkpoint`);
+            // Use current position but add +10 to Y for checkpoint calculation
+            const checkpointCalcPos = { 
+                x: entity.position.x, 
+                y: entity.position.y + 10, 
+                z: entity.position.z 
+            };
+            const respawnPos = this.calculateClosestLobbyCheckpoint(checkpointCalcPos);
+            console.log(`[RESPAWN_DEBUG] Final lobby checkpoint respawn position: (${respawnPos.x}, ${respawnPos.y}, ${respawnPos.z})`);
+            return respawnPos;
+        }
+        
+        // Priority 6: Default fallback
+        console.log(`[RESPAWN_DEBUG] Using default fallback position: (0, 10, 0)`);
+        console.log(`[RESPAWN_DEBUG] ===== END SMART RESPAWN POSITION CALCULATION =====`);
+        return { x: 0, y: 10, z: 0 };
+    }
+    
+    /**
+     * Restrict player movement for a specified duration
+     */
+    public restrictMovement(durationMs: number): void {
+        this.movementRestricted = true;
+        this.movementRestrictedUntil = Date.now() + durationMs;
+        console.log(`[ObbyPlayerController] Movement restricted for ${durationMs}ms`);
+    }
+
+    /**
+     * Set the fall threshold Y position (first stage at -2)
      */
     public setFallThreshold(y: number): void {
         this.fallThresholdY = y;
+    }
+    
+    /**
+     * Set the death threshold Y position (second stage at -10)
+     */
+    public setDeathThreshold(y: number): void {
+        this.deathThresholdY = y;
     }
 
     /**
@@ -1544,6 +1668,86 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     }
 
     /**
+     * Find a nearby start block that the player might have fallen from - ENHANCED DETECTION
+     */
+    private findNearbyStartBlock(playerPosition: Vector3Like): Vector3Like | null {
+        const searchRadius = 15; // Search within 15 blocks horizontally
+        const searchHeight = 20; // Search up to 20 blocks above the player
+        
+        console.log(`[RESPAWN_DEBUG] Searching for start blocks near player position (${playerPosition.x.toFixed(2)}, ${playerPosition.y.toFixed(2)}, ${playerPosition.z.toFixed(2)})`);
+        console.log(`[RESPAWN_DEBUG] Search parameters: radius=${searchRadius}, height=${searchHeight}`);
+        
+        let closestStartBlock: Vector3Like | null = null;
+        let closestDistance = Number.POSITIVE_INFINITY;
+        
+        // Search in a cylinder above the player's position
+        for (let y = 0; y <= searchHeight; y++) {
+            for (let x = -searchRadius; x <= searchRadius; x++) {
+                for (let z = -searchRadius; z <= searchRadius; z++) {
+                    // Skip positions outside the circular search area
+                    const horizontalDistance = Math.sqrt(x * x + z * z);
+                    if (horizontalDistance > searchRadius) continue;
+                    
+                    const checkPos = {
+                        x: Math.floor(playerPosition.x) + x,
+                        y: Math.floor(playerPosition.y) + y,
+                        z: Math.floor(playerPosition.z) + z
+                    };
+                    
+                    const blockId = this.world.chunkLattice.getBlockId(checkPos);
+                    if (blockId === 100) { // Start block ID
+                        // Calculate 3D distance to find the closest start block
+                        const totalDistance = Math.sqrt(x * x + y * y + z * z);
+                        console.log(`[RESPAWN_DEBUG] Found start block at (${checkPos.x}, ${checkPos.y}, ${checkPos.z}), distance: ${totalDistance.toFixed(2)}`);
+                        
+                        if (totalDistance < closestDistance) {
+                            closestDistance = totalDistance;
+                            closestStartBlock = checkPos;
+                            console.log(`[RESPAWN_DEBUG] New closest start block found at distance ${totalDistance.toFixed(2)}`);
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (closestStartBlock) {
+            console.log(`[RESPAWN_DEBUG] Selected closest start block: (${closestStartBlock.x}, ${closestStartBlock.y}, ${closestStartBlock.z}) at distance ${closestDistance.toFixed(2)}`);
+        } else {
+            console.log(`[RESPAWN_DEBUG] No start blocks found within search radius`);
+        }
+        
+        return closestStartBlock;
+    }
+    
+    /**
+     * Calculate the closest lobby checkpoint to a given position - ENHANCED CALCULATION
+     */
+    private calculateClosestLobbyCheckpoint(fromPosition: Vector3Like): Vector3Like {
+        console.log(`[RESPAWN_DEBUG] Calculating closest lobby checkpoint from: (${fromPosition.x.toFixed(2)}, ${fromPosition.y.toFixed(2)}, ${fromPosition.z.toFixed(2)})`);
+        console.log(`[RESPAWN_DEBUG] Available lobby checkpoints: ${LOBBY_CHECKPOINTS.length}`);
+        
+        // Find closest checkpoint
+        let closest = LOBBY_CHECKPOINTS[0];
+        let minDist = Number.POSITIVE_INFINITY;
+        for (let i = 0; i < LOBBY_CHECKPOINTS.length; i++) {
+            const cp = LOBBY_CHECKPOINTS[i];
+            const dx = cp.x - fromPosition.x;
+            const dy = cp.y - fromPosition.y;
+            const dz = cp.z - fromPosition.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            console.log(`[RESPAWN_DEBUG] Checkpoint ${i}: (${cp.x}, ${cp.y}, ${cp.z}) - Distance: ${dist.toFixed(2)}`);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = cp;
+                console.log(`[RESPAWN_DEBUG] New closest checkpoint found: ${i}`);
+            }
+        }
+        
+        console.log(`[RESPAWN_DEBUG] Selected closest lobby checkpoint: (${closest.x}, ${closest.y}, ${closest.z}) with distance ${minDist.toFixed(2)}`);
+        return { x: closest.x, y: closest.y + 2, z: closest.z }; // Add +2 for safe spawning height
+    }
+
+    /**
      * Get the player entity associated with this controller
      */
     public getPlayerEntity(): ObbyPlayerEntity {
@@ -1551,6 +1755,254 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             throw new Error('Player entity not attached to PlayerController');
         }
         return this.playerEntity;
+    }
+
+    // ============== ADVANCED VINE CLIMBING METHODS ==============
+
+    private applyClimbingPhysics(entity: DefaultPlayerEntity, input: PlayerInput, cameraOrientation: PlayerCameraOrientation, deltaTimeMs: number): void {
+        const { w, a, s, d, sp, sh } = input;
+        let { yaw } = cameraOrientation;
+        
+        // Override yaw with locked rotation if climbing
+        if ((entity as any).climbingRotationLocked && (entity as any).climbingStartRotation) {
+            const lockedRotation = (entity as any).climbingStartRotation;
+            yaw = Math.atan2(2 * (lockedRotation.w * lockedRotation.y + lockedRotation.x * lockedRotation.z), 
+                            1 - 2 * (lockedRotation.y * lockedRotation.y + lockedRotation.z * lockedRotation.z));
+        }
+        
+        // Position-based climbing to prevent physics interference
+        const climbSpeed = 0.03; // Reduced from 0.1 to 0.05 for slower climbing
+        const traverseSpeed = 0.03; // Increased from 0.03 to 0.08 for more responsive horizontal movement
+        const jumpBackForce = 5.0;
+        
+        // Allow jumping at any time while climbing (no cooldown, no A/D restriction)
+        if (sp && this.canJump(this)) {
+            const isNearTop = this.isNearTopOfVineWall(entity);
+            
+            if (isNearTop) {
+                // Near the top - just jump up to get over the wall
+                entity.setLinearVelocity({ 
+                    x: 0, 
+                    y: this.jumpVelocity * 1.2, // Slightly higher jump
+                    z: 0 
+                });
+            } else {
+                // In the middle - jump back and out to escape
+                const jumpBackX = -Math.sin(yaw) * jumpBackForce;
+                const jumpBackZ = -Math.cos(yaw) * jumpBackForce;
+                
+                entity.setLinearVelocity({ 
+                    x: jumpBackX, 
+                    y: this.jumpVelocity, 
+                    z: jumpBackZ 
+                });
+            }
+            
+            // Start with jump-pre animation
+            entity.startModelOneshotAnimations(['jump-pre']);
+            
+            // After a short delay, transition to jump-loop
+            setTimeout(() => {
+                if (!(entity as any).isClimbing) { // Only if still not climbing
+                   // entity.startModelOneshotAnimations(['jump-loop']);
+                }
+            }, 200);
+            
+            // Unlock rotation when climbing stops
+            (entity as any).climbingRotationLocked = false;
+            (entity as any).climbingStartRotation = null;
+            
+            (entity as any).isClimbing = false;
+            return;
+        }
+        
+        // Get vine navigation data for smart movement
+        const vineData = this.getVineNavigationData(entity);
+        
+        // Get current position
+        const currentPos = entity.position;
+        let newPos = { x: currentPos.x, y: currentPos.y, z: currentPos.z };
+        
+        if (w || s || a || d) {
+            // Set cooldown for next climbing jump
+            if (!entity.modelLoopedAnimations.has('climbing')) {  
+                entity.startModelLoopedAnimations(['climbing']);
+            }
+        }
+        
+        // Handle vertical climbing with camera-relative movement
+        if (w) { // W - climb up (forward relative to camera)
+            // Always allow moving up when climbing - don't check for vines above
+            newPos.y += climbSpeed;
+        } else if (s) { // S - climb down (backward relative to camera)
+            // Always allow moving down when climbing - don't check for vines below
+            newPos.y -= climbSpeed;
+        } else {
+            // No vertical input - only apply upward force if there are vines below to prevent sliding
+            if (vineData.hasVinesBelow) {
+                newPos.y += 0.005; // Reduced upward force to prevent going up at top
+            }
+        }
+        
+        // Handle horizontal movement - use existing vine detection but make it camera-relative
+        if (a || d) {
+            
+            // Use the existing vine navigation data to check for vines
+            // But determine movement direction based on camera orientation
+            let canMoveLeft = false;
+            let canMoveRight = false;
+            
+            // Check if there are vines in the camera-relative directions
+            if (vineData.hasVinesLeft || vineData.hasVinesRight || vineData.hasVinesFront || vineData.hasVinesBack) {
+                // There are vines around us, so we can move
+                canMoveLeft = true;
+                canMoveRight = true;
+            }
+            
+            if (a && canMoveLeft) {
+                // Move left relative to camera direction
+                newPos.x -= traverseSpeed * Math.cos(yaw);
+                newPos.z += traverseSpeed * Math.sin(yaw);
+            } else if (d && canMoveRight) {
+                // Move right relative to camera direction
+                newPos.x += traverseSpeed * Math.cos(yaw);
+                newPos.z -= traverseSpeed * Math.sin(yaw);
+            } else {
+            }
+        }
+        
+        // Apply position change and zero out velocity to prevent physics interference
+        entity.setPosition(newPos);
+        entity.setLinearVelocity({ x: 0, y: 0, z: 0 });
+        
+        // Lock rotation during climbing to prevent excessive spinning
+        // Keep the player facing the same direction they were when they started climbing
+        if (!(entity as any).climbingRotationLocked) {
+            // Store the initial rotation when climbing starts
+            (entity as any).climbingRotationLocked = true;
+            (entity as any).climbingStartRotation = entity.rotation;
+        }
+        
+        // Apply the stored rotation to keep player stable
+        if ((entity as any).climbingStartRotation) {
+            entity.setRotation((entity as any).climbingStartRotation);
+        }
+    }
+
+    private getVineNavigationData(entity: DefaultPlayerEntity): {
+        hasVinesAbove: boolean;
+        hasVinesBelow: boolean;
+        hasVinesLeft: boolean;
+        hasVinesRight: boolean;
+        hasVinesFront: boolean;
+        hasVinesBack: boolean;
+    } {
+        const playerPos = entity.position;
+        
+        // Find the vine wall position (where the vines are)
+        let vineWallX = Math.floor(playerPos.x);
+        let vineWallZ = Math.floor(playerPos.z);
+        
+        // Check in front of player for vines (vine wall) - reduced buffer
+        const frontPos = new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 0.5));
+        if (this.world.chunkLattice.getBlockId(frontPos) === 15) {
+            vineWallZ = Math.floor(playerPos.z + 0.5);
+        }
+        
+        // Check behind player for vines (vine wall) - reduced buffer
+        const backPos = new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 0.5));
+        if (this.world.chunkLattice.getBlockId(backPos) === 15) {
+            vineWallZ = Math.floor(playerPos.z - 0.5);
+        }
+        
+        // Check left of player for vines (vine wall) - reduced buffer
+        const leftPos = new Vector3(Math.floor(playerPos.x - 0.5), Math.floor(playerPos.y), Math.floor(playerPos.z));
+        if (this.world.chunkLattice.getBlockId(leftPos) === 15) {
+            vineWallX = Math.floor(playerPos.x - 0.5);
+        }
+        
+        // Check right of player for vines (vine wall) - reduced buffer
+        const rightPos = new Vector3(Math.floor(playerPos.x + 0.5), Math.floor(playerPos.y), Math.floor(playerPos.z));
+        if (this.world.chunkLattice.getBlockId(rightPos) === 15) {
+            vineWallX = Math.floor(playerPos.x + 0.5);
+        }
+        
+        
+        // Now check for vines relative to the vine wall position, not the player position
+        const directions = [
+            { name: 'Above', pos: new Vector3(vineWallX, Math.floor(playerPos.y + 1), vineWallZ) },
+            { name: 'Below', pos: new Vector3(vineWallX, Math.floor(playerPos.y - 1), vineWallZ) },
+            { name: 'Left', pos: new Vector3(vineWallX - 1, Math.floor(playerPos.y), vineWallZ) },
+            { name: 'Right', pos: new Vector3(vineWallX + 1, Math.floor(playerPos.y), vineWallZ) },
+            { name: 'Front', pos: new Vector3(vineWallX, Math.floor(playerPos.y), vineWallZ + 1) },
+            { name: 'Back', pos: new Vector3(vineWallX, Math.floor(playerPos.y), vineWallZ - 1) }
+        ];
+
+        const result = {
+            hasVinesAbove: false,
+            hasVinesBelow: false,
+            hasVinesLeft: false,
+            hasVinesRight: false,
+            hasVinesFront: false,
+            hasVinesBack: false
+        };
+
+        for (const dir of directions) {
+            const blockId = this.world.chunkLattice.getBlockId(dir.pos);
+            if (blockId === 15) { // Vine block
+                result[`hasVines${dir.name}` as keyof typeof result] = true;
+            }
+        }
+
+        return result;
+    }
+
+    private isNearTopOfVineWall(entity: DefaultPlayerEntity): boolean {
+        const playerPos = entity.position;
+        
+        // Find the vine wall position (where the vines are)
+        let vineWallX = Math.floor(playerPos.x);
+        let vineWallZ = Math.floor(playerPos.z);
+        
+        // Check in front of player for vines (vine wall)
+        const frontPos = new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 0.5));
+        if (this.world.chunkLattice.getBlockId(frontPos) === 15) {
+            vineWallZ = Math.floor(playerPos.z + 0.5);
+        }
+        
+        // Check behind player for vines (vine wall)
+        const backPos = new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 0.5));
+        if (this.world.chunkLattice.getBlockId(backPos) === 15) {
+            vineWallZ = Math.floor(playerPos.z - 0.5);
+        }
+        
+        // Check left of player for vines (vine wall)
+        const leftPos = new Vector3(Math.floor(playerPos.x - 0.5), Math.floor(playerPos.y), Math.floor(playerPos.z));
+        if (this.world.chunkLattice.getBlockId(leftPos) === 15) {
+            vineWallX = Math.floor(playerPos.x - 0.5);
+        }
+        
+        // Check right of player for vines (vine wall)
+        const rightPos = new Vector3(Math.floor(playerPos.x + 0.5), Math.floor(playerPos.y), Math.floor(playerPos.z));
+        if (this.world.chunkLattice.getBlockId(rightPos) === 15) {
+            vineWallX = Math.floor(playerPos.x + 0.5);
+        }
+        
+        // Check for vines above the player's current position
+        // Look up to 3 blocks above to see if we're near the top
+        let hasVinesAbove = false;
+        for (let y = 1; y <= 3; y++) {
+            const checkPos = new Vector3(vineWallX, Math.floor(playerPos.y + y), vineWallZ);
+            if (this.world.chunkLattice.getBlockId(checkPos) === 15) {
+                hasVinesAbove = true;
+                break;
+            }
+        }
+        
+        // If there are no vines above within 3 blocks, we're near the top
+        const isNearTop = !hasVinesAbove;
+        
+        return isNearTop;
     }
 
 

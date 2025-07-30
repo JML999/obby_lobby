@@ -111,6 +111,7 @@ export class SimpleLevelingSystem {
    */
   private getOrCreatePlayerData(playerId: string): PlayerLevelData {
     if (!this.playerData.has(playerId)) {
+      // Create default data - will be replaced by loadPlayerData if persisted data exists
       this.playerData.set(playerId, {
         level: 1,
         xp: 0,
@@ -123,6 +124,74 @@ export class SimpleLevelingSystem {
       console.log(`[SimpleLevelingSystem] Created new player data for ${playerId}`);
     }
     return this.playerData.get(playerId)!;
+  }
+
+  /**
+   * Load player data from persistence - COMPLETELY REWRITTEN
+   */
+  public async loadPlayerData(player: Player): Promise<void> {
+    console.log(`[SimpleLevelingSystem] Loading persisted data for player ${player.id}...`);
+    
+    try {
+      const persistedData = await player.getPersistedData();
+      console.log(`[SimpleLevelingSystem] Raw persisted data for ${player.id}:`, JSON.stringify(persistedData, null, 2));
+      
+      let level = 1;
+      let xp = 0;
+      let totalXP = 0;
+      
+      // Check multiple possible locations for level data
+      if (persistedData) {
+        // PRIORITY 1: Check obby.levelData (where the real data is!)
+        if (persistedData.obby && persistedData.obby.levelData) {
+          console.log(`[SimpleLevelingSystem] 🎯 Found obby.levelData (REAL DATA):`, persistedData.obby.levelData);
+          level = persistedData.obby.levelData.level || 1;
+          xp = persistedData.obby.levelData.xp || 0;
+          totalXP = persistedData.obby.levelData.totalXP || 0;
+        }
+        // PRIORITY 2: Check if levelData exists
+        else if (persistedData.levelData) {
+          console.log(`[SimpleLevelingSystem] Found levelData:`, persistedData.levelData);
+          level = persistedData.levelData.level || 1;
+          xp = persistedData.levelData.xp || 0;
+          totalXP = persistedData.levelData.totalXP || 0;
+        }
+        // PRIORITY 3: Check if it's stored under a different key
+        else if (persistedData.level !== undefined) {
+          console.log(`[SimpleLevelingSystem] Found level in root:`, persistedData.level);
+          level = persistedData.level;
+          xp = persistedData.xp || 0;
+          totalXP = persistedData.totalXP || 0;
+        }
+        // PRIORITY 4: Check if it's stored under player data
+        else if (persistedData.playerData) {
+          console.log(`[SimpleLevelingSystem] Found playerData:`, persistedData.playerData);
+          level = persistedData.playerData.level || 1;
+          xp = persistedData.playerData.xp || 0;
+          totalXP = persistedData.playerData.totalXp || 0;
+        }
+      }
+      
+      console.log(`[SimpleLevelingSystem] Extracted values for ${player.id}: Level ${level}, XP ${xp}, Total ${totalXP}`);
+      
+      // Create the player data object
+      const playerData: PlayerLevelData = {
+        level,
+        xp,
+        totalXP,
+        firstTimeFlags: new Set(),
+        lastActiveTime: Date.now(),
+        loginStreak: 1,
+        lastLoginDate: new Date().toDateString()
+      };
+      
+      // Force cache the loaded data
+      this.playerData.set(player.id, playerData);
+      console.log(`[SimpleLevelingSystem] ✅ LOADED AND CACHED: Player ${player.id} - Level ${level}, XP ${xp}, Total ${totalXP}`);
+      
+    } catch (error) {
+      console.error(`[SimpleLevelingSystem] ❌ Error loading player data for ${player.id}:`, error);
+    }
   }
 
   /**
@@ -524,20 +593,81 @@ export class SimpleLevelingSystem {
   /**
    * Save all queued players
    */
-  private saveQueuedPlayers(): void {
+  private async saveQueuedPlayers(): Promise<void> {
     console.log(`[SimpleLevelingSystem] Saving ${this.saveQueue.size} players to persistence`);
     
-    for (const playerId of this.saveQueue) {
-      // TODO: Implement actual persistence save
-      // For now, just log
-      const data = this.playerData.get(playerId);
-      if (data) {
-        console.log(`[SimpleLevelingSystem] Would save player ${playerId}: Level ${data.level}, XP ${data.xp}, Total XP ${data.totalXP}`);
-      }
-    }
-    
+    const playersToSave = Array.from(this.saveQueue);
     this.saveQueue.clear();
     this.saveTimeout = null;
+
+    for (const playerId of playersToSave) {
+      try {
+        await this.savePlayerData(playerId);
+      } catch (error) {
+        console.error(`[SimpleLevelingSystem] Failed to save player ${playerId}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Save player data to persistence - COMPLETELY REWRITTEN
+   */
+  private async savePlayerData(playerId: string): Promise<void> {
+    const data = this.playerData.get(playerId);
+    if (!data) {
+      console.log(`[SimpleLevelingSystem] No data to save for ${playerId}`);
+      return;
+    }
+
+    if (!this.world) {
+      console.log(`[SimpleLevelingSystem] No world available for saving ${playerId}`);
+      return;
+    }
+    
+    const allPlayerEntities = this.world.entityManager.getAllPlayerEntities();
+    const playerEntity = allPlayerEntities.find(pe => pe.player.id === playerId);
+    
+    if (!playerEntity) {
+      console.log(`[SimpleLevelingSystem] Player ${playerId} not found for saving`);
+      return;
+    }
+
+    try {
+      console.log(`[SimpleLevelingSystem] Saving player ${playerId}: Level ${data.level}, XP ${data.xp}, Total ${data.totalXP}`);
+      
+      // Save the data in multiple locations to ensure it's found
+      const saveData = {
+        level: data.level,
+        xp: data.xp,
+        totalXP: data.totalXP,
+        firstTimeFlags: Array.from(data.firstTimeFlags),
+        lastActiveTime: data.lastActiveTime,
+        loginStreak: data.loginStreak,
+        lastLoginDate: data.lastLoginDate
+      };
+
+      // Get existing persisted data first
+      const existingData = await playerEntity.player.getPersistedData() || {};
+      
+      // Update with new level data
+      const updatedData = {
+        ...existingData,
+        levelData: saveData,  // Primary location
+        level: data.level,    // Backup in root
+        xp: data.xp,         // Backup in root
+        totalXP: data.totalXP // Backup in root
+      };
+
+      await playerEntity.player.setPersistedData(updatedData);
+      console.log(`[SimpleLevelingSystem] ✅ SAVED player ${playerId}: Level ${data.level}, XP ${data.xp}, Total ${data.totalXP}`);
+      
+      // Verify the save worked
+      const verification = await playerEntity.player.getPersistedData();
+      console.log(`[SimpleLevelingSystem] 🔍 VERIFICATION for ${playerId}:`, JSON.stringify(verification, null, 2));
+      
+    } catch (error) {
+      console.error(`[SimpleLevelingSystem] ❌ Error saving player data for ${playerId}:`, error);
+    }
   }
 
   /**
@@ -546,6 +676,34 @@ export class SimpleLevelingSystem {
   public sendLevelUIUpdate(player: Player): void {
     const data = this.getOrCreatePlayerData(player.id);
     this.sendXPUIUpdate(player, data);
+  }
+
+  /**
+   * DEBUG: Manually set player level and XP for testing
+   */
+  public debugSetPlayerLevel(player: Player, level: number, xp: number): void {
+    console.log(`[SimpleLevelingSystem] 🔧 DEBUG: Setting player ${player.id} to Level ${level}, XP ${xp}`);
+    
+    const data: PlayerLevelData = {
+      level,
+      xp,
+      totalXP: xp,
+      firstTimeFlags: new Set(),
+      lastActiveTime: Date.now(),
+      loginStreak: 1,
+      lastLoginDate: new Date().toDateString()
+    };
+    
+    // Force set the data
+    this.playerData.set(player.id, data);
+    
+    // Send UI update immediately
+    this.sendXPUIUpdate(player, data);
+    
+    // Save to persistence
+    this.queuePlayerForSave(player.id);
+    
+    console.log(`[SimpleLevelingSystem] 🔧 DEBUG: Set and saved player ${player.id} to Level ${level}, XP ${xp}`);
   }
 
   /**

@@ -12,6 +12,7 @@ export interface BlockBehavior {
     bounceForce?: number; // Bounce/jump force
     isDeadly?: boolean;
     isSlippery?: boolean;
+    isStartBlock?: boolean;
     isSandy?: boolean; // Flag for sand physics
     disappearAfterTime?: number; // Time in ms before block disappears
     regenerateAfterTime?: number; // Time in ms before block regenerates
@@ -69,6 +70,7 @@ export class BlockBehaviorManager {
             
             // Add specific behaviors based on block type
             if (block.isStartBlock) {
+                behavior.isStartBlock = true;
                 behavior.onStandingOn = (player, world, blockPos) => {
                     // Set spawn point for this player - center on the block
                     (player as any).spawnPoint = { 
@@ -329,6 +331,17 @@ export class BlockBehaviorManager {
             behavior.onStandingOn(player, world, blockBelowPos);
         }
 
+        // Always update spawn point when standing on start block, even if we've been on it before
+        // This ensures players can reset their spawn point by revisiting the start block
+        if (behavior.isStartBlock) {
+            (player as any).spawnPoint = { 
+                x: blockBelowPos.x + 0.5,  // Center of block
+                y: blockBelowPos.y + 1.8,  // Above block with clearance
+                z: blockBelowPos.z + 0.5   // Center of block
+            };
+            console.log(`[BlockBehaviorManager] Updated spawn point for player on start block at (${blockBelowPos.x + 0.5}, ${blockBelowPos.y + 1.8}, ${blockBelowPos.z + 0.5})`);
+        }
+
         // Trigger onTouch for continuous effects - but use stricter rules for conveyors
         if (behavior.onTouch) {
             // For conveyor blocks, only trigger if strict conditions are met
@@ -373,41 +386,91 @@ export class BlockBehaviorManager {
 
     private checkVineCollision(player: ObbyPlayerEntity, world: World): void {
         const playerPos = player.position;
+        const wasClimbing = (player as any).isClimbing;
+        
+        // Get player's facing direction for logging
+        const playerRotation = player.rotation;
+        const playerYaw = Math.atan2(2 * (playerRotation.w * playerRotation.y + playerRotation.x * playerRotation.z), 
+                                      1 - 2 * (playerRotation.y * playerRotation.y + playerRotation.z * playerRotation.z));
+        const playerYawDegrees = (playerYaw * 180 / Math.PI + 360) % 360;
+        
+        // Get player velocity for context
+        const velocity = player.linearVelocity;
+        const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
         
         // Check for vines in all directions around the player
         const checkPositions = [
             // Same level - sides only
-            new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), // Right
-            new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), // Left
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 1)), // Front
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 1)), // Back
+            { pos: new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), name: "Right", relativeDir: "East" },
+            { pos: new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y), Math.floor(playerPos.z)), name: "Left", relativeDir: "West" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z + 1)), name: "Front", relativeDir: "North" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y), Math.floor(playerPos.z - 1)), name: "Back", relativeDir: "South" },
             
             // Check one level up - sides only
-            new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), // Right
-            new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), // Left  
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z + 1)), // Front
-            new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z - 1)), // Back
+            { pos: new Vector3(Math.floor(playerPos.x + 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), name: "Right+1", relativeDir: "East+1" },
+            { pos: new Vector3(Math.floor(playerPos.x - 1), Math.floor(playerPos.y + 1), Math.floor(playerPos.z)), name: "Left+1", relativeDir: "West+1" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z + 1)), name: "Front+1", relativeDir: "North+1" },
+            { pos: new Vector3(Math.floor(playerPos.x), Math.floor(playerPos.y + 1), Math.floor(playerPos.z - 1)), name: "Back+1", relativeDir: "South+1" }
         ];
         
         let foundVine = false;
-        for (const checkPos of checkPositions) {
-            const blockId = world.chunkLattice.getBlockId(checkPos);
+        let vineLocations = [];
+        let vineDirection = { x: 0, z: 0 };
+        
+        for (const check of checkPositions) {
+            const blockId = world.chunkLattice.getBlockId(check.pos);
             if (blockId === 15) { // Vine block
-                foundVine = true;
-                console.log(`[VINE COLLISION] Player ${player.player.id} near vine at ${checkPos.x}, ${checkPos.y}, ${checkPos.z} - playerPos: ${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)}, velocity: x=${player.linearVelocity.x.toFixed(2)}, y=${player.linearVelocity.y.toFixed(2)}, z=${player.linearVelocity.z.toFixed(2)}`);
-                console.log(`[VINE COLLISION] Current state - isClimbing=${(player as any).isClimbing}, isOnConveyor=${(player as any).isOnConveyor}, isOnIce=${(player as any).isOnIce}`);
+                vineLocations.push(check.name);
                 
-                // Set climbing flag
-                (player as any).isClimbing = true;
+                // Calculate direction FROM player TO vine position (not vine orientation)
+                const directionToVine = {
+                    x: check.pos.x + 0.5 - playerPos.x, // Use center of vine block
+                    z: check.pos.z + 0.5 - playerPos.z
+                };
                 
-                console.log(`[VINE COLLISION] Set isClimbing=true for player ${player.player.id}`);
-                break;
+                // Calculate angle player should face to look AT the vine
+                const angleToVine = Math.atan2(directionToVine.x, directionToVine.z);
+                const angleToVineDegrees = (angleToVine * 180 / Math.PI + 360) % 360;
+                const angleDifference = Math.abs(((playerYawDegrees - angleToVineDegrees + 180) % 360) - 180);
+                
+                let playerRelativeDirection = "";
+                let isFacingVine = false;
+                
+                // Player must be facing TOWARD the vine (within 45 degrees) to climb
+                // Note: angleDifference near 180° means facing TOWARD the target
+                if (angleDifference > 135) {
+                    playerRelativeDirection = "FACING_VINE";
+                    isFacingVine = true;
+                } else if (angleDifference < 45) {
+                    playerRelativeDirection = "BACK_TO_VINE";
+                } else {
+                    playerRelativeDirection = "SIDE_TO_VINE";
+                }
+                
+                // Only allow climbing if player is facing toward the vine
+                if (isFacingVine) {
+                    foundVine = true;
+                    vineDirection = directionToVine; // Use the calculated direction to vine
+                    // Valid climb: Player facing toward vine
+                } else {
+                    // No climb: Player not facing toward vine
+                }
             }
         }
         
-        if (!foundVine && (player as any).isClimbing) {
-            console.log(`[VINE COLLISION] No vine found - clearing isClimbing for player ${player.player.id}`);
+        if (foundVine && !wasClimbing) {
+            // Starting climb
+            (player as any).isClimbing = true;
+        } else if (foundVine && wasClimbing) {
+            // Continuing climb
+        } else if (!foundVine && wasClimbing) {
+            // Stopping climb - no more vines detected
             (player as any).isClimbing = false;
+        }
+        
+        // Log when vines are detected but no action taken
+        if (foundVine && vineLocations.length > 0) {
+            // Vine climbing state updated
         }
     }
 
