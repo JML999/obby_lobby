@@ -2,6 +2,7 @@ import { Player, World, Vector3 } from 'hytopia';
 import { BlockPlacementManager } from './BlockPlacementManager';
 import { getPlotCoordinates } from './generateObbyHubMap';
 import { PlotBoundaryManager } from './PlotBoundaryManager';
+import { MechanicalBlockManager } from './MechanicalBlockManager';
 // import { PlotSaveManager } from './PlotSaveManager';
 
 interface PlotBuildData {
@@ -154,6 +155,19 @@ export class PlotBuildManager {
      */
     public setPlayerActiveBuildPlot(playerId: string, plotIndex: number | null): void {
         console.log(`[PlotBuildManager] setPlayerActiveBuildPlot called for playerId=${playerId}, plotIndex=${plotIndex}`);
+        
+        // If setting to null (exiting build mode), exit mechanical block build mode
+        if (plotIndex === null) {
+            const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+            mechanicalBlockManager.exitBuildMode();
+            console.log(`[PlotBuildManager] Exited mechanical block build mode for player ${playerId}`);
+        } else {
+            // If entering build mode, enter mechanical block build mode
+            const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+            mechanicalBlockManager.enterBuildMode();
+            console.log(`[PlotBuildManager] Entered mechanical block build mode for player ${playerId}`);
+        }
+        
         this.playerActiveBuildPlots.set(playerId, plotIndex);
         console.log('[PlotBuildManager] playerActiveBuildPlots after set:', Array.from(this.playerActiveBuildPlots.entries()));
     }
@@ -284,6 +298,10 @@ export class PlotBuildManager {
         if (!world) return false;
 
         console.log(`[PlotBuildManager] Exiting build mode for player ${player.id} from plot ${plotIndex}`);
+
+        // Exit mechanical block build mode to resume motion
+        const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+        mechanicalBlockManager.exitBuildMode();
 
         // Disable fly mode before exiting
         this.disablePlayerFlyMode(player);

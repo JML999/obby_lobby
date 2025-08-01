@@ -170,6 +170,18 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
             case 'showBuildTutorial':
                 this.handleShowBuildTutorial(player);
                 break;
+            case 'mechanicalConfigConfirmed':
+                this.handleMechanicalConfigConfirmed(player, data);
+                break;
+            case 'mechanicalConfigCancelled':
+                this.handleMechanicalConfigCancelled(player, data);
+                break;
+            case 'mechanicalPreviewUpdate':
+                this.handleMechanicalPreviewUpdate(player, data);
+                break;
+            case 'mechanicalPreviewStop':
+                this.handleMechanicalPreviewStop(player, data);
+                break;
             case '1':
             case '2':
             case '3':
@@ -671,7 +683,8 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
             21: { id: 21, name: 'void-sand', textureUri: 'blocks/void-sand.png' },
             100: { id: 100, name: 'start', textureUri: 'blocks/start.png' },
             101: { id: 101, name: 'goal', textureUri: 'blocks/goal.png' },
-            102: { id: 102, name: 'checkpoint', textureUri: 'blocks/emerald-block.png' }
+            102: { id: 102, name: 'checkpoint', textureUri: 'blocks/emerald-block.png' },
+            115: { id: 115, name: 'mechanical', textureUri: 'blocks/iron-ore.png' }
         };
 
         return blockMap[blockId] || null;
@@ -1046,5 +1059,125 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
         console.error(`[ObbyPlayerEntity] Could not find any NPC currently interacting with player ${player.id} in world ${world.name}`);
     }
 
+    /**
+     * Handle mechanical config panel confirmation
+     */
+    private handleMechanicalConfigConfirmed(player: Player, data: any): void {
+        if (!player.world) return;
 
-} 
+        console.log(`[ObbyPlayerEntity] Mechanical config confirmed:`, data);
+        
+        try {
+            // Import MechanicalBlockManager and handle the configuration
+            const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+            const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+            mechanicalBlockManager.initializeWorld(player.world);
+            
+            // Create the mechanical entity based on configuration
+            const success = mechanicalBlockManager.onMechanicalConfigConfirmed(data.position, data.config);
+            
+            if (success) {
+                player.world.chatManager.sendPlayerMessage(
+                    player, 
+                    `✅ Created ${data.config.type} mechanical block (${data.config.sizeX}x${data.config.sizeY}x${data.config.sizeZ})`, 
+                    '00FF00'
+                );
+            } else {
+                player.world.chatManager.sendPlayerMessage(
+                    player, 
+                    '❌ Failed to create mechanical block!', 
+                    'FF0000'
+                );
+            }
+        } catch (error) {
+            console.error(`[ObbyPlayerEntity] Error handling mechanical config confirmation:`, error);
+            if (player.world) {
+                player.world.chatManager.sendPlayerMessage(
+                    player, 
+                    '❌ Error creating mechanical block!', 
+                    'FF0000'
+                );
+            }
+        }
+    }
+
+    /**
+     * Handle mechanical config panel cancellation
+     */
+    private handleMechanicalConfigCancelled(player: Player, data: any): void {
+        console.log(`[ObbyPlayerEntity] Mechanical config cancelled for position:`, data.position);
+        
+        if (player.world) {
+            try {
+                // Stop any preview and clean up entities
+                const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+                const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+                mechanicalBlockManager.onMechanicalPreviewStop(data.position);
+                
+                // Remove the mechanical block since user cancelled configuration
+                const position = data.position;
+                const coordinate = {
+                    x: Math.floor(position.x),
+                    y: Math.floor(position.y),
+                    z: Math.floor(position.z)
+                };
+                
+                // Set block to air to remove it
+                player.world.chunkLattice.setBlock(coordinate, 0);
+                
+                player.world.chatManager.sendPlayerMessage(
+                    player, 
+                    '❌ Mechanical block placement cancelled', 
+                    'FFAA00'
+                );
+            } catch (error) {
+                console.error(`[ObbyPlayerEntity] Error handling mechanical config cancellation:`, error);
+            }
+        }
+    }
+
+    /**
+     * Handle mechanical preview updates (real-time configuration changes)
+     */
+    private handleMechanicalPreviewUpdate(player: Player, data: any): void {
+        if (!player.world) return;
+
+        console.log(`[ObbyPlayerEntity] Mechanical preview update:`, data);
+        
+        try {
+            // Import MechanicalBlockManager and update the preview
+            const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+            const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+            mechanicalBlockManager.initializeWorld(player.world);
+            
+            // Update the preview entity with new configuration
+            const success = mechanicalBlockManager.onMechanicalPreviewUpdate(data.position, data.config);
+            
+            if (!success) {
+                console.warn(`[ObbyPlayerEntity] Failed to update mechanical preview at position:`, data.position);
+            }
+        } catch (error) {
+            console.error(`[ObbyPlayerEntity] Error handling mechanical preview update:`, error);
+        }
+    }
+
+    /**
+     * Handle mechanical preview stop (cleanup when panel is closed)
+     */
+    private handleMechanicalPreviewStop(player: Player, data: any): void {
+        if (!player.world) return;
+
+        console.log(`[ObbyPlayerEntity] Mechanical preview stop for position:`, data.position);
+        
+        try {
+            // Import MechanicalBlockManager and stop the preview
+            const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+            const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+            mechanicalBlockManager.onMechanicalPreviewStop(data.position);
+        } catch (error) {
+            console.error(`[ObbyPlayerEntity] Error stopping mechanical preview:`, error);
+        }
+    }
+
+
+}

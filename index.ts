@@ -50,6 +50,9 @@ import { PlotBuildManager } from './src/PlotBuildManager';
 import { PlotSaveManager } from './src/PlotSaveManager';
 import { ObbyPlayManager } from './src/ObbyPlayManager';
 import { MobileDetectionManager } from './src/MobileDetectionManager';
+import { MechanicalBlockManager } from './src/MechanicalBlockManager';
+import { BlockBehaviorManager } from './src/BlockBehaviorManager';
+import { blockRegistry } from './src/BlockRegistry';
 
 
 /**
@@ -72,13 +75,20 @@ startServer(world => {
   console.log('[Server] Game Manager initialized successfully');
 
   /**
-   * Initialize PlayerStateManager, PlotBuildManager, PlotSaveManager, ObbyPlayManager, and MobileDetectionManager
+   * Initialize PlayerStateManager, PlotBuildManager, PlotSaveManager, ObbyPlayManager, MobileDetectionManager, and Mechanical Systems
    */
   const playerStateManager = PlayerStateManager.getInstance();
   const plotBuildManager = PlotBuildManager.getInstance();
   const plotSaveManager = PlotSaveManager.getInstance();
   const obbyPlayManager = ObbyPlayManager.getInstance();
   const mobileDetectionManager = MobileDetectionManager.getInstance();
+  const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+  const blockBehaviorManager = BlockBehaviorManager.getInstance();
+  
+  // Register all block types with Hytopia SDK
+  console.log('[Server] Registering block types with Hytopia SDK...');
+  blockRegistry.registerAllBlockTypes(world);
+  console.log('[Server] Block types registered successfully');
   
   // Initialize managers with the default world
   const { BlockPlacementManager } = require('./src/BlockPlacementManager');
@@ -86,7 +96,8 @@ startServer(world => {
   blockPlacementManager.initializeWorld(world);
   plotSaveManager.initializeWorld(world);
   obbyPlayManager.initializeWorld(world);
-  console.log('[Server] PlayerStateManager, PlotBuildManager, PlotSaveManager, BlockPlacementManager, ObbyPlayManager, and MobileDetectionManager initialized');
+  mechanicalBlockManager.initializeWorld(world);
+  console.log('[Server] All managers initialized successfully');
 
 
 

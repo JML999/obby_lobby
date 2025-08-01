@@ -43,6 +43,15 @@ export class ObstacleCollisionManager {
       small: { width: 5, height: 5, length: 5 },
       large: { width: 5, height: 5, length: 5 }
     },
+    mechanical_piston: {
+      standard: { width: 1, height: 1, length: 1 }
+    },
+    mechanical_wheel: {
+      standard: { width: 1, height: 1, length: 1 }
+    },
+    mechanical_elevator: {
+      standard: { width: 1, height: 1, length: 1 }
+    },
     seesaw: {
       standard: { width: 6, height: 2, length: 2 }
     }
@@ -185,6 +194,11 @@ export class ObstacleCollisionManager {
         break;
       case 'seesaw':
         buffer = 3; // 3 blocks from edge for seesaws
+        break;
+      case 'mechanical_piston':
+      case 'mechanical_wheel':
+      case 'mechanical_elevator':
+        buffer = 1; // 1 block from edge for 1x1x1 mechanical blocks
         break;
       default:
         buffer = 2; // Default 2 blocks for any other obstacles

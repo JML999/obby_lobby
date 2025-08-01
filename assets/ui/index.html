@@ -87,7 +87,8 @@
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobilePlotOptionsPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobileNpcOptionsPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/AchievementPopupPanel.js'),
-                loadScript('{{CDN_ASSETS_URL}}/ui/panels/CompletionLeaderboardPanel.js')
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/CompletionLeaderboardPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MechanicalConfigPanel.js')
             ]);
             
             // Initialize panels
@@ -100,6 +101,9 @@
             window.MobileControlPanel.initialize('mobile-controls-container');
             window.MobilePlotOptionsPanel.initialize();
             window.MobileNpcOptionsPanel.initialize();
+            
+            // Initialize mechanical config panel
+            window.mechanicalConfigPanel = new window.MechanicalConfigPanel();
             
             // New panels auto-initialize themselves
             // AchievementPopupPanel and CompletionLeaderboardPanel are auto-initialized in their respective files
@@ -184,6 +188,12 @@
                             window.YourPlotPanel.hide();
                             console.log('[UI] Hiding Your Plot panel');
                         }
+                    }
+                } else if (data.type === 'showMechanicalConfig') {
+                    // Show mechanical configuration panel
+                    if (window.mechanicalConfigPanel) {
+                        window.mechanicalConfigPanel.show(data.position, data.config);
+                        console.log('[UI] Showing mechanical config panel for position:', data.position);
                     }
                 }
             });

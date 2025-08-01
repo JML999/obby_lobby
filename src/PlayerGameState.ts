@@ -74,13 +74,18 @@ export class PlayerStateManager {
                 if (state === PlayerGameState.BUILDING) {
                     const { PlotSaveManager } = require('./PlotSaveManager');
                     const { CashCalculator } = require('./CashCalculator');
+                    const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
                     const plotSaveManager = PlotSaveManager.getInstance();
+                    const levelingSystem = SimpleLevelingSystem.getInstance();
                     
                     const currentCash = plotSaveManager.getPlayerCash(player);
+                    const playerLevel = levelingSystem.getPlayerLevel(player.id);
+                    
                     data.cash = currentCash;
                     data.maxCash = CashCalculator.DEFAULT_STARTING_CASH;
+                    data.playerLevel = playerLevel;
                     
-                    console.log(`[PlayerStateManager] Sending build mode cash info: ${currentCash}`);
+                    console.log(`[PlayerStateManager] Sending build mode info: cash=${currentCash}, level=${playerLevel}`);
                 }
 
                 player.ui.sendData(data);

@@ -16,5 +16,19 @@
         "plot_3": "Mon Jul 28 2025"
       }
     }
-  }
+  },
+  "levelData": {
+    "level": 2,
+    "xp": 29,
+    "totalXP": 79,
+    "firstTimeFlags": [
+      "FIRST_BUILD"
+    ],
+    "lastActiveTime": 1754063502420,
+    "loginStreak": 1,
+    "lastLoginDate": "Fri Aug 01 2025"
+  },
+  "level": 2,
+  "xp": 29,
+  "totalXP": 79
 }

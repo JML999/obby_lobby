@@ -13,6 +13,10 @@ import { ObbyPlayManager } from "./ObbyPlayManager";
 import { CashCalculator } from "./CashCalculator";
 import { PlotSaveManager } from "./PlotSaveManager";
 import { MobileDetectionManager } from "./MobileDetectionManager";
+import { MechanicalBlockManager } from "./MechanicalBlockManager";
+import { AttachmentSystem } from "./contraptions/AttachmentSystem";
+import { blockRegistry } from "./BlockRegistry";
+import { MechanicalWheelEntity } from "./entities/MechanicalWheelEntity";
 
 // --- Lobby checkpoint positions ---
 const LOBBY_CHECKPOINTS = [
@@ -166,10 +170,11 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             return;
         }
         
-        // Check if player is on ice, sand, conveyor, or climbing using the block behavior system
+        // Check if player is on ice, sand, conveyor, wheel, or climbing using the block behavior system
         const isOnIce = (playerEntity as any).isOnIce === true;
         const isOnSand = (playerEntity as any).isOnSand === true;
         const isOnConveyor = (playerEntity as any).isOnConveyor === true;
+        const isOnWheel = (playerEntity as any).isOnWheel === true;
         const isClimbing = (playerEntity as any).isClimbing === true;
         
         // Log state transitions for debugging
@@ -199,6 +204,11 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             
             // Then override with conveyor physics
             this.applyConveyorPhysics(entity, input, cameraOrientation, deltaTimeMs);
+        } else if (isOnWheel) {
+            super.tickWithPlayerInput(entity, input, cameraOrientation, deltaTimeMs);
+            
+            // Then override with wheel physics
+            this.applyWheelPhysics(entity, input, cameraOrientation, deltaTimeMs);
         } else if (isOnSand) {
             super.tickWithPlayerInput(entity, input, cameraOrientation, deltaTimeMs);
             
@@ -766,17 +776,40 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
 
     private handleMouseInput(playerEntity: ObbyPlayerEntity, input: PlayerInput): void {
         // Build mode is always enabled in obby game
-        // Left click to place blocks or obstacles (only on press, not hold)
+        // Left click to place blocks/obstacles or make mechanical entities bigger (only on press, not hold)
         if (input.ml && !this.lastMouseState.ml) {
+            // First try normal placement (prioritize block/obstacle placement)
+            let placementSuccess = false;
             if (playerEntity.isObstacleSelected()) {
                 this.handleObstaclePlacement(playerEntity);
+                placementSuccess = true; // Assume obstacle placement attempts are intentional
             } else {
-                this.handleBlockPlacement(playerEntity);
+                // For block placement, we need to check if it actually placed something
+                const targetPosition = this.getTargetPositionForPlacement(playerEntity);
+                if (targetPosition) {
+                    // Check if there's already a block at this position
+                    const existingBlockId = this.world.chunkLattice.getBlockId(targetPosition);
+                    if (existingBlockId === 0) {
+                        // No block exists, place normally
+                        this.handleBlockPlacement(playerEntity);
+                        placementSuccess = true;
+                    }
+                }
+            }
+            
+            // Only try to resize mechanical entities if no placement occurred
+            if (!placementSuccess) {
+                this.tryResizeMechanicalEntity(playerEntity, 'bigger');
             }
         }
-        // Right click to remove blocks (only on press, not hold)
+        // Right click to remove blocks or make mechanical entities smaller (only on press, not hold)
         if (input.mr && !this.lastMouseState.mr) {
-            this.handleBlockRemoval(playerEntity);
+            // First try to remove blocks/obstacles (prioritize chunk lattice)
+            const blockRemovalSuccess = this.handleBlockRemoval(playerEntity);
+            if (!blockRemovalSuccess) {
+                // If no block was found, try to make a mechanical entity smaller (or delete if at minimum size)
+                this.tryResizeMechanicalEntity(playerEntity, 'smaller');
+            }
         }
     }
 
@@ -798,7 +831,8 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                 playerEntity.player, 
                 selectedObstacle.id, 
                 targetPosition,
-                plotId // Pass plotId for boundary checking
+                plotId, // Pass plotId for boundary checking
+                false // isRightClick
             );
             if (success) {
                 // Map obstacle type to entity type for cash calculation
@@ -809,6 +843,12 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                         break;
                     case 'rotating_beam':
                         entityType = 'rotating-beam';
+                        break;
+                    case 'mechanical_piston':
+                        entityType = 'mechanical-piston';
+                        break;
+                    case 'mechanical_wheel':
+                        entityType = 'mechanical-wheel';
                         break;
                     case 'seesaw':
                         entityType = 'obstacle'; // Use generic for now
@@ -856,7 +896,8 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                         playerEntity.player, 
                         selectedObstacle.id, 
                         targetPosition,
-                        plotId // Pass plotId for boundary checking
+                        plotId, // Pass plotId for boundary checking
+                        false // isRightClick
                     );
                     
                     if (success) {
@@ -868,6 +909,12 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                                 break;
                             case 'rotating_beam':
                                 entityType = 'rotating-beam';
+                                break;
+                            case 'mechanical_piston':
+                                entityType = 'mechanical-piston';
+                                break;
+                            case 'mechanical_wheel':
+                                entityType = 'mechanical-wheel';
                                 break;
                             case 'seesaw':
                                 entityType = 'obstacle'; // Use generic for now
@@ -898,13 +945,27 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                     return;
                 }
                 
-                // Place block
-                const success = this.blockPlacementManager.placeBlock(
-                    playerEntity.player, 
-                    targetPosition,
-                    this.world, // Pass world parameter
-                    plotId // Pass plotId for boundary checking
+                // Check if this block can be attached to a nearby mechanical entity
+                console.log(`[ObbyPlayerController] Target position for placement: ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+                const attachmentSuccess = this.tryAttachBlockToMechanicalEntity(
+                    playerEntity,
+                    selectedBlockId,
+                    targetPosition
                 );
+                
+                let success = false;
+                if (attachmentSuccess) {
+                    success = true;
+                    console.log(`[ObbyPlayerController] Block attached to mechanical entity instead of placed in world`);
+                } else {
+                    // Place block normally in chunk lattice
+                    success = this.blockPlacementManager.placeBlock(
+                        playerEntity.player, 
+                        targetPosition,
+                        this.world, // Pass world parameter
+                        plotId // Pass plotId for boundary checking
+                    );
+                }
                 
                 if (success) {
                     // Deduct cash and update UI
@@ -918,7 +979,423 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         }
     }
 
-    private handleBlockRemoval(playerEntity: ObbyPlayerEntity): void {
+    /**
+     * Try to attach a block to a nearby mechanical entity instead of placing it in the world
+     */
+    private tryAttachBlockToMechanicalEntity(
+        playerEntity: ObbyPlayerEntity,
+        blockId: number,
+        targetPosition: Vector3Like
+    ): boolean {
+        console.log(`[ObbyPlayerController] ========== ATTACHMENT DEBUG ==========`);
+        console.log(`[ObbyPlayerController] Trying to attach block ID ${blockId} at target position ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+        
+        // Log player/camera information
+        const playerPos = playerEntity.position;
+        console.log(`[ObbyPlayerController] Player entity position: ${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)}`);
+        
+        // Try to get real player position (might be different if in fly mode)
+        const rawPosition = playerEntity.rawPosition;
+        if (rawPosition) {
+            console.log(`[ObbyPlayerController] Raw player position: ${rawPosition.x.toFixed(2)}, ${rawPosition.y.toFixed(2)}, ${rawPosition.z.toFixed(2)}`);
+        }
+        
+        // Check if we have a parent entity (fly mode)
+        if (playerEntity.parent) {
+            const parentPos = playerEntity.parent.position;
+            console.log(`[ObbyPlayerController] Parent entity position (fly mode): ${parentPos.x.toFixed(2)}, ${parentPos.y.toFixed(2)}, ${parentPos.z.toFixed(2)}`);
+        }
+        
+        // Get camera direction - handle fly mode properly
+        let camera = playerEntity.camera;
+        let actualPlayerPos = playerPos;
+        
+        // If in fly mode, get camera from the player's actual player object
+        if (playerEntity.parent) {
+            actualPlayerPos = playerEntity.parent.position;
+            console.log(`[ObbyPlayerController] In fly mode - using parent position for calculations`);
+            
+            // Try to get the actual player entity that's riding the fly entity
+            const flyEntity = playerEntity.parent;
+            if ((flyEntity as any).rider && (flyEntity as any).rider.camera) {
+                camera = (flyEntity as any).rider.camera;
+                console.log(`[ObbyPlayerController] Got camera from fly entity rider`);
+            }
+        }
+        
+        let facing = camera && camera.facingDirection ? camera.facingDirection : null;
+        
+        // Fallback if camera facing direction is not available
+        if (!facing) {
+            console.log(`[ObbyPlayerController] Camera facing direction not available - using entity rotation as fallback`);
+            // Calculate facing direction from entity rotation
+            const rotation = playerEntity.rotation;
+            facing = {
+                x: Math.sin(rotation.y) * Math.cos(rotation.x),
+                y: -Math.sin(rotation.x),
+                z: Math.cos(rotation.y) * Math.cos(rotation.x)
+            };
+        }
+        
+        console.log(`[ObbyPlayerController] Camera/entity facing direction: ${facing.x.toFixed(3)}, ${facing.y.toFixed(3)}, ${facing.z.toFixed(3)}`);
+        
+        // Calculate direction from actual player position to target
+        const playerToTarget = {
+            x: targetPosition.x - actualPlayerPos.x,
+            y: targetPosition.y - actualPlayerPos.y,
+            z: targetPosition.z - actualPlayerPos.z
+        };
+        const distance = Math.sqrt(playerToTarget.x ** 2 + playerToTarget.y ** 2 + playerToTarget.z ** 2);
+        const normalizedDirection = {
+            x: playerToTarget.x / distance,
+            y: playerToTarget.y / distance,
+            z: playerToTarget.z / distance
+        };
+        console.log(`[ObbyPlayerController] Actual player to target direction: ${normalizedDirection.x.toFixed(3)}, ${normalizedDirection.y.toFixed(3)}, ${normalizedDirection.z.toFixed(3)} (distance: ${distance.toFixed(2)})`);
+        
+        // Compare camera direction to player-target direction
+        const dotProduct = facing.x * normalizedDirection.x + facing.y * normalizedDirection.y + facing.z * normalizedDirection.z;
+        console.log(`[ObbyPlayerController] Camera-to-target alignment (dot product): ${dotProduct.toFixed(3)} (1.0 = perfect alignment)`);
+        
+        // Most importantly: show where the player is looking vs where they clicked
+        console.log(`[ObbyPlayerController] Camera direction suggests player is looking towards: ${facing.x > 0 ? 'east' : facing.x < 0 ? 'west' : 'center'}, ${facing.z > 0 ? 'south' : facing.z < 0 ? 'north' : 'center'}`);
+        
+        console.log(`[ObbyPlayerController] ==========================================`);
+        
+        // Get the block type from registry
+        const blockData = blockRegistry.getBlock(blockId);
+        if (!blockData) {
+            console.log(`[ObbyPlayerController] Unknown block ID: ${blockId}`);
+            return false;
+        }
+
+        console.log(`[ObbyPlayerController] Block data found: ${blockData.name}`);
+
+        // Only allow certain blocks to be attached (ice, glass, stone, etc.)
+        const attachableBlocks = ['ice', 'glass', 'stone', 'wood', 'sand'];
+        const blockName = blockData.name.toLowerCase();
+        const isAttachable = attachableBlocks.some(name => blockName.includes(name));
+        
+        console.log(`[ObbyPlayerController] Block '${blockData.name}' (${blockName}) attachable: ${isAttachable}`);
+        
+        if (!isAttachable) {
+            console.log(`[ObbyPlayerController] Block '${blockData.name}' is not attachable`);
+            return false;
+        }
+
+        // Search for nearby mechanical entities
+        const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+        const searchRadius = 10.0; // blocks - increased for testing
+        
+        console.log(`[ObbyPlayerController] Searching for mechanical entities within ${searchRadius} blocks`);
+        
+        // Debug: Check what entities are registered
+        const entityCount = mechanicalBlockManager.getEntityCount();
+        console.log(`[ObbyPlayerController] MechanicalBlockManager state:`);
+        console.log(`[ObbyPlayerController] - Piston entities: ${entityCount.pistons}`);
+        console.log(`[ObbyPlayerController] - Wheel entities: ${entityCount.wheels}`);
+        console.log(`[ObbyPlayerController] - Total entities: ${entityCount.total}`);
+        
+        // Check for pistons in nearby positions
+        for (let x = -searchRadius; x <= searchRadius; x++) {
+            for (let y = -searchRadius; y <= searchRadius; y++) {
+                for (let z = -searchRadius; z <= searchRadius; z++) {
+                    const checkPos = {
+                        x: Math.floor(targetPosition.x) + x,
+                        y: Math.floor(targetPosition.y) + y,
+                        z: Math.floor(targetPosition.z) + z
+                    };
+                    
+                    // Check for piston at this position
+                    const piston = mechanicalBlockManager.getPistonEntityAt(checkPos);
+                    if (piston) {
+                        console.log(`[ObbyPlayerController] Found piston at ${checkPos.x}, ${checkPos.y}, ${checkPos.z}`);
+                        
+                        // Try to attach to this piston - pass camera info for better face selection
+                        let cameraDirection = null;
+                        if (camera && camera.facingDirection) {
+                            cameraDirection = camera.facingDirection;
+                        }
+                        
+                        const attached = AttachmentSystem.attachBlockToEntity(
+                            blockName,
+                            targetPosition,
+                            piston,
+                            playerEntity.world,
+                            cameraDirection
+                        );
+                        
+                        if (attached) {
+                            console.log(`[ObbyPlayerController] Successfully attached ${blockData.name} to piston`);
+                            return true;
+                        } else {
+                            console.log(`[ObbyPlayerController] Failed to attach ${blockData.name} to piston`);
+                        }
+                    }
+                    
+                    // Check for wheel at this position
+                    const wheel = mechanicalBlockManager.getWheelEntityAt(checkPos);
+                    if (wheel) {
+                        console.log(`[ObbyPlayerController] Found wheel at ${checkPos.x}, ${checkPos.y}, ${checkPos.z}`);
+                        
+                        // Try to attach to this wheel - pass camera info for better face selection
+                        let cameraDirection = null;
+                        if (camera && camera.facingDirection) {
+                            cameraDirection = camera.facingDirection;
+                        }
+                        
+                        const attached = AttachmentSystem.attachBlockToEntity(
+                            blockName,
+                            targetPosition,
+                            wheel,
+                            playerEntity.world,
+                            cameraDirection
+                        );
+                        
+                        if (attached) {
+                            console.log(`[ObbyPlayerController] Successfully attached ${blockData.name} to wheel`);
+                            return true;
+                        } else {
+                            console.log(`[ObbyPlayerController] Failed to attach ${blockData.name} to wheel`);
+                        }
+                    }
+                }
+            }
+        }
+        
+        console.log(`[ObbyPlayerController] No mechanical entities found within ${searchRadius} blocks of target position`);
+        console.log(`[ObbyPlayerController] Searched area: X(${Math.floor(targetPosition.x) - searchRadius} to ${Math.floor(targetPosition.x) + searchRadius}), Y(${Math.floor(targetPosition.y) - searchRadius} to ${Math.floor(targetPosition.y) + searchRadius}), Z(${Math.floor(targetPosition.z) - searchRadius} to ${Math.floor(targetPosition.z) + searchRadius})`);
+        return false;
+    }
+
+    /**
+     * Try to resize a mechanical entity at the target position
+     */
+    private tryResizeMechanicalEntity(
+        playerEntity: ObbyPlayerEntity,
+        action: 'bigger' | 'smaller'
+    ): boolean {
+        const targetPosition = this.getTargetPositionForPlacement(playerEntity);
+        if (!targetPosition) {
+            return false;
+        }
+
+        console.log(`[ObbyPlayerController] Trying to ${action} mechanical entity at ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+
+        const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+        
+        // First, try exact position (rounded)
+        const exactPos = {
+            x: Math.floor(targetPosition.x + 0.5),
+            y: Math.floor(targetPosition.y + 0.5), 
+            z: Math.floor(targetPosition.z + 0.5)
+        };
+        
+        console.log(`[ObbyPlayerController] Checking exact position: ${exactPos.x}, ${exactPos.y}, ${exactPos.z}`);
+        let wheel = mechanicalBlockManager.getWheelEntityAt(exactPos);
+        
+        if (!wheel) {
+            console.log(`[ObbyPlayerController] No wheel at exact position, searching nearby...`);
+            
+            // Debug: List all registered wheels
+            const allWheels = mechanicalBlockManager.getWheelEntities();
+            console.log(`[ObbyPlayerController] Registered wheels: ${allWheels.size}`);
+            for (const [posKey, w] of allWheels) {
+                console.log(`[ObbyPlayerController] - Wheel at ${posKey}: size ${w.getCurrentSize()}, direction ${w.getCurrentGrowthDirection()}`);
+            }
+            
+            // If not found at exact position, search with size-based radius
+            // Use adaptive search: check all entities in a reasonable area to find the largest size,
+            // then use that to determine appropriate search radius (larger entities = smaller zones)
+            let searchRadius = 3; // Start with max radius for initial scan
+            let largestEntitySize = 1; // Default minimum size
+            
+            // First pass: find the largest entity size in the area
+            for (let x = -searchRadius; x <= searchRadius; x++) {
+                for (let y = -searchRadius; y <= searchRadius; y++) {
+                    for (let z = -searchRadius; z <= searchRadius; z++) {
+                        const checkPos = {
+                            x: exactPos.x + x,
+                            y: exactPos.y + y,
+                            z: exactPos.z + z
+                        };
+                        
+                        // Check wheel entities
+                        const testWheel = mechanicalBlockManager.getWheelEntityAt(checkPos);
+                        if (testWheel) {
+                            largestEntitySize = Math.max(largestEntitySize, testWheel.getCurrentSize());
+                        }
+                        
+                        // Check configurable mechanical entities
+                        const testConfigurable = mechanicalBlockManager.getConfigurableEntityAt(checkPos);
+                        if (testConfigurable) {
+                            // Configurable entities can be 1-5 in each dimension, use max dimension for size
+                            const maxDim = Math.max(testConfigurable.dimensions?.x || 1, testConfigurable.dimensions?.y || 1, testConfigurable.dimensions?.z || 1);
+                            largestEntitySize = Math.max(largestEntitySize, maxDim);
+                        }
+                        
+                        // Check piston entities
+                        const testPiston = mechanicalBlockManager.getPistonEntityAt(checkPos);
+                        if (testPiston) {
+                            // Pistons have a getCurrentSize method, use it if available
+                            const pistonSize = (testPiston as any).getCurrentSize ? (testPiston as any).getCurrentSize() : 1;
+                            largestEntitySize = Math.max(largestEntitySize, pistonSize);
+                        }
+                    }
+                }
+            }
+            
+            // Calculate size-based search radius: larger entities get smaller interaction zones
+            // Size 1 = radius 2, Size 2 = radius 2, Size 3 = radius 1, Size 4+ = radius 1
+            const sizeBasedRadius = largestEntitySize <= 2 ? 2 : 1;
+            searchRadius = Math.min(searchRadius, sizeBasedRadius);
+            
+            console.log(`[ObbyPlayerController] Using size-based search radius ${searchRadius} for largest entity size ${largestEntitySize}`);
+            
+            // Second pass: search with appropriate radius for all entity types
+            for (let x = -searchRadius; x <= searchRadius; x++) {
+                for (let y = -searchRadius; y <= searchRadius; y++) {
+                    for (let z = -searchRadius; z <= searchRadius; z++) {
+                        const checkPos = {
+                            x: exactPos.x + x,
+                            y: exactPos.y + y,
+                            z: exactPos.z + z
+                        };
+                        
+                        // Check for wheel entities first (maintain existing behavior)
+                        wheel = mechanicalBlockManager.getWheelEntityAt(checkPos);
+                        if (wheel) {
+                            console.log(`[ObbyPlayerController] Found wheel at ${checkPos.x}, ${checkPos.y}, ${checkPos.z} (size ${wheel.getCurrentSize()}, search radius was ${searchRadius})`);
+                            break;
+                        }
+                        
+                        // Check for configurable mechanical entities
+                        const configurableEntity = mechanicalBlockManager.getConfigurableEntityAt(checkPos);
+                        if (configurableEntity) {
+                            console.log(`[ObbyPlayerController] Found configurable entity at ${checkPos.x}, ${checkPos.y}, ${checkPos.z} (search radius was ${searchRadius})`);
+                            // For compatibility with existing code, we'll handle this in the next section
+                            break;
+                        }
+                        
+                        // Check for piston entities
+                        const pistonEntity = mechanicalBlockManager.getPistonEntityAt(checkPos);
+                        if (pistonEntity) {
+                            console.log(`[ObbyPlayerController] Found piston entity at ${checkPos.x}, ${checkPos.y}, ${checkPos.z} (search radius was ${searchRadius})`);
+                            // For compatibility with existing code, we'll handle this in the next section
+                            break;
+                        }
+                    }
+                    if (wheel) break; // Break out of nested loops when found
+                }
+                if (wheel) break;
+            }
+        }
+        
+        if (wheel) {
+            const wheelPos = wheel.position;
+            console.log(`[ObbyPlayerController] Found wheel, current size: ${wheel.getCurrentSize()}, growth direction: ${wheel.getCurrentGrowthDirection()}`);
+            
+            if (action === 'bigger') {
+                // Calculate new growth direction
+                const newGrowthDirection = this.calculateGrowthDirection(targetPosition, wheelPos);
+                const currentGrowthDirection = wheel.getCurrentGrowthDirection();
+                const currentSize = wheel.getCurrentSize();
+                
+                // Check if we're switching growth direction
+                let finalSize: number;
+                if (currentGrowthDirection !== 'both' && newGrowthDirection !== currentGrowthDirection) {
+                    // Switching direction - reset to size 1 and grow in new direction
+                    finalSize = 2; // Start at size 2 in new direction
+                    console.log(`[ObbyPlayerController] Switching growth direction from ${currentGrowthDirection} to ${newGrowthDirection}, resetting size`);
+                } else {
+                    // Same direction - continue growing
+                    if (currentSize >= 4) {
+                        console.log(`[ObbyPlayerController] Wheel already at maximum size`);
+                        return true;
+                    }
+                    finalSize = currentSize + 1;
+                    console.log(`[ObbyPlayerController] Continuing growth along ${newGrowthDirection} axis`);
+                }
+                
+                // Replace wheel with new size and direction
+                this.replaceWheelWithNewSize(wheel, wheelPos, finalSize, mechanicalBlockManager, newGrowthDirection);
+                console.log(`[ObbyPlayerController] Made wheel bigger along ${newGrowthDirection} axis, new size: ${finalSize}`);
+                return true;
+            } else {
+                // Make wheel smaller or delete if at minimum size
+                const currentSize = wheel.getCurrentSize();
+                if (currentSize === 1) {
+                    // Delete the wheel when it's at minimum size
+                    console.log(`[ObbyPlayerController] Deleting wheel at minimum size`);
+                    mechanicalBlockManager.onMechanicalBlockRemoved(wheelPos);
+                    return true;
+                } else {
+                    // Make wheel smaller
+                    const newSize = currentSize - 1;
+                    const growthDirection = this.calculateGrowthDirection(targetPosition, wheelPos);
+                    this.replaceWheelWithNewSize(wheel, wheelPos, newSize, mechanicalBlockManager, growthDirection);
+                    console.log(`[ObbyPlayerController] Made wheel smaller along ${growthDirection} axis, new size: ${newSize}`);
+                    return true;
+                }
+            }
+        }
+
+        console.log(`[ObbyPlayerController] No mechanical entities found for resizing`);
+        return false;
+    }
+
+    /**
+     * Calculate the growth direction based on raycast intersection
+     */
+    private calculateGrowthDirection(targetPosition: Vector3Like, wheelPosition: Vector3Like): 'x' | 'z' {
+        // Calculate direction from wheel center to click point
+        const dx = Math.abs(targetPosition.x - wheelPosition.x);
+        const dz = Math.abs(targetPosition.z - wheelPosition.z);
+        
+        // Grow along the axis with greater distance (where the player clicked)
+        if (dx > dz) {
+            return 'x';
+        } else {
+            return 'z';
+        }
+    }
+
+    /**
+     * Replace a wheel entity with a new one of different size and directional growth
+     */
+    private replaceWheelWithNewSize(
+        oldWheel: any,
+        position: Vector3Like,
+        newSize: number,
+        mechanicalBlockManager: any,
+        growthDirection: 'x' | 'z' = 'x'
+    ): void {
+        console.log(`[ObbyPlayerController] Replacing wheel at ${position.x}, ${position.y}, ${position.z} with size ${newSize}`);
+        
+        // Store current state
+        const currentPos = oldWheel.position;
+        const currentRot = oldWheel.getCurrentRotation();
+        const wasActivated = oldWheel.isActivated;
+        
+        // Remove old wheel safely
+        mechanicalBlockManager.onMechanicalBlockRemoved(position);
+        
+        // Create new wheel with new size and growth direction
+        const newWheel = new MechanicalWheelEntity(this.world, currentPos, currentRot, newSize, growthDirection);
+        newWheel.spawn(this.world, currentPos);
+        
+        // Restore activation state
+        if (wasActivated) {
+            newWheel.activate();
+        }
+        
+        // Register with manager
+        mechanicalBlockManager.registerWheelEntity(currentPos, newWheel);
+        
+        console.log(`[ObbyPlayerController] Successfully replaced wheel with size ${newSize}`);
+    }
+
+    private handleBlockRemoval(playerEntity: ObbyPlayerEntity): boolean {
         const targetPosition = this.getTargetPositionForRemoval(playerEntity);
         if (targetPosition) {
             
@@ -926,46 +1403,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             const activeBuildPlot = this.plotBuildManager.getPlayerActiveBuildPlot(playerEntity.player.id);
             const plotId = activeBuildPlot !== null ? this.plotBuildManager.getPlotId(activeBuildPlot) : undefined;
             
-            // Try to remove obstacle first (obstacles are entities, not blocks)
-            const obstacleRemovalResult = this.obstaclePlacementManager.removeObstacle(
-                playerEntity.player,
-                targetPosition,
-                plotId // Pass plotId for boundary checking
-            );
-            
-            if (obstacleRemovalResult.success) {
-                // Obstacle was removed, give cash refund based on actual obstacle type
-                const currentCash = this.plotSaveManager.getPlayerCash(playerEntity.player);
-                let newCash = currentCash;
-                
-                if (obstacleRemovalResult.obstacleType && obstacleRemovalResult.obstacleSize) {
-                    // Map obstacle type to entity type for cash calculation
-                    let entityType = 'obstacle'; // Default fallback
-                    switch (obstacleRemovalResult.obstacleType) {
-                        case 'bounce_pad':
-                            entityType = 'bounce-pad';
-                            break;
-                        case 'rotating_beam':
-                            entityType = 'rotating-beam';
-                            break;
-                        case 'seesaw':
-                            entityType = 'obstacle'; // Use generic for now, can add specific type later
-                            break;
-                        default:
-                            entityType = 'obstacle';
-                    }
-                    
-                    // Refund based on mapped entity type (size doesn't affect cost currently)
-                    newCash = CashCalculator.refundEntityCost(currentCash, entityType);
-                } else {
-                    // Fallback - refund generic obstacle cost
-                    newCash = CashCalculator.refundEntityCost(currentCash, 'obstacle');
-                }
-                
-                this.plotSaveManager.setPlayerCash(playerEntity.player, newCash);
-                this.updatePlayerCashUI(playerEntity.player, newCash);
-            } else {
-                // No obstacle found, try to remove block if one exists
+                // First check for chunk lattice blocks at exact position (like regular blocks)
                 const blockId = this.world.chunkLattice.getBlockId(targetPosition);
                 
                 if (blockId !== 0) {
@@ -983,14 +1421,87 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                         const newCash = CashCalculator.refundBlockCost(currentCash, blockId);
                         this.plotSaveManager.setPlayerCash(playerEntity.player, newCash);
                         this.updatePlayerCashUI(playerEntity.player, newCash);
+                        return true; // Successfully removed block
                     }
                 } else {
-                    // No block or obstacle found
+                    // No chunk lattice block found, check for mechanical entities at exact position
+                    const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+                    
+                    // Check for configurable mechanical entities at exact position
+                    const configurableEntity = mechanicalBlockManager.getConfigurableEntityAt(targetPosition);
+                    if (configurableEntity) {
+                        console.log(`[ObbyPlayerController] Removing configurable mechanical entity at exact position ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+                        mechanicalBlockManager.onMechanicalBlockRemoved(targetPosition);
+                        return true; // Successfully removed mechanical entity
+                    }
+                    
+                    // Check for wheel entities at exact position
+                    const wheelEntity = mechanicalBlockManager.getWheelEntityAt(targetPosition);
+                    if (wheelEntity) {
+                        console.log(`[ObbyPlayerController] Removing wheel entity at exact position ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+                        mechanicalBlockManager.onMechanicalBlockRemoved(targetPosition);
+                        return true; // Successfully removed mechanical entity
+                    }
+                    
+                    // Check for piston entities at exact position
+                    const pistonEntity = mechanicalBlockManager.getPistonEntityAt(targetPosition);
+                    if (pistonEntity) {
+                        console.log(`[ObbyPlayerController] Removing piston entity at exact position ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+                        mechanicalBlockManager.onMechanicalBlockRemoved(targetPosition);
+                        return true; // Successfully removed mechanical entity
+                    }
+                    
+                    // Finally try to remove obstacles with the massive search zone (as fallback)
+                    const obstacleRemovalResult = this.obstaclePlacementManager.removeObstacle(
+                        playerEntity.player,
+                        targetPosition,
+                        plotId // Pass plotId for boundary checking
+                    );
+                    
+                    if (obstacleRemovalResult.success) {
+                        // Obstacle was removed, give cash refund based on actual obstacle type
+                        const currentCash = this.plotSaveManager.getPlayerCash(playerEntity.player);
+                        let newCash = currentCash;
+                        
+                        if (obstacleRemovalResult.obstacleType && obstacleRemovalResult.obstacleSize) {
+                            // Map obstacle type to entity type for cash calculation
+                            let entityType = 'obstacle'; // Default fallback
+                            switch (obstacleRemovalResult.obstacleType) {
+                                case 'bounce_pad':
+                                    entityType = 'bounce-pad';
+                                    break;
+                                case 'rotating_beam':
+                                    entityType = 'rotating-beam';
+                                    break;
+                                case 'mechanical_piston':
+                                    entityType = 'mechanical-piston';
+                                    break;
+                                case 'mechanical_wheel':
+                                    entityType = 'mechanical-wheel';
+                                    break;
+                                case 'seesaw':
+                                    entityType = 'obstacle'; // Use generic for now, can add specific type later
+                                    break;
+                                default:
+                                    entityType = 'obstacle';
+                            }
+                            
+                            // Refund based on mapped entity type (size doesn't affect cost currently)
+                            newCash = CashCalculator.refundEntityCost(currentCash, entityType);
+                        } else {
+                            // Fallback - refund generic obstacle cost
+                            newCash = CashCalculator.refundEntityCost(currentCash, 'obstacle');
+                        }
+                        
+                        this.plotSaveManager.setPlayerCash(playerEntity.player, newCash);
+                        this.updatePlayerCashUI(playerEntity.player, newCash);
+                        return true; // Successfully removed obstacle
+                    }
                 }
-            }
         } else {
             console.log("[ObbyPlayerController] No target position found for removal");
         }
+        return false; // Nothing was removed
     }
 
     private getTargetPositionForPlacement(playerEntity: ObbyPlayerEntity): Vector3 | null {
@@ -1173,7 +1684,19 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     private calculateAimDirection(entity: DefaultPlayerEntity, maxDistance: number) {
         // Get camera orientation
         const camera = entity.player.camera;
-        const facingDirection = camera.facingDirection;
+        let facingDirection = camera.facingDirection;
+        
+        // Fallback if camera facing direction is not available
+        if (!facingDirection) {
+            console.warn('[ObbyPlayerController] Camera facing direction not available, using entity rotation as fallback');
+            // Calculate facing direction from entity rotation (similar to BlockPlacementManager)
+            const rotation = entity.rotation;
+            facingDirection = {
+                x: Math.sin(rotation.y) * Math.cos(rotation.x),
+                y: -Math.sin(rotation.x),
+                z: Math.cos(rotation.y) * Math.cos(rotation.x)
+            };
+        }
         
         // Calculate world position - different logic for fly mode vs normal mode
         let worldPosition: Vector3;
@@ -1196,7 +1719,7 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             z: worldPosition.z,
         };
 
-        // Use camera's facing direction directly
+        // Use camera's facing direction (or fallback)
         const direction = facingDirection;
 
         return { origin, direction };
@@ -1331,6 +1854,57 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
                 z: currentVelocity.z
             });
         }
+    }
+
+    /**
+     * Apply wheel physics (similar to conveyor physics but with circular motion)
+     */
+    private applyWheelPhysics(entity: DefaultPlayerEntity, input: PlayerInput, cameraOrientation: PlayerCameraOrientation, deltaTimeMs: number): void {
+        const { w, a, s, d, sp, sh } = input;
+        
+        // Check if player is jumping - if so, cancel wheel forces
+        if (sp && this.canJump(this)) {
+            if (this.isGrounded && entity.linearVelocity.y > -0.001 && entity.linearVelocity.y <= 3) {
+                // Clamp X/Z velocity to a reasonable value for jumps
+                const maxJumpXZ = 6.0;
+                entity.setLinearVelocity({
+                    x: Math.max(Math.min(entity.linearVelocity.x, maxJumpXZ), -maxJumpXZ),
+                    y: this.jumpVelocity,
+                    z: Math.max(Math.min(entity.linearVelocity.z, maxJumpXZ), -maxJumpXZ)
+                });
+                // Clear wheel state when jumping to allow normal movement
+                (entity as any).isOnWheel = false;
+                
+                return; // Exit early, don't apply wheel forces when jumping
+            }
+        }
+        
+        // Apply wheel movement by adding to current velocity (like conveyors)
+        const currentVelocity = entity.linearVelocity;
+        const wheelEntity = (entity as any).wheelEntity;
+        const wheelStrength = (entity as any).wheelStrength ?? 4.0;
+        
+        // Get real-time wheel movement based on current position
+        let scaledTangentX = 0;
+        let scaledTangentZ = 0;
+        
+        if (wheelEntity && wheelEntity.getWheelMovementForPlayer) {
+            const wheelMovement = wheelEntity.getWheelMovementForPlayer(entity.position);
+            if (wheelMovement) {
+                scaledTangentX = wheelMovement.x * wheelStrength;
+                scaledTangentZ = wheelMovement.z * wheelStrength;
+            }
+        }
+        
+        // Add wheel movement to current velocity
+        const newXVelocity = currentVelocity.x + scaledTangentX;
+        const newZVelocity = currentVelocity.z + scaledTangentZ;
+        
+        entity.setLinearVelocity({
+            x: Math.max(Math.min(newXVelocity, 24.0), -24.0),
+            y: currentVelocity.y,
+            z: Math.max(Math.min(newZVelocity, 24.0), -24.0)
+        });
     }
 
     // Public methods for external access

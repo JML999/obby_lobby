@@ -31,6 +31,8 @@ export class CashCalculator {
         'bounce-pad': 5,
         'rotating-beam': 5,
         'obstacle': 5,
+        'mechanical-piston': 5,
+        'mechanical-wheel': 5,
         // Add more entity types as needed
     };
 

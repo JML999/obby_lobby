@@ -3,10 +3,12 @@ class HotbarPanel {
         this.container = null;
         this.hotbarElement = null;
         this.hotbarSlots = [];
-        this.selectedSlot = 1; // Default to first editable slot (slot 1 after save)
+        this.selectedSlot = 3; // Default to first editable slot (slot 3 after backpack, save, and select)
         this.maxSlots = 6;
         this.permanentActions = [
-            { id: 'save', icon: '💾', label: 'Save', action: 'saveCourse' }
+            { id: 'backpack', icon: '🎒', label: 'Toggle Inventory', action: 'toggleInventory' },
+            { id: 'save', icon: '💾', label: 'Save', action: 'saveCourse' },
+            { id: 'select', icon: '🖱️', label: 'Select/Edit Mechanical Entity', action: 'selectMechanical' }
         ];
         
         // State management
@@ -38,7 +40,7 @@ class HotbarPanel {
                 if (data.type === 'hotbarUpdate') {
                     this.updateSlot(data.slotIndex, data.block);
                 } else if (data.type === 'playerStateChanged') {
-                    this.onPlayerStateChanged(data.state, data.plotIndex, data.isMobile, data.mobileControls);
+                    this.onPlayerStateChanged(data.state, data.plotIndex, data.isMobile, data.mobileControls, data.playerLevel);
                 } else if (data.type === 'flyModeChanged') {
                     this.onFlyModeChanged(data.isFlying);
                 }
@@ -104,9 +106,9 @@ class HotbarPanel {
             slotNumber.textContent = i + 1;
             slot.appendChild(slotNumber);
 
-            // Only slot 0 is permanent action (save)
+            // Slot 0 is for backpack action (toggle inventory)
             if (i === 0) {
-                slot.classList.add('hotbar-action-slot');
+                slot.classList.add('hotbar-action-slot', 'backpack-action-slot');
                 const action = this.permanentActions[0];
                 const actionBtn = document.createElement('button');
                 actionBtn.className = 'hotbar-action-btn';
@@ -117,7 +119,22 @@ class HotbarPanel {
                     this.handleActionButton(action.action);
                 });
                 slot.appendChild(actionBtn);
+            }
+            // Slot 1 is for save action
+            else if (i === 1) {
+                slot.classList.add('hotbar-action-slot', 'save-action-slot');
+                const action = this.permanentActions[1];
+                const actionBtn = document.createElement('button');
+                actionBtn.className = 'hotbar-action-btn';
+                actionBtn.title = action.label;
+                actionBtn.innerHTML = `<span class="hotbar-action-icon">${action.icon}</span>`;
+                actionBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.handleActionButton(action.action);
+                });
+                slot.appendChild(actionBtn);
             } else {
+                // Slots 2-5 are editable slots
                 if (i === this.selectedSlot) {
                     slot.classList.add('selected');
                 }
@@ -131,6 +148,23 @@ class HotbarPanel {
                         obstacleText.className = 'hotbar-obstacle-text';
                         obstacleText.textContent = block.name;
                         slotContent.appendChild(obstacleText);
+                        
+                        // Add category label for mechanical blocks
+                        if (block.mechanicalCategory || block.category) {
+                            const categoryLabel = document.createElement('div');
+                            categoryLabel.className = 'hotbar-category-label';
+                            const category = (block.mechanicalCategory || block.category).toUpperCase();
+                            categoryLabel.textContent = category;
+                            
+                            // Color code the label based on category
+                            if (category === 'BEAM') {
+                                categoryLabel.style.backgroundColor = 'rgba(59, 130, 246, 0.9)'; // Blue for beams
+                            } else if (category === 'PLATFORM') {
+                                categoryLabel.style.backgroundColor = 'rgba(168, 85, 247, 0.9)'; // Purple for platforms
+                            }
+                            
+                            slotContent.appendChild(categoryLabel);
+                        }
                     } else {
                         // Block display - use image like inventory
                         const blockImage = document.createElement('img');
@@ -148,7 +182,7 @@ class HotbarPanel {
     }
 
     setupEventListeners() {
-        // Number key selection (1 for save action, 2-6 for editable slots)
+        // Number key selection (1 for backpack, 2 for save, 3-6 for editable slots)
         document.addEventListener('keydown', (e) => {
             if (this.isInputElementActive()) return;
             
@@ -159,14 +193,21 @@ class HotbarPanel {
             
             if (keyNum === 1) {
                 e.preventDefault();
-                // Trigger save action (slot 0)
+                // Trigger backpack action (slot 0)
                 const action = this.permanentActions[0];
                 if (action) {
                     this.handleActionButton(action.action);
                 }
-            } else if (keyNum >= 2 && keyNum <= 6) {
+            } else if (keyNum === 2) {
                 e.preventDefault();
-                // Select editable slots 1-5 (keys 2-6 map to slots 1-5)
+                // Trigger save action (slot 1)
+                const action = this.permanentActions[1];
+                if (action) {
+                    this.handleActionButton(action.action);
+                }
+            } else if (keyNum >= 3 && keyNum <= 6) {
+                e.preventDefault();
+                // Select editable slots 2-5 (keys 3-6 map to slots 2-5)
                 this.selectSlot(keyNum - 1);
             }
         });
@@ -179,7 +220,7 @@ class HotbarPanel {
             const slot = e.target.closest('.hotbar-slot');
             if (slot) {
                 const slotIndex = parseInt(slot.dataset.slotIndex);
-                if (slotIndex >= 1) { // Only allow clicking editable slots 1-5
+                if (slotIndex >= 2) { // Only allow clicking editable slots 2-5
                     this.selectSlot(slotIndex);
                 }
             }
@@ -224,9 +265,9 @@ class HotbarPanel {
     }
 
     selectSlot(slotIndex) {
-        // Only allow selecting editable slots (1-5)
-        if (slotIndex === 0 || slotIndex >= this.maxSlots) {
-            console.log('[HotbarPanel] Cannot select permanent or invalid slot:', slotIndex);
+        // Only allow selecting editable slots (2-5)
+        if (slotIndex < 2 || slotIndex >= this.maxSlots) {
+            console.log('[HotbarPanel] Cannot select action or invalid slot:', slotIndex);
             return;
         }
 
@@ -262,7 +303,8 @@ class HotbarPanel {
                 type: 'selectObstacle',
                 obstacleId: item.id,
                 obstacleType: item.type,
-                obstacleSize: item.size
+                obstacleSize: item.size,
+                // No mechanical category needed
             });
         } else {
             // Block item
@@ -274,7 +316,7 @@ class HotbarPanel {
     }
 
     setSlotBlock(slotIndex, item) {
-        if (slotIndex === 0 || slotIndex >= this.maxSlots) return; // Prevent editing permanent slot and out of bounds
+        if (slotIndex < 2 || slotIndex >= this.maxSlots) return; // Prevent editing action slots and out of bounds
         this.hotbarSlots[slotIndex] = item;
         // Update the visual slot
         const slot = this.hotbarElement.querySelector(`[data-slot-index="${slotIndex}"]`);
@@ -288,6 +330,23 @@ class HotbarPanel {
                     obstacleText.className = 'hotbar-obstacle-text';
                     obstacleText.textContent = item.name;
                     content.appendChild(obstacleText);
+                    
+                    // Add category label for mechanical blocks
+                    if (item.mechanicalCategory || item.category) {
+                        const categoryLabel = document.createElement('div');
+                        categoryLabel.className = 'hotbar-category-label';
+                        const category = (item.mechanicalCategory || item.category).toUpperCase();
+                        categoryLabel.textContent = category;
+                        
+                        // Color code the label based on category
+                        if (category === 'BEAM') {
+                            categoryLabel.style.backgroundColor = 'rgba(59, 130, 246, 0.9)'; // Blue for beams
+                        } else if (category === 'PLATFORM') {
+                            categoryLabel.style.backgroundColor = 'rgba(168, 85, 247, 0.9)'; // Purple for platforms
+                        }
+                        
+                        content.appendChild(categoryLabel);
+                    }
                 } else {
                     // Block display - use image like inventory
                     const itemImage = document.createElement('img');
@@ -335,12 +394,17 @@ class HotbarPanel {
         
         if (action === 'saveCourse') {
             hytopia.sendData({ type: 'saveCourse' });
+        } else if (action === 'toggleInventory') {
+            // Toggle the block inventory panel
+            if (window.BlockInventoryPanel) {
+                window.BlockInventoryPanel.toggle();
+            }
         }
         console.log('[HotbarPanel] Action button pressed:', action);
     }
 
-    onPlayerStateChanged(newState, plotIndex, isMobile, mobileControls) {
-        console.log('[HotbarPanel] Player state changed to:', newState, 'plotIndex:', plotIndex, 'isMobile:', isMobile);
+    onPlayerStateChanged(newState, plotIndex, isMobile, mobileControls, playerLevel) {
+        console.log('[HotbarPanel] Player state changed to:', newState, 'plotIndex:', plotIndex, 'isMobile:', isMobile, 'level:', playerLevel);
         this.currentPlayerState = newState;
         
         // Only show hotbar when in building mode AND inventory is not open
@@ -357,6 +421,14 @@ class HotbarPanel {
                     this.hotbarElement.classList.remove('mobile-hotbar');
                 }
                 console.log('[HotbarPanel] Build mode activated - hotbar now visible');
+                
+                // Prefill hotbar for new players (under level 3)
+                if (playerLevel && playerLevel < 3) {
+                    console.log(`[HotbarPanel] Player level ${playerLevel} < 3, checking for prefill`);
+                    this.prefillHotbarForNewPlayer();
+                } else {
+                    console.log(`[HotbarPanel] Player level ${playerLevel} >= 3, skipping prefill`);
+                }
             } else {
                 console.log('[HotbarPanel] Build mode activated but inventory is open - keeping hotbar hidden');
                 this.setVisible(false);
@@ -368,6 +440,57 @@ class HotbarPanel {
         
         // Update creative mode hint based on current state
         this.updateCreativeModeHint();
+    }
+
+    prefillHotbarForNewPlayer() {
+        // Check if player is under level 3 and hotbar is empty
+        // We'll get the level from the playerStateChanged event data
+        // For now, we'll check if the hotbar is empty and prefill if it is
+        console.log('[HotbarPanel] Checking if hotbar should be prefilled for new player');
+        
+        // Check if hotbar is empty (slots 2-5)
+        const isEmpty = this.hotbarSlots.slice(2).every(slot => slot === null);
+        
+        if (isEmpty) {
+            console.log('[HotbarPanel] Hotbar is empty, prefilling with essential blocks');
+            this.prefillWithEssentialBlocks();
+        } else {
+            console.log('[HotbarPanel] Hotbar not empty, skipping prefill');
+        }
+    }
+
+    prefillWithEssentialBlocks() {
+        console.log('[HotbarPanel] Prefilling hotbar with essential blocks for new player');
+        
+        // Define essential blocks for new players
+        const essentialBlocks = [
+            { id: 100, name: 'start', textureUri: 'blocks/start.png' },      // Slot 2: Start block
+            { id: 1, name: 'platform', textureUri: 'blocks/stone.png' },     // Slot 3: Stone platform
+            { id: 9, name: 'ice', textureUri: 'blocks/ice.png' },            // Slot 4: Ice block
+            { id: 101, name: 'goal', textureUri: 'blocks/goal.png' }         // Slot 5: Goal block
+        ];
+        
+        // Fill slots 2-5 with essential blocks
+        for (let i = 0; i < essentialBlocks.length; i++) {
+            const slotIndex = i + 2; // Slots 2, 3, 4, 5
+            const block = essentialBlocks[i];
+            
+            this.setSlotBlock(slotIndex, block);
+            console.log(`[HotbarPanel] Prefilled slot ${slotIndex} with ${block.name}`);
+        }
+        
+        // Select the first editable slot (slot 2)
+        this.selectSlot(2);
+        
+        // Send a helpful message to the player
+        if (window.hytopia && window.hytopia.sendData) {
+            window.hytopia.sendData({
+                type: 'showMessage',
+                message: '🎯 Your hotbar has been prefilled with essential blocks! Start with the green start block, then add platforms, ice, and finish with the red goal block.',
+                color: '00FF00',
+                duration: 8000
+            });
+        }
     }
 
     onFlyModeChanged(isFlying) {
@@ -514,6 +637,33 @@ class HotbarPanel {
                 cursor: default;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             }
+            
+            /* Specific styles for action slots */
+            .backpack-action-slot {
+                border-color: #4CAF50;
+                background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+                box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+            }
+            
+            .save-action-slot {
+                border-color: #ff6b6b;
+                background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.1));
+                box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+            }
+            
+            .backpack-action-slot:hover,
+            .save-action-slot:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            
+            .backpack-action-slot .hotbar-action-btn:hover {
+                background: rgba(76, 175, 80, 0.2);
+            }
+            
+            .save-action-slot .hotbar-action-btn:hover {
+                background: rgba(255, 107, 107, 0.2);
+            }
             .hotbar-action-btn {
                 width: 48px;
                 height: 48px;
@@ -620,12 +770,42 @@ class HotbarPanel {
                 word-break: break-word;
                 white-space: normal;
             }
+            .hotbar-category-label {
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                background: rgba(76, 175, 80, 0.9);
+                color: white;
+                font-weight: 700;
+                font-size: 6px;
+                padding: 1px 2px;
+                border-radius: 2px;
+                line-height: 1;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                min-width: 8px;
+                text-align: center;
+                pointer-events: none;
+                z-index: 10;
+                letter-spacing: 0.3px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+                animation: categoryPulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes categoryPulse {
+                0%, 100% { opacity: 0.9; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.05); }
+            }
             @media (max-width: 768px) {
                 .hotbar-obstacle-text {
                     font-size: 9px;
                     padding: 2px 1px;
                     max-width: 38px;
                     max-height: 20px;
+                }
+                .hotbar-category-label {
+                    font-size: 5px;
+                    padding: 0px 1px;
                 }
             }
             .hotbar-label {

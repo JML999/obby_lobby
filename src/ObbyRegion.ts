@@ -14,6 +14,7 @@ import { ParkingLotPopulator } from './ParkingLotPopulator';
 import { GreeterNpc } from './entities/GreeterNpc';
 import { type NpcConfig } from './entities/DialogNpc';
 import { SimpleLevelingSystem } from './SimpleLevelingSystem';
+import { MechanicalBlockManager } from './MechanicalBlockManager';
 // import { TrafficManager } from './TrafficManager'; // TODO: Enable for next version - Traffic system ready but disabled for production
 
 export default class ObbyRegion extends GameRegion {
@@ -25,6 +26,7 @@ export default class ObbyRegion extends GameRegion {
   private obstacleCollisionManager: ObstacleCollisionManager;
   private plotSaveManager: PlotSaveManager;
   private simpleLevelingSystem: SimpleLevelingSystem;
+  private mechanicalBlockManager: MechanicalBlockManager;
   // TODO: Enable for next version - Traffic system ready but disabled for production
   // private trafficManager?: TrafficManager;
   private maxPlayers: number = 5;
@@ -58,6 +60,7 @@ export default class ObbyRegion extends GameRegion {
     this.obstacleCollisionManager = ObstacleCollisionManager.getInstance();
     this.plotSaveManager = PlotSaveManager.getInstance();
     this.simpleLevelingSystem = SimpleLevelingSystem.getInstance();
+    this.mechanicalBlockManager = MechanicalBlockManager.getInstance();
     // TODO: Enable for next version - Traffic system ready but disabled for production
     // this.trafficManager = new TrafficManager(this.world);
     
@@ -66,8 +69,9 @@ export default class ObbyRegion extends GameRegion {
     this.obstacleCollisionManager.initializeWorld(this.world);
     this.plotSaveManager.initializeWorld(this.world);
     this.blockPlacementManager.initializeWorld(this.world);
+    this.mechanicalBlockManager.initializeWorld(this.world);
     this.simpleLevelingSystem.initialize(this.world);
-    console.log(`[ObbyRegion] SimpleLevelingSystem initialized for region ${this.id}`);
+    console.log(`[ObbyRegion] MechanicalBlockManager and SimpleLevelingSystem initialized for region ${this.id}`);
     
     // Plot initialization is now handled automatically by PlotManager.assignPlayerToPlotInWorld()
     // when the first player is assigned to this region

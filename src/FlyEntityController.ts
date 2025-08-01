@@ -60,11 +60,9 @@ export class FlyEntityController extends BaseEntityController {
         // Vertical movement - use correct HYTOPIA property names
         if (input.sp) { // Up - correct property name for spacebar
             moveY += this.flySpeed;
-            console.log('[FlyEntityController] Space detected, moving up:', { sp: input.sp, moveY });
         }
         if (input.sh) { // Down - correct property name for shift
             moveY -= this.flySpeed;
-            console.log('[FlyEntityController] Shift detected, moving down:', { sh: input.sh, moveY });
         }
         
         // DEBUG: Check if moveY is being set when it shouldn't be
@@ -89,12 +87,6 @@ export class FlyEntityController extends BaseEntityController {
             };
             entity.setPosition(newPosition);
             
-            console.log('[FlyEntityController] Final movement applied:', {
-                delta: { moveX, moveY, moveZ },
-                oldPos: { x: oldPosition.x, y: oldPosition.y, z: oldPosition.z },
-                newPos: newPosition,
-                actualYChange: newPosition.y - oldPosition.y
-            });
         }
 
         // Apply yaw rotation (copied from DefaultPlayerEntityController)

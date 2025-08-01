@@ -5,6 +5,7 @@ import { PlotBoundaryManager } from "./PlotBoundaryManager";
 import { ObstacleCollisionManager } from "./ObstacleCollisionManager";
 import { PlotSaveManager } from "./PlotSaveManager";
 import { SimpleLevelingSystem } from "./SimpleLevelingSystem";
+import { MechanicalBlockManager } from "./MechanicalBlockManager";
 
 export interface BlockType {
   id: number;
@@ -21,6 +22,7 @@ export class BlockPlacementManager {
   private plotBoundaryManager: PlotBoundaryManager;
   private obstacleCollisionManager: ObstacleCollisionManager;
   private plotSaveManager: PlotSaveManager;
+  private mechanicalBlockManager: MechanicalBlockManager;
   
   // Block catalog for obby creator (matching world map block IDs)
   public readonly BLOCK_CATALOG: BlockType[] = [
@@ -47,6 +49,11 @@ export class BlockPlacementManager {
     
     // Special blocks (3 points each)
     { id: 6, name: 'glass', description: 'Disappearing glass', category: 'obstacle' },
+    
+    // Mechanical blocks (5 points each)
+    { id: 115, name: 'mechanical', description: 'Configurable mechanical block', category: 'special' },
+    { id: 120, name: 'mechanical-piston', description: 'Mechanical piston with 3 linear orientations', category: 'special' },
+    { id: 130, name: 'mechanical-wheel', description: 'Mechanical wheel with 8 radial positions', category: 'special' },
   ];
 
   public static getInstance(): BlockPlacementManager {
@@ -68,6 +75,7 @@ export class BlockPlacementManager {
     this.plotBoundaryManager = PlotBoundaryManager.getInstance();
     this.obstacleCollisionManager = ObstacleCollisionManager.getInstance();
     this.plotSaveManager = PlotSaveManager.getInstance();
+    this.mechanicalBlockManager = MechanicalBlockManager.getInstance();
   }
 
   // Toggle build mode for a player - now requires world parameter
@@ -76,14 +84,20 @@ export class BlockPlacementManager {
     const currentMode = this.playerBuildModes.get(playerId) || false;
     this.playerBuildModes.set(playerId, !currentMode);
     
+    const mechanicalBlockManager = MechanicalBlockManager.getInstance();
+    
     if (!currentMode) {
       // Entering build mode
+      mechanicalBlockManager.enterBuildMode();
       world.chatManager.sendPlayerMessage(player, '🔨 Build mode enabled!', 'FFD700');
+      world.chatManager.sendPlayerMessage(player, '⚙️ Mechanical blocks paused and reset to home positions', 'FFA500');
       world.chatManager.sendPlayerMessage(player, 'Left click to place blocks, right click to remove');
       this.showBlockCatalog(player, world);
     } else {
       // Exiting build mode
+      mechanicalBlockManager.exitBuildMode();
       world.chatManager.sendPlayerMessage(player, '🏃 Build mode disabled!', 'FF6B6B');
+      world.chatManager.sendPlayerMessage(player, '⚙️ Mechanical blocks resumed motion', '90EE90');
     }
   }
 
@@ -239,12 +253,33 @@ export class BlockPlacementManager {
       Math.floor(position.z)
     );
     
-    console.log(`[BlockPlacementManager] Setting block at coordinate:`, coordinate, `with ID: ${actualBlockId}`);
-    world.chunkLattice.setBlock(coordinate, actualBlockId);
-    
-    // Verify the block was placed
-    const placedBlockId = world.chunkLattice.getBlockId(coordinate);
-    console.log(`[BlockPlacementManager] Block placed, verification - expected: ${actualBlockId}, actual: ${placedBlockId}`);
+    // Handle general mechanical block (show config panel directly - no physical block placement)
+    if (this.mechanicalBlockManager.isGeneralMechanicalBlock(actualBlockId)) {
+      console.log(`[BlockPlacementManager] Showing config panel for general mechanical block ID ${actualBlockId} (no physical block placement)`);
+      
+      // Directly show the config panel without placing physical block first
+      const success = this.mechanicalBlockManager.onGeneralMechanicalBlockPlaced(coordinate, player);
+      if (!success) {
+        world.chatManager.sendPlayerMessage(player, 'Failed to show mechanical config panel!', 'FF0000');
+        return false;
+      }
+    } else if (this.mechanicalBlockManager.isMechanicalBlock(actualBlockId)) {
+      // Handle other mechanical blocks as pure entities (no chunk lattice placement)
+      console.log(`[BlockPlacementManager] Creating mechanical entity for block ID ${actualBlockId} (entity-only, no block placement)`);
+      const success = this.mechanicalBlockManager.onMechanicalBlockPlaced(actualBlockId, coordinate, undefined, player);
+      if (!success) {
+        world.chatManager.sendPlayerMessage(player, 'Failed to place mechanical block!', 'FF0000');
+        return false;
+      }
+    } else {
+      // Place normal blocks in chunk lattice
+      console.log(`[BlockPlacementManager] Setting block at coordinate:`, coordinate, `with ID: ${actualBlockId}`);
+      world.chunkLattice.setBlock(coordinate, actualBlockId);
+      
+      // Verify the block was placed
+      const placedBlockId = world.chunkLattice.getBlockId(coordinate);
+      console.log(`[BlockPlacementManager] Block placed, verification - expected: ${actualBlockId}, actual: ${placedBlockId}`);
+    }
     
     // Track the block placement if plotId is provided
     if (plotId) {
@@ -293,6 +328,12 @@ export class BlockPlacementManager {
       console.log(`[BlockPlacementManager] No block found at position (ID: 0)`);
       world.chatManager.sendPlayerMessage(player, 'No block to remove here!', 'FF0000');
       return false;
+    }
+    
+    // Handle mechanical block entity removal before removing the block
+    if (this.mechanicalBlockManager.isMechanicalBlock(currentBlockId)) {
+      console.log(`[BlockPlacementManager] Removing mechanical entity for block ID ${currentBlockId}`);
+      this.mechanicalBlockManager.onMechanicalBlockRemoved(coordinate);
     }
     
     // Use delete_block → air sequence to clear zombie blocks

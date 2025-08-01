@@ -366,6 +366,30 @@ export class BlockRegistry {
         description: 'Conveyor belt - moves players in the positive X direction (east)'
       },
 
+      // =================================================================
+      // MECHANICAL BLOCKS (IDs 115, 120+)
+      // =================================================================
+      { 
+        id: 115, name: 'mechanical', textureUri: 'blocks/iron-ore.png', 
+        category: 'special', buildable: true, destructible: true, pointCost: 5,
+        description: 'Configurable mechanical block - opens config panel on placement'
+      },
+      { 
+        id: 120, name: 'mechanical-piston', textureUri: 'blocks/coal-ore.png', 
+        category: 'special', buildable: true, destructible: true, pointCost: 5,
+        description: 'Mechanical piston - extends/retracts with 3 linear orientations (X, Y, Z)'
+      },
+      { 
+        id: 130, name: 'mechanical-wheel', textureUri: 'blocks/gold-ore.png', 
+        category: 'special', buildable: true, destructible: true, pointCost: 5,
+        description: 'Mechanical wheel - rotates with 8 radial positions'
+      },
+      { 
+        id: 140, name: 'mechanical-elevator', textureUri: 'blocks/iron-ore.png', 
+        category: 'special', buildable: true, destructible: true, pointCost: 5,
+        description: 'Mechanical elevator - moves up and down vertically'
+      },
+
     ];
 
     // Build internal maps for fast lookup
@@ -660,4 +684,14 @@ export const SPECIAL_BLOCK_IDS = {
   START: 100,
   GOAL: 101,
   CHECKPOINT: 102
+} as const;
+
+/**
+ * Mechanical block IDs for easy access
+ */
+export const MECHANICAL_BLOCK_IDS = {
+  GENERAL: 115,
+  PISTON: 120,
+  WHEEL: 130,
+  ELEVATOR: 140
 } as const; 

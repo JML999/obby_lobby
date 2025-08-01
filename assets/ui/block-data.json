@@ -1,49 +1,7 @@
 {
-  "generated": "2025-07-13T22:50:42.056Z",
-  "totalBlocks": 8,
+  "generated": "2025-07-30T17:50:00.000Z",
+  "totalBlocks": 11,
   "blocks": [
-    {
-      "id": 1,
-      "name": "platform",
-      "textureUri": "blocks/stone.png",
-      "cost": 1,
-      "type": "platform"
-    },
-    {
-      "id": 6,
-      "name": "glass",
-      "textureUri": "blocks/glass.png",
-      "cost": 3,
-      "type": "glass"
-    },
-    {
-      "id": 9,
-      "name": "ice",
-      "textureUri": "blocks/ice.png",
-      "cost": 1,
-      "type": "ice"
-    },
-    {
-      "id": 15,
-      "name": "vines",
-      "textureUri": "blocks/oak-planks-leafyerer.png",
-      "cost": 1,
-      "type": "vines"
-    },
-    {
-      "id": 17,
-      "name": "sand",
-      "textureUri": "blocks/sand.png",
-      "cost": 1,
-      "type": "sand"
-    },
-    {
-      "id": 21,
-      "name": "lava",
-      "textureUri": "blocks/lava.png",
-      "cost": 2,
-      "type": "lava"
-    },
     {
       "id": 100,
       "name": "start",
@@ -57,6 +15,76 @@
       "textureUri": "blocks/goal.png",
       "cost": 0,
       "type": "goal"
+    },
+    {
+      "id": 102,
+      "name": "checkpoint",
+      "textureUri": "blocks/emerald-block.png",
+      "cost": 3,
+      "type": "checkpoint"
+    },
+    {
+      "id": 1,
+      "name": "platform",
+      "textureUri": "blocks/stone.png",
+      "cost": 1,
+      "type": "platform"
+    },
+    {
+      "id": 9,
+      "name": "ice",
+      "textureUri": "blocks/ice.png",
+      "cost": 1,
+      "type": "ice"
+    },
+    {
+      "id": 17,
+      "name": "sand",
+      "textureUri": "blocks/sand.png",
+      "cost": 1,
+      "type": "sand"
+    },
+    {
+      "id": 15,
+      "name": "vines",
+      "textureUri": "blocks/oak-planks-leafyerer.png",
+      "cost": 1,
+      "type": "vines"
+    },
+    {
+      "id": 21,
+      "name": "lava",
+      "textureUri": "blocks/lava.png",
+      "cost": 2,
+      "type": "lava"
+    },
+    {
+      "id": 6,
+      "name": "glass",
+      "textureUri": "blocks/glass.png",
+      "cost": 3,
+      "type": "glass"
+    },
+    {
+      "id": 120,
+      "name": "mechanical-piston",
+      "textureUri": "blocks/coal-ore.png",
+      "cost": 5,
+      "type": "mechanical-piston"
+    },
+    {
+      "id": 130,
+      "name": "mechanical-wheel",
+      "textureUri": "blocks/gold-ore.png",
+      "cost": 5,
+      "type": "mechanical-wheel"
+    },
+    {
+      "id": 115,
+      "name": "mechanical",
+      "textureUri": "blocks/iron-ore.png",
+      "cost": 5,
+      "type": "mechanical"
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { Vector3, World, Player } from "hytopia";
 import { ObbyPlayerEntity } from "./ObbyPlayerEntity";
 import { blockRegistry } from "./BlockRegistry";
+import { MechanicalBlockManager } from "./MechanicalBlockManager";
 
 export interface BlockBehavior {
     id: number;
@@ -23,8 +24,10 @@ export class BlockBehaviorManager {
     private behaviors: Map<number, BlockBehavior> = new Map();
     private disappearingBlocks: Map<string, { blockId: number, disappearTime: number, regenerateTime?: number }> = new Map();
     private playerLastStandingBlock: Map<string, number> = new Map(); // Track what block each player was last standing on
+    private mechanicalBlockManager: MechanicalBlockManager;
     
     private constructor() {
+        this.mechanicalBlockManager = MechanicalBlockManager.getInstance();
         this.initializeBehaviors();
     }
 
