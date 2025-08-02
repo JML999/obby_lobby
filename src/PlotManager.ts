@@ -454,31 +454,43 @@ export class PlotManager {
         }
     }
 
-    // Create initial plots for a new world: All 8 plots filled with random pool maps
+    // Create initial plots for a new world: Leave first 3 plots empty, fill remaining 5 with pool maps
     private async createInitialPlots(world: World): Promise<Plot[]> {
         const plots: Plot[] = [];
         
         // Load all available pool maps
         const allPoolMaps = await this.defaultMapLoader.loadAllPoolMaps();
         
-        // Randomly select 8 unique pool maps from the available pool maps
-        const selectedPoolMaps = this.selectRandomUniquePoolMaps(allPoolMaps, 8);
+        // Randomly select 5 unique pool maps for plots 3-7 (the remaining plots after first 3 players)
+        const selectedPoolMaps = this.selectRandomUniquePoolMaps(allPoolMaps, 5);
         
-        // Create all 8 plots with random pool map content
+        // Create all 8 plots
         for (let i = 0; i < 8; i++) {
-            const poolMap = selectedPoolMaps[i];
-            plots.push({ 
-                ownerId: null, // Keep assignable to players
-                obby: poolMap ? poolMap.obby : null, // Load pool content
-                plotIndex: i
-                // NOTE: NOT setting defaultMapId - all plots remain assignable to players
-            });
-            
-            if (poolMap) {
+            // Keep first 3 plots (indices 0, 1, 2 = displays 4, 3, 2) empty for new players
+            if (i < 3) {
+                plots.push({ 
+                    ownerId: null, // Assignable to players
+                    obby: null, // Empty - no prefab content
+                    plotIndex: i
+                });
                 const displayNumber = this.getClockwiseDisplayNumber(i);
+                console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) left empty for new players`);
             } else {
+                // Fill remaining plots (indices 3-7) with pool maps
+                const poolMapIndex = i - 3; // Adjust index for selectedPoolMaps array
+                const poolMap = selectedPoolMaps[poolMapIndex];
+                plots.push({ 
+                    ownerId: null, // Keep assignable to players
+                    obby: poolMap ? poolMap.obby : null, // Load pool content
+                    plotIndex: i
+                });
+                
+                if (poolMap) {
+                    const displayNumber = this.getClockwiseDisplayNumber(i);
+                    console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool map`);
                 }
             }
+        }
         
         return plots;
     }

@@ -258,15 +258,28 @@ export class BlockPlacementManager {
       console.log(`[BlockPlacementManager] Showing config panel for general mechanical block ID ${actualBlockId} (no physical block placement)`);
       
       // Directly show the config panel without placing physical block first
-      const success = this.mechanicalBlockManager.onGeneralMechanicalBlockPlaced(coordinate, player);
+      const success = this.mechanicalBlockManager.onGeneralMechanicalBlockPlaced(coordinate, player, plotId);
       if (!success) {
         world.chatManager.sendPlayerMessage(player, 'Failed to show mechanical config panel!', 'FF0000');
         return false;
       }
+      
+      console.log(`[BlockPlacementManager] General mechanical block ${actualBlockId} handled - SHOULD NOT be tracked as regular block`);
+      
+      // Grant XP for block placement
+      const xpSystem = SimpleLevelingSystem.getInstance();
+      xpSystem.onFirstBlockPlaced(player.id, player); // Handles first-time bonus
+      xpSystem.onBlockPlaced(player.id, player); // Always grant repeatable XP
+      
+      // Send feedback
+      const blockType = this.BLOCK_CATALOG.find(b => b.id === actualBlockId);
+      world.chatManager.sendPlayerMessage(player, `Placed ${blockType?.name || 'mechanical block'}`, '00FF00');
+      
+      return true; // Return here to skip block tracking
     } else if (this.mechanicalBlockManager.isMechanicalBlock(actualBlockId)) {
       // Handle other mechanical blocks as pure entities (no chunk lattice placement)
       console.log(`[BlockPlacementManager] Creating mechanical entity for block ID ${actualBlockId} (entity-only, no block placement)`);
-      const success = this.mechanicalBlockManager.onMechanicalBlockPlaced(actualBlockId, coordinate, undefined, player);
+      const success = this.mechanicalBlockManager.onMechanicalBlockPlaced(actualBlockId, coordinate, undefined, player, plotId);
       if (!success) {
         world.chatManager.sendPlayerMessage(player, 'Failed to place mechanical block!', 'FF0000');
         return false;
@@ -281,8 +294,8 @@ export class BlockPlacementManager {
       console.log(`[BlockPlacementManager] Block placed, verification - expected: ${actualBlockId}, actual: ${placedBlockId}`);
     }
     
-    // Track the block placement if plotId is provided
-    if (plotId) {
+    // Track the block placement if plotId is provided (but NOT for mechanical blocks)
+    if (plotId && !this.mechanicalBlockManager.isGeneralMechanicalBlock(actualBlockId) && !this.mechanicalBlockManager.isMechanicalBlock(actualBlockId)) {
       this.plotSaveManager.trackBlockPlacement(plotId, coordinate, actualBlockId);
       // Also record user-placed block for efficient clearing
       this.plotSaveManager.trackUserPlacedBlock(world, coordinate, actualBlockId, player.id, plotId);
@@ -334,6 +347,25 @@ export class BlockPlacementManager {
     if (this.mechanicalBlockManager.isMechanicalBlock(currentBlockId)) {
       console.log(`[BlockPlacementManager] Removing mechanical entity for block ID ${currentBlockId}`);
       this.mechanicalBlockManager.onMechanicalBlockRemoved(coordinate);
+    }
+    
+    // Handle configurable mechanical entity removal with refund
+    if (plotId) {
+      const positionKey = `${Math.floor(coordinate.x)},${Math.floor(coordinate.y)},${Math.floor(coordinate.z)}`;
+      const mechanicalEntity = this.mechanicalBlockManager.getConfigurableEntityAt(coordinate);
+      if (mechanicalEntity) {
+        console.log(`[BlockPlacementManager] Removing configurable mechanical entity at ${positionKey}`);
+        const refundAmount = this.mechanicalBlockManager.removeMechanicalEntity(plotId, positionKey, player);
+        
+        if (refundAmount > 0) {
+          // Refund the player
+          const currentCash = this.plotSaveManager.getPlayerCash(player);
+          const newCash = currentCash + refundAmount;
+          this.plotSaveManager.setPlayerCash(player, newCash);
+          world.chatManager.sendPlayerMessage(player, `💰 Refunded ${refundAmount} cash for mechanical entity`, '00FF00');
+          console.log(`[BlockPlacementManager] Refunded ${refundAmount} cash to player ${player.id} (new balance: ${newCash})`);
+        }
+      }
     }
     
     // Use delete_block → air sequence to clear zombie blocks

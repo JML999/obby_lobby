@@ -114,4 +114,37 @@ export class CashCalculator {
     public static getAllEntityCosts(): CashCosts['entities'] {
         return { ...this.ENTITY_COSTS };
     }
+
+    /**
+     * Calculate mechanical entity cost based on dimensions
+     * Base cost is 2 for 1x1x1, +1 for each additional block volume
+     */
+    public static getMechanicalEntityCost(dimensions: { x: number; y: number; z: number }): number {
+        const volume = dimensions.x * dimensions.y * dimensions.z;
+        return Math.max(2, 1 + volume); // Base 2 for 1x1x1, +1 for each additional block
+    }
+
+    /**
+     * Check if player has enough cash for a mechanical entity
+     */
+    public static canAffordMechanicalEntity(currentCash: number, dimensions: { x: number; y: number; z: number }): boolean {
+        return currentCash >= this.getMechanicalEntityCost(dimensions);
+    }
+
+    /**
+     * Calculate cash after placing a mechanical entity
+     */
+    public static deductMechanicalEntityCost(currentCash: number, dimensions: { x: number; y: number; z: number }): number {
+        const cost = this.getMechanicalEntityCost(dimensions);
+        return Math.max(0, currentCash - cost);
+    }
+
+    /**
+     * Calculate cash after removing a mechanical entity (full refund)
+     */
+    public static refundMechanicalEntityCost(currentCash: number, dimensions: { x: number; y: number; z: number }, refundPercentage: number = 1.0): number {
+        const cost = this.getMechanicalEntityCost(dimensions);
+        const refund = Math.floor(cost * refundPercentage);
+        return currentCash + refund;
+    }
 } 

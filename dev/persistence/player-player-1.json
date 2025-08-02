@@ -1,34 +1,215 @@
 {
   "obby": {
-    "plotData": null,
-    "cash": 100,
-    "levelData": {
-      "level": 2,
-      "xp": 8,
-      "totalXP": 58,
-      "firstTimeFlags": [
-        "FIRST_COMPLETE",
-        "FIRST_BUILD"
+    "plotData": {
+      "version": "1.0",
+      "plotSize": {
+        "width": 61,
+        "length": 61,
+        "height": 100
+      },
+      "plotCenter": {
+        "x": -39.5,
+        "y": 1,
+        "z": -96.5
+      },
+      "plotSide": "left",
+      "blocks": [
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 100
+        },
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": -1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": -1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 0,
+            "z": -1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 6.5,
+            "y": 1,
+            "z": -2.5
+          },
+          "blockTypeId": 101
+        }
       ],
-      "loginStreak": 2,
-      "lastLoginDate": "Mon Jul 28 2025",
-      "completedCourses": {
-        "plot_3": "Mon Jul 28 2025"
-      }
+      "obstacles": [
+        {
+          "id": "-14,1,-98",
+          "type": "elevator",
+          "size": "custom",
+          "relativePos": {
+            "x": 25.5,
+            "y": 0,
+            "z": -1.5
+          },
+          "config": {
+            "entityType": "elevator",
+            "dimensions": {
+              "x": 1,
+              "y": 2,
+              "z": 1
+            },
+            "speed": 1,
+            "distance": 2,
+            "rotationSpeed": 20,
+            "cost": 3
+          }
+        },
+        {
+          "id": "-18,2,-99",
+          "type": "carousel",
+          "size": "custom",
+          "relativePos": {
+            "x": 21.5,
+            "y": 1,
+            "z": -2.5
+          },
+          "config": {
+            "entityType": "carousel",
+            "dimensions": {
+              "x": 2,
+              "y": 1,
+              "z": 2
+            },
+            "speed": 2.299999952316284,
+            "distance": 2,
+            "rotationSpeed": 45.999999046325684,
+            "cost": 5
+          }
+        },
+        {
+          "id": "-23,2,-100",
+          "type": "side-to-side",
+          "size": "custom",
+          "relativePos": {
+            "x": 16.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "config": {
+            "entityType": "side-to-side",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2.299999952316284,
+            "distance": 2,
+            "rotationSpeed": 45.999999046325684,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-28,2,-100",
+          "type": "front-to-back",
+          "size": "custom",
+          "relativePos": {
+            "x": 11.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "config": {
+            "entityType": "front-to-back",
+            "dimensions": {
+              "x": 5,
+              "y": 2,
+              "z": 1
+            },
+            "speed": 2.299999952316284,
+            "distance": 5,
+            "rotationSpeed": 45.999999046325684,
+            "cost": 11
+          }
+        }
+      ],
+      "lastModified": 1754104822793,
+      "creatorName": "player-1",
+      "creatorId": "player-1",
+      "scoreboard": [
+        {
+          "playerId": "player-1",
+          "playerName": "player-1",
+          "completionTime": 12682,
+          "timestamp": 1754104822778
+        }
+      ]
     }
   },
   "levelData": {
-    "level": 2,
-    "xp": 29,
-    "totalXP": 79,
+    "level": 7,
+    "xp": 1,
+    "totalXP": 751,
     "firstTimeFlags": [
-      "FIRST_BUILD"
+      "FIRST_COMPLETE"
     ],
-    "lastActiveTime": 1754063502420,
+    "lastActiveTime": 1754104822789,
     "loginStreak": 1,
     "lastLoginDate": "Fri Aug 01 2025"
   },
-  "level": 2,
-  "xp": 29,
-  "totalXP": 79
+  "level": 7,
+  "xp": 1,
+  "totalXP": 751
 }

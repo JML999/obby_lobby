@@ -381,28 +381,35 @@ export class PlotEntranceEntity extends SmartBlockEntity {
 
     private async clearPlot(player: Player) {
         const world = this.world;
-        if (!world) return;
+        if (!world) {
+            console.error('[PlotEntranceEntity] No world available for clearing plot');
+            return;
+        }
 
         // Only allow owner to clear
         if (this.owner !== player.id) {
-            if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ You can only clear plots you own!', 'FF0000');
-            }
+            console.log(`[PlotEntranceEntity] Player ${player.id} attempted to clear plot ${this.plotIndex} but owner is ${this.owner}`);
+            world.chatManager.sendPlayerMessage(player, '❌ You can only clear plots you own!', 'FF0000');
             return;
         }
+        
+        console.log(`[PlotEntranceEntity] Starting clear plot process for plot ${this.plotIndex} owned by ${player.id}`);
         
         // Get plot boundaries from PlotBuildManager
-        const plotBoundaries = this.plotBuildManager.getPlotBoundaries(this.plotIndex);
+        const plotId = `plot_${this.plotIndex}`;
+        console.log(`[PlotEntranceEntity] Getting boundaries for plotId: ${plotId}`);
+        
+        const plotBoundaries = this.plotBuildManager.getPlotBoundaries(plotId);
         
         if (!plotBoundaries) {
-            if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ Could not get plot boundaries!', 'FF0000');
-            }
+            console.error(`[PlotEntranceEntity] Could not get plot boundaries for ${plotId}`);
+            world.chatManager.sendPlayerMessage(player, '❌ Could not get plot boundaries!', 'FF0000');
             return;
         }
         
+        console.log(`[PlotEntranceEntity] Plot boundaries:`, plotBoundaries);
+        
         // Convert plot boundaries to the format expected by PlotSaveManager
-        // Use the actual properties from plotBoundaries instead of non-existent ones
         const clearBoundaries = {
             minX: plotBoundaries.minX,
             maxX: plotBoundaries.maxX,
@@ -412,22 +419,35 @@ export class PlotEntranceEntity extends SmartBlockEntity {
             maxZ: plotBoundaries.maxZ
         };
         
-        // Clear the player's saved obby data (if any)
-        await this.plotSaveManager.clearPlayerObby(player, this.plotIndex);
-        
-        // Clear the physical plot blocks using boundaries
-        await this.plotSaveManager.clearPlotWithBoundaries(player, clearBoundaries, this.plotIndex);
-        
-        // Clear the scoreboard for this plot
-        const { ScoreboardManager } = await import('../ScoreboardManager');
-        const scoreboardManager = ScoreboardManager.getInstance();
-        scoreboardManager.clearPlotScoreboard(this.plotIndex, world);
-        
-        // Don't change player state or teleport - just clear the plot
-        // The player can choose to enter build mode manually if they want
-        
-        if (world) {
+        try {
+            // Step 1: Clear the player's saved obby data (if any)
+            console.log(`[PlotEntranceEntity] Clearing player obby data for plot ${plotId}`);
+            await this.plotSaveManager.clearPlayerObby(player, plotId);
+            
+            // Step 2: Clear the physical plot blocks using boundaries
+            console.log(`[PlotEntranceEntity] Clearing physical plot blocks for plot ${plotId}`, {plotId, clearBoundaries});
+            console.log(`[PlotEntranceEntity] plotId type: ${typeof plotId}, value: ${plotId}`);
+            await this.plotSaveManager.clearPlotWithBoundaries(player, clearBoundaries, plotId);
+            
+            // Step 3: Clear the scoreboard for this plot
+            console.log(`[PlotEntranceEntity] Clearing scoreboard for plot ${this.plotIndex}`);
+            try {
+                const { ScoreboardManager } = await import('../ScoreboardManager');
+                const scoreboardManager = ScoreboardManager.getInstance();
+                scoreboardManager.clearPlotScoreboard(this.plotIndex, world);
+                console.log(`[PlotEntranceEntity] Scoreboard cleared for plot ${this.plotIndex}`);
+            } catch (scoreboardError) {
+                console.error(`[PlotEntranceEntity] Error clearing scoreboard for plot ${this.plotIndex}:`, scoreboardError);
+                // Don't fail the entire operation if scoreboard clearing fails
+            }
+            
+            // Success message
             world.chatManager.sendPlayerMessage(player, `🧹 Plot cleared successfully! You can now build a new course.`, '00FF00');
+            console.log(`[PlotEntranceEntity] Successfully cleared plot ${this.plotIndex} for player ${player.id}`);
+            
+        } catch (error) {
+            console.error(`[PlotEntranceEntity] Error during plot clearing for plot ${this.plotIndex}:`, error);
+            world.chatManager.sendPlayerMessage(player, '❌ Error clearing plot! Check server logs for details.', 'FF0000');
         }
     }
 

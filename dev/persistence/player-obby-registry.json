@@ -19,15 +19,63 @@
           {
             "relativePos": {
               "x": 30.5,
-              "y": 1,
+              "y": 0,
               "z": -0.5
             },
             "blockTypeId": 100
           },
           {
             "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
               "x": 29.5,
-              "y": 1,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
               "z": -0.5
             },
             "blockTypeId": 1
@@ -35,733 +83,118 @@
           {
             "relativePos": {
               "x": 28.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 27.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 26.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 25.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 24.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 23.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 22.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 21.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 20.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 19.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 18.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 17.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 16.5,
-              "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 16.5,
-              "y": 1,
-              "z": 0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 16.5,
-              "y": 1,
-              "z": 1.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 15.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 14.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
               "y": 0,
               "z": -0.5
             },
-            "blockTypeId": 15
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": 13.5,
+              "x": 6.5,
               "y": 1,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 2,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 3,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 4,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 5,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 6,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 7,
-              "z": -0.5
-            },
-            "blockTypeId": 15
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 8,
-              "z": -0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 4,
-              "z": 0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 3,
-              "z": 0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 2,
-              "z": 0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 1,
-              "z": 0.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 3,
-              "z": 1.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 5,
-              "z": -1.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 4,
-              "z": -1.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 3,
-              "z": -1.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 2,
-              "z": -1.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 12.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 11.5,
-              "y": 1,
-              "z": 1.5
-            },
-            "blockTypeId": 104
-          },
-          {
-            "relativePos": {
-              "x": 11.5,
-              "y": 1,
-              "z": 0.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": 10.5,
-              "y": 0,
-              "z": -1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 12.5,
-              "y": 0,
-              "z": -1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 11.5,
-              "y": 0,
               "z": -2.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": 11.5,
-              "y": 0,
-              "z": -3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 0,
-              "z": -3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 10.5,
-              "y": 0,
-              "z": -4.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 10.5,
-              "y": 0,
-              "z": -3.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 0,
-              "z": -4.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 0,
-              "z": -5.5
-            },
-            "blockTypeId": 104
-          },
-          {
-            "relativePos": {
-              "x": 8.5,
-              "y": 0,
-              "z": -6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 7.5,
-              "y": 0,
-              "z": -6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 5,
-              "z": 6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 8.5,
-              "y": 5,
-              "z": 6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 7.5,
-              "y": 5,
-              "z": 6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 4,
-              "z": 6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 5.5,
-              "y": 4,
-              "z": 6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -6.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -5.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -4.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -3.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -2.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -1.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 5.5,
-              "y": 0,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 4.5,
-              "y": 0,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 0,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": -0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 1.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 2.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 3.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 16.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 11.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "blockTypeId": 104
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 0,
-              "z": -6.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 6.5,
-              "y": 0,
-              "z": -0.5
-            },
-            "blockTypeId": 109
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 7,
-              "z": 2.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 7,
-              "z": 1.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 7,
-              "z": 0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 9.5,
-              "y": 7,
-              "z": -0.5
-            },
-            "blockTypeId": 105
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 9.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 2.5,
-              "y": 0,
-              "z": 8.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 1.5,
-              "y": 0,
-              "z": 8.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 0.5,
-              "y": 0,
-              "z": 7.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 0.5,
-              "y": 0,
-              "z": 6.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 1.5,
-              "y": 0,
-              "z": 6.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 1.5,
-              "y": 0,
-              "z": 5.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 0,
-              "z": 9.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 0,
-              "z": 8.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 0,
-              "z": 7.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 1,
-              "z": 7.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 3.5,
-              "y": 0,
-              "z": 6.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 1.5,
-              "y": 0,
-              "z": 7.5
             },
             "blockTypeId": 101
           }
         ],
-        "obstacles": [],
-        "lastModified": 1753306224271,
+        "obstacles": [
+          {
+            "id": "-14,1,-98",
+            "type": "elevator",
+            "size": "custom",
+            "relativePos": {
+              "x": 25.5,
+              "y": 0,
+              "z": -1.5
+            },
+            "config": {
+              "entityType": "elevator",
+              "dimensions": {
+                "x": 1,
+                "y": 2,
+                "z": 1
+              },
+              "speed": 1,
+              "distance": 2,
+              "rotationSpeed": 20,
+              "cost": 3
+            }
+          },
+          {
+            "id": "-18,2,-99",
+            "type": "carousel",
+            "size": "custom",
+            "relativePos": {
+              "x": 21.5,
+              "y": 1,
+              "z": -2.5
+            },
+            "config": {
+              "entityType": "carousel",
+              "dimensions": {
+                "x": 2,
+                "y": 1,
+                "z": 2
+              },
+              "speed": 2.299999952316284,
+              "distance": 2,
+              "rotationSpeed": 45.999999046325684,
+              "cost": 5
+            }
+          },
+          {
+            "id": "-23,2,-100",
+            "type": "side-to-side",
+            "size": "custom",
+            "relativePos": {
+              "x": 16.5,
+              "y": 1,
+              "z": -3.5
+            },
+            "config": {
+              "entityType": "side-to-side",
+              "dimensions": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+              },
+              "speed": 2.299999952316284,
+              "distance": 2,
+              "rotationSpeed": 45.999999046325684,
+              "cost": 2
+            }
+          },
+          {
+            "id": "-28,2,-100",
+            "type": "front-to-back",
+            "size": "custom",
+            "relativePos": {
+              "x": 11.5,
+              "y": 1,
+              "z": -3.5
+            },
+            "config": {
+              "entityType": "front-to-back",
+              "dimensions": {
+                "x": 5,
+                "y": 2,
+                "z": 1
+              },
+              "speed": 2.299999952316284,
+              "distance": 5,
+              "rotationSpeed": 45.999999046325684,
+              "cost": 11
+            }
+          }
+        ],
+        "lastModified": 1754104634591,
         "creatorName": "player-1",
         "creatorId": "player-1",
         "scoreboard": []
       },
-      "cash": 9
+      "cash": 46
     },
-    "lastUpdated": 1753306224282,
+    "lastUpdated": 1754104634594,
     "displayName": "player-1",
     "worldSnapshots": {
       "Obby Region 1": 1752969137436,
@@ -781,836 +214,353 @@
         "plotCenter": {
           "x": -39.5,
           "y": 1,
-          "z": 31.5
+          "z": -96.5
         },
         "plotSide": "left",
         "blocks": [
           {
             "relativePos": {
-              "x": -8.5,
-              "y": 45,
-              "z": 2.5
+              "x": 21.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 100
           },
           {
             "relativePos": {
-              "x": -6.5,
-              "y": 37,
-              "z": -0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 36,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 36,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 36,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 37,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 34,
-              "z": -0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 34,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 33,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 34,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 33,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 33,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 33,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 36,
-              "z": -0.5
+              "x": 20.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -6.5,
-              "y": 36,
-              "z": 2.5
+              "x": 20.5,
+              "y": 1,
+              "z": 13.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -7.5,
-              "y": 35,
-              "z": 3.5
+              "x": 21.5,
+              "y": 1,
+              "z": 13.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -4.5,
-              "y": 32,
-              "z": 1.5
+              "x": 20.5,
+              "y": 1,
+              "z": 15.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -0.5,
-              "y": 7,
-              "z": 3.5
+              "x": 21.5,
+              "y": 1,
+              "z": 15.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 1,
+              "z": 14.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 1,
+              "z": 15.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 22.5,
+              "y": 1,
+              "z": 13.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 7.5,
+              "y": 3,
+              "z": 13.5
             },
             "blockTypeId": 101
           },
           {
             "relativePos": {
-              "x": -6.5,
-              "y": 28,
-              "z": 1.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 27,
-              "z": 1.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 24,
-              "z": 0.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 24,
-              "z": 4.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 23,
-              "z": 3.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 22,
-              "z": 1.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 18,
-              "z": 1.5
-            },
-            "blockTypeId": 9
-          },
-          {
-            "relativePos": {
-              "x": -8.5,
-              "y": 42,
-              "z": 2.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 42,
-              "z": 1.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 42,
-              "z": 0.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 42,
-              "z": 1.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 42,
-              "z": 2.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 42,
-              "z": 3.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 42,
-              "z": 3.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 42,
-              "z": 4.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -8.5,
-              "y": 42,
-              "z": 4.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 42,
-              "z": 4.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 42,
-              "z": 3.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -10.5,
-              "y": 42,
-              "z": 3.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -10.5,
-              "y": 42,
-              "z": 2.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -10.5,
-              "y": 42,
-              "z": 1.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -8.5,
-              "y": 42,
-              "z": 0.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 42,
-              "z": 1.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 42,
-              "z": 0.5
-            },
-            "blockTypeId": 17
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 34,
-              "z": -0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -12.5,
-              "y": 33,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 33,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 34,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -10.5,
-              "y": 31,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 7,
-              "z": 3.5
+              "x": 23.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": 0.5,
-              "y": 7,
-              "z": 3.5
+              "x": 24.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -0.5,
-              "y": 7,
-              "z": 2.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": -0.5,
-              "y": 7,
-              "z": 4.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": -0.5,
-              "y": 14,
-              "z": 3.5
+              "x": 25.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -3.5,
-              "y": 17,
-              "z": 2.5
+              "x": 26.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -3.5,
-              "y": 19,
-              "z": 3.5
+              "x": 27.5,
+              "y": 1,
+              "z": 14.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -5.5,
-              "y": 27,
-              "z": 1.5
+              "x": 27.5,
+              "y": 1,
+              "z": 13.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -3.5,
-              "y": 33,
-              "z": 4.5
+              "x": 27.5,
+              "y": 1,
+              "z": 12.5
             },
-            "blockTypeId": 6
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -5.5,
-              "y": 31,
-              "z": 3.5
+              "x": 28.5,
+              "y": 1,
+              "z": 12.5
             },
-            "blockTypeId": 6
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -4.5,
-              "y": 29,
-              "z": 3.5
+              "x": 28.5,
+              "y": 1,
+              "z": 11.5
             },
-            "blockTypeId": 6
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -4.5,
-              "y": 28,
-              "z": 3.5
+              "x": 28.5,
+              "y": 1,
+              "z": 10.5
             },
-            "blockTypeId": 6
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -4.5,
-              "y": 24,
+              "x": 28.5,
+              "y": 1,
+              "z": 9.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": 8.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": 7.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
+              "z": 6.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 28.5,
+              "y": 1,
               "z": 5.5
             },
-            "blockTypeId": 6
+            "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -7.5,
-              "y": 26,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 26,
-              "z": -0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 26,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 26,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 26,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 26,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -8.5,
-              "y": 26,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 26,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -8.5,
-              "y": 22,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 23,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -6.5,
-              "y": 23,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 23,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 22,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 19,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 17,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 18,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 15,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 15,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 26,
+              "x": 28.5,
+              "y": 1,
               "z": 4.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 22,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 23,
-              "z": 4.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 25,
-              "z": 0.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 25,
-              "z": 3.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 18,
-              "z": 2.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": -1.5,
-              "y": 14,
-              "z": 3.5
-            },
-            "blockTypeId": 21
-          },
-          {
-            "relativePos": {
-              "x": 0.5,
-              "y": 21,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 17,
-              "z": 3.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 22,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -7.5,
-              "y": 22,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -5.5,
-              "y": 25,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 24,
-              "z": -1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -4.5,
-              "y": 23,
-              "z": 0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 28,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 21,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 27,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 26,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -2.5,
-              "y": 27,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 27,
-              "z": 2.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -3.5,
-              "y": 26,
-              "z": 1.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 33,
-              "z": -0.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": -9.5,
-              "y": 32,
-              "z": -0.5
             },
             "blockTypeId": 1
           },
           {
             "relativePos": {
-              "x": -8.5,
-              "y": 32,
-              "z": -0.5
+              "x": 28.5,
+              "y": 0,
+              "z": 5.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": 4.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 0,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 3.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 29.5,
+              "y": 1,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": 2.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": 1.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 30.5,
+              "y": 0,
+              "z": 0.5
             },
             "blockTypeId": 1
           }
         ],
-        "obstacles": [],
-        "lastModified": 1752976552642,
+        "obstacles": [
+          {
+            "id": "-22,3,-82",
+            "type": "carousel",
+            "size": "custom",
+            "relativePos": {
+              "x": 17.5,
+              "y": 2,
+              "z": 14.5
+            },
+            "config": {
+              "entityType": "carousel",
+              "dimensions": {
+                "x": 2,
+                "y": 2,
+                "z": 2
+              },
+              "speed": 1.600000023841858,
+              "distance": 2,
+              "rotationSpeed": 32.00000047683716,
+              "cost": 9
+            }
+          },
+          {
+            "id": "-28,4,-82",
+            "type": "side-to-side",
+            "size": "custom",
+            "relativePos": {
+              "x": 11.5,
+              "y": 3,
+              "z": 14.5
+            },
+            "config": {
+              "entityType": "side-to-side",
+              "dimensions": {
+                "x": 4,
+                "y": 1,
+                "z": 1
+              },
+              "speed": 1.2000000476837158,
+              "distance": 1,
+              "rotationSpeed": 24.000000953674316,
+              "cost": 5
+            }
+          }
+        ],
+        "lastModified": 1754109616069,
         "creatorName": "player-6",
         "creatorId": "player-6",
         "scoreboard": []
       },
-      "cash": 0
+      "cash": 36
     },
-    "lastUpdated": 1752976552647,
+    "lastUpdated": 1754109616072,
     "displayName": "player-6",
     "worldSnapshots": {
       "Obby Region 1": 1752948466468,

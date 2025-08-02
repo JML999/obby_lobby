@@ -339,30 +339,6 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
     }
 
     private sendWelcomeMessage(player: Player): void {
-        try {
-            // Get the player's assigned plot from PlotManager
-            const { PlotManager } = require('./PlotManager');
-            const plotManager = PlotManager.getInstance();
-            const playerPlot = plotManager.getPlayerPlot(player.id);
-            
-            if (playerPlot) {
-                // Use the same clockwise display number logic as PlotManager
-                const displayNumber = this.getDisplayNumber(playerPlot.plotIndex);
-                
-                // Show animated welcome message
-                this.showAnimatedText(
-                    `Welcome to OBBY LOBBY!`,
-                    `You can build on Plot ${displayNumber}`,
-                    3000,
-                    'success'
-                );
-                
-            } else {
-                console.warn(`[ObbyPlayerEntity] No plot found for player ${player.id}, skipping welcome message`);
-            }
-        } catch (error) {
-            console.error(`[ObbyPlayerEntity] Error sending welcome message to player ${player.id}:`, error);
-        }
     }
 
     /**
@@ -1073,8 +1049,12 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
             const mechanicalBlockManager = MechanicalBlockManager.getInstance();
             mechanicalBlockManager.initializeWorld(player.world);
             
+            // Get the current plot for this player
+            const currentPlotIndex = this.plotBuildManager.getPlayerActiveBuildPlot(player.id);
+            const plotId = currentPlotIndex !== null ? `plot_${currentPlotIndex}` : undefined;
+            
             // Create the mechanical entity based on configuration
-            const success = mechanicalBlockManager.onMechanicalConfigConfirmed(data.position, data.config);
+            const success = mechanicalBlockManager.onMechanicalConfigConfirmed(data.position, data.config, plotId, player);
             
             if (success) {
                 player.world.chatManager.sendPlayerMessage(

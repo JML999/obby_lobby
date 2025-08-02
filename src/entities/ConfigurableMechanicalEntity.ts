@@ -132,6 +132,29 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
     }
     
     /**
+     * Getter methods for accessing entity properties during saving
+     */
+    public getEntityType(): 'static' | 'elevator' | 'carousel' | 'side-to-side' | 'front-to-back' {
+        return this.entityType;
+    }
+    
+    public getDimensions(): { x: number; y: number; z: number } {
+        return { ...this.dimensions };
+    }
+    
+    public getMoveSpeed(): number {
+        return this.moveSpeed;
+    }
+    
+    public getMoveDistance(): number {
+        return this.moveDistance;
+    }
+    
+    public getRotationSpeed(): number {
+        return this.rotationSpeed;
+    }
+    
+    /**
      * Spawn the entity and set up movement behavior
      */
     spawn(world: World, position: Vector3Like): Entity | null {

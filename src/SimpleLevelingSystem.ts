@@ -1,46 +1,46 @@
 import { Player, World } from 'hytopia';
 import { MessageManager } from './MessageManager';
 
-// Level configuration with cash allowances and block unlocks
+// Level configuration with linear cash progression - ALL BLOCKS UNLOCKED AT ALL LEVELS
 const LEVEL_CONFIG: Record<number, { cash: number; blocks: string[]; xpRequired: number }> = {
   1: { 
-    cash: 100, 
-    blocks: ['platform', 'start', 'finish', 'sand', 'ice'], // Fun blocks available from start
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels - no unlocking system
     xpRequired: 0 
   },
   2: { 
-    cash: 150, 
-    blocks: [], // No new blocks, just more cash allowance
-    xpRequired: 50  // Very easy first level
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
+    xpRequired: 50
   },
   3: { 
-    cash: 200, 
-    blocks: ['lava'],
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 100
   },
   4: { 
-    cash: 250, 
-    blocks: ['conveyor-z+', 'conveyor-z-', 'conveyor-x+', 'conveyor-x-'],
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 200
   },
   5: { 
-    cash: 300, 
-    blocks: ['checkpoint', 'disappearing', 'bounce', 'rotating_bean', 'jump_pad', 'zombie'], // All obstacles complete by level 5
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 350
   },
   6: { 
-    cash: 500, // Increased cash allowance focus
-    blocks: [], // No new blocks, just more building allowance
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 500
   },
   7: { 
-    cash: 750, // Higher cash allowance focus
-    blocks: [], // No new blocks, just more building allowance
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 750
   },
   8: { 
-    cash: 1200, // Maximum cash allowance for late game
-    blocks: [], // No new blocks, just maximum building allowance
+    cash: 1000, // Dev mode: 1000 allowance for all levels
+    blocks: [], // All blocks available at all levels
     xpRequired: 1000
   }
 };
@@ -338,11 +338,11 @@ export class SimpleLevelingSystem {
 
   /**
    * Check if a specific block type is unlocked for a player
+   * ALL BLOCKS ARE UNLOCKED AT ALL LEVELS - always returns true
    */
   public isBlockUnlocked(playerId: string, blockTypeName: string): boolean {
-    const data = this.getOrCreatePlayerData(playerId);
-    const unlockedBlocks = this.getUnlockedBlocks(data.level);
-    return unlockedBlocks.includes(blockTypeName);
+    // All blocks and mechanical blocks are available to all players at all times
+    return true;
   }
 
   /**

@@ -1,5 +1,9 @@
 /* Completion Leaderboard Panel Styles */
 
+.completion-leaderboard-panel {
+    display: none; /* Hidden by default until shown via JavaScript */
+}
+
 .completion-leaderboard-overlay {
     position: fixed;
     top: 50%;

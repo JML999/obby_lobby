@@ -1,5 +1,379 @@
 {
   "obby": {
-    "plotData": null
-  }
+    "plotData": {
+      "version": "1.0",
+      "plotSize": {
+        "width": 61,
+        "length": 61,
+        "height": 100
+      },
+      "plotCenter": {
+        "x": -39.5,
+        "y": 1,
+        "z": -96.5
+      },
+      "plotSide": "left",
+      "blocks": [
+        {
+          "relativePos": {
+            "x": 21.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 100
+        },
+        {
+          "relativePos": {
+            "x": 20.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 20.5,
+            "y": 1,
+            "z": 13.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 21.5,
+            "y": 1,
+            "z": 13.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 20.5,
+            "y": 1,
+            "z": 15.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 21.5,
+            "y": 1,
+            "z": 15.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 1,
+            "z": 15.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 1,
+            "z": 13.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 7.5,
+            "y": 3,
+            "z": 13.5
+          },
+          "blockTypeId": 101
+        },
+        {
+          "relativePos": {
+            "x": 23.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 24.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 26.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 1,
+            "z": 14.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 1,
+            "z": 13.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 1,
+            "z": 12.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 12.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 11.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 10.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 9.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 8.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 7.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 6.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 5.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": 4.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 0,
+            "z": 5.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": 4.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 0,
+            "z": 3.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 1,
+            "z": 3.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 1,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 1,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 30.5,
+            "y": 0,
+            "z": 0.5
+          },
+          "blockTypeId": 1
+        }
+      ],
+      "obstacles": [
+        {
+          "id": "-22,3,-82",
+          "type": "carousel",
+          "size": "custom",
+          "relativePos": {
+            "x": 17.5,
+            "y": 2,
+            "z": 14.5
+          },
+          "config": {
+            "entityType": "carousel",
+            "dimensions": {
+              "x": 2,
+              "y": 2,
+              "z": 2
+            },
+            "speed": 1.600000023841858,
+            "distance": 2,
+            "rotationSpeed": 32.00000047683716,
+            "cost": 9
+          }
+        },
+        {
+          "id": "-28,4,-82",
+          "type": "side-to-side",
+          "size": "custom",
+          "relativePos": {
+            "x": 11.5,
+            "y": 3,
+            "z": 14.5
+          },
+          "config": {
+            "entityType": "side-to-side",
+            "dimensions": {
+              "x": 4,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 1.2000000476837158,
+            "distance": 1,
+            "rotationSpeed": 24.000000953674316,
+            "cost": 5
+          }
+        }
+      ],
+      "lastModified": 1754110138019,
+      "creatorName": "player-6",
+      "creatorId": "player-6",
+      "scoreboard": [
+        {
+          "playerId": "player-6",
+          "playerName": "player-6",
+          "completionTime": 3590,
+          "timestamp": 1754110138010
+        }
+      ]
+    }
+  },
+  "levelData": {
+    "level": 3,
+    "xp": 48,
+    "totalXP": 148,
+    "firstTimeFlags": [
+      "FIRST_COMPLETE"
+    ],
+    "lastActiveTime": 1754110138014,
+    "loginStreak": 1,
+    "lastLoginDate": "Fri Aug 01 2025"
+  },
+  "level": 3,
+  "xp": 48,
+  "totalXP": 148
 }

@@ -12,10 +12,18 @@ export interface SavedBlock {
 
 export interface SavedObstacle {
   id: string;
-  type: string; // 'bounce_pad', 'rotating_beam', 'seesaw'
-  size: string; // 'small', 'medium', 'large', 'standard'
+  type: string; // 'bounce_pad', 'rotating_beam', 'seesaw', 'mechanical'
+  size: string; // 'small', 'medium', 'large', 'standard', or 'custom'
   relativePos: Vector3Like;  // Position relative to plot center
   config?: any; // Additional configuration (rotation speed, etc.)
+}
+
+export interface MechanicalEntityConfig {
+  entityType: 'static' | 'elevator' | 'carousel' | 'side-to-side' | 'front-to-back';
+  dimensions: { x: number; y: number; z: number }; // Full block sizes
+  speed: number; // Movement speed
+  distance: number; // Movement distance (for elevator, side-to-side, front-to-back)
+  rotationSpeed?: number; // For carousel type
 }
 
 export interface PlotData {
@@ -42,7 +50,7 @@ export class PlotSaveManager {
   private obstacleCollisionManager: ObstacleCollisionManager;
   private obstaclePlacementManager: ObstaclePlacementManager;
   
-  // In-memory cache of obby data per player
+  // In-memory cache of obby data per player (world-aware)
   private playerObbyCache = new Map<string, PlayerObbyData>();
   
   // Real-time block tracking per plot - now region-aware with world name
@@ -348,7 +356,8 @@ export class PlotSaveManager {
    * Get player's current cash
    */
   public getPlayerCash(player: Player): number {
-    const playerData = this.playerObbyCache.get(player.id);
+    const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+    const playerData = this.playerObbyCache.get(playerKey);
     return playerData?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
   }
 
@@ -356,12 +365,13 @@ export class PlotSaveManager {
    * Set player's cash
    */
   public setPlayerCash(player: Player, cash: number): void {
-    const playerData = this.playerObbyCache.get(player.id);
+    const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+    const playerData = this.playerObbyCache.get(playerKey);
     if (playerData) {
       playerData.cash = Math.max(0, cash);
     } else {
       // Initialize if doesn't exist
-      this.playerObbyCache.set(player.id, { 
+      this.playerObbyCache.set(playerKey, { 
         plotData: null, 
         cash: Math.max(0, cash) 
       });
@@ -404,12 +414,22 @@ export class PlotSaveManager {
   }
 
   /**
+   * Create a world-aware player cache key to prevent cross-world data bleeding
+   */
+  private getWorldAwarePlayerKey(playerId: string, world?: World): string {
+    const targetWorld = world || this.world;
+    const worldName = targetWorld?.name || 'unknown';
+    return `${worldName}:${playerId}`;
+  }
+
+  /**
    * Check if player has a saved obby
    */
   public async hasPlayerObby(player: Player): Promise<boolean> {
     try {
       // Check cache first
-      const cached = this.playerObbyCache.get(player.id);
+      const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+      const cached = this.playerObbyCache.get(playerKey);
       if (cached) {
         return cached.plotData !== null;
       }
@@ -420,7 +440,7 @@ export class PlotSaveManager {
       
       if (persistedData && persistedData.obby && 
           typeof persistedData.obby === 'object' && 'plotData' in persistedData.obby &&
-          persistedData.obby.plotData !== null) { // FIX: Check that plotData is not null
+          persistedData.obby.plotData !== null) {
         const rawObbyData = persistedData.obby as any;
         
         // Handle backward compatibility - add missing creator fields if they don't exist
@@ -439,7 +459,7 @@ export class PlotSaveManager {
       }
       
       // Cache the result
-      this.playerObbyCache.set(player.id, playerObbyData);
+      this.playerObbyCache.set(playerKey, playerObbyData);
       
       return playerObbyData.plotData !== null;
     } catch (error) {
@@ -500,7 +520,7 @@ export class PlotSaveManager {
       
       if (persistedData && persistedData.obby && 
           typeof persistedData.obby === 'object' && persistedData.obby !== null && 'plotData' in persistedData.obby &&
-          persistedData.obby.plotData !== null) { // FIX: Check that plotData is not null
+          persistedData.obby.plotData !== null) {
         const rawObbyData = persistedData.obby as any;
         
         // Handle backward compatibility - add missing creator fields if they don't exist
@@ -519,7 +539,8 @@ export class PlotSaveManager {
       }
       
       // Cache the player's obby data
-      this.playerObbyCache.set(player.id, playerObbyData);
+      const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+      this.playerObbyCache.set(playerKey, playerObbyData);
       
       const plotData = playerObbyData.plotData;
       if (!plotData) {
@@ -536,13 +557,19 @@ export class PlotSaveManager {
       
       // Update the cached data with the calculated cash
       playerObbyData.cash = calculatedCash;
-      this.playerObbyCache.set(player.id, playerObbyData);
+      this.playerObbyCache.set(playerKey, playerObbyData);
       
       console.log(`[PlotSaveManager] Set player ${player.username} cash to ${calculatedCash} based on loaded content`);
       
-      // CLEAR THE PLOT FIRST before loading new content
+      // CLEAR THE PLOT FIRST before loading new content (including any existing mechanical entities)
       console.log(`[PlotSaveManager] Clearing plot ${plotId} before loading player ${player.username}'s obby`);
       await this.clearPlotPhysicalContent(plotId, player.world);
+      
+      // Also clear any existing mechanical entities in this plot to prevent conflicts
+      const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+      const mechanicalManager = MechanicalBlockManager.getInstance();
+      mechanicalManager.clearAllEntitiesInPlot(plotId);
+      console.log(`[PlotSaveManager] Cleared existing mechanical entities in plot ${plotId}`);
 
       // Calculate new plot center for loading
       const plotBuildManager = (await import('./PlotBuildManager')).PlotBuildManager.getInstance();
@@ -598,8 +625,14 @@ export class PlotSaveManager {
         console.log(`[PlotSaveManager] ✅ Plot sides match: ${savedPlotSide} → ${currentPlotSide}`);
       }
 
-      // Load blocks using relative positions  
+      // Load blocks using relative positions (skip mechanical block IDs to prevent duplicates)
+      const mechanicalBlockIds = [115, 120, 130]; // General mechanical, piston, wheel
       for (const savedBlock of plotData.blocks) {
+        // Skip mechanical block IDs since they're handled as entities
+        if (mechanicalBlockIds.includes(savedBlock.blockTypeId)) {
+          console.log(`[PlotSaveManager] Skipping mechanical block ID ${savedBlock.blockTypeId} at [${savedBlock.relativePos.x}, ${savedBlock.relativePos.y}, ${savedBlock.relativePos.z}] - handled as entity instead`);
+          continue;
+        }
         // Apply transformation if needed
         const transformedRelativePos = needsTransformation 
           ? this.transformCoordinatesForDifferentSide(savedBlock.relativePos, newPlotCenter, plotId)
@@ -639,7 +672,8 @@ export class PlotSaveManager {
         }
       }
 
-      // Load obstacles using relative positions
+      // Load obstacles and mechanical entities using relative positions
+      const mechanicalEntities: any[] = [];
       for (const savedObstacle of plotData.obstacles) {
         // Apply transformation if needed
         const transformedRelativePos = needsTransformation 
@@ -651,18 +685,43 @@ export class PlotSaveManager {
           y: newPlotCenter.y + transformedRelativePos.y,
           z: newPlotCenter.z + transformedRelativePos.z
         };
-        const obstacleId = `${savedObstacle.type}_${savedObstacle.size}`;
-        const success = this.obstaclePlacementManager.placeObstacle(
-          player,
-          obstacleId,
-          worldPos,
-          plotId
-        );
-        if (!success) {
-          console.warn(`[PlotSaveManager] Failed to load obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+        
+        // Check if this is a mechanical entity (handle both old format 'mechanical' and new specific types)
+        const mechanicalTypes = ['mechanical', 'static', 'elevator', 'carousel', 'side-to-side', 'front-to-back'];
+        if (mechanicalTypes.includes(savedObstacle.type) && savedObstacle.size === 'custom' && savedObstacle.config) {
+          // Store mechanical entity data for later loading
+          mechanicalEntities.push({
+            id: savedObstacle.id,
+            position: worldPos,
+            type: savedObstacle.type, // Use the actual saved type
+            size: 'custom',
+            config: savedObstacle.config,
+            cost: savedObstacle.config.cost || 2 // Default cost if not stored
+          });
+          console.log(`[PlotSaveManager] Prepared mechanical entity ${savedObstacle.config.entityType} for loading at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
         } else {
-          console.log(`[PlotSaveManager] Loaded obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}] (relative [${savedObstacle.relativePos.x}, ${savedObstacle.relativePos.y}, ${savedObstacle.relativePos.z}])`);
+          // Handle regular obstacles
+          const obstacleId = `${savedObstacle.type}_${savedObstacle.size}`;
+          const success = this.obstaclePlacementManager.placeObstacle(
+            player,
+            obstacleId,
+            worldPos,
+            plotId
+          );
+          if (!success) {
+            console.warn(`[PlotSaveManager] Failed to load obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+          } else {
+            console.log(`[PlotSaveManager] Loaded obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}] (relative [${savedObstacle.relativePos.x}, ${savedObstacle.relativePos.y}, ${savedObstacle.relativePos.z}])`);
+          }
         }
+      }
+      
+      // Load mechanical entities using MechanicalBlockManager
+      if (mechanicalEntities.length > 0) {
+        const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+        const mechanicalManager = MechanicalBlockManager.getInstance();
+        mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, player.world || this.world!);
+        console.log(`[PlotSaveManager] Loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId}`);
       }
 
       // Load scoreboard data if it exists
@@ -677,7 +736,7 @@ export class PlotSaveManager {
 
       this.world.chatManager.sendPlayerMessage(
         player,
-        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
+        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (including ${mechanicalEntities.length} mechanical entities)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
         '00FF00'
       );
 
@@ -756,6 +815,29 @@ export class PlotSaveManager {
             config: {} // Additional config can be added later
           });
         }
+        
+        // Collect mechanical entities from MechanicalBlockManager
+        const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+        const mechanicalManager = MechanicalBlockManager.getInstance();
+        const mechanicalEntities = mechanicalManager.getPlotMechanicalEntities(plotId);
+        
+        for (const mechanicalEntity of mechanicalEntities) {
+          const relativePos = {
+            x: mechanicalEntity.position.x - plotCenter.x,
+            y: mechanicalEntity.position.y - plotCenter.y,
+            z: mechanicalEntity.position.z - plotCenter.z
+          };
+          obstacles.push({
+            id: mechanicalEntity.id,
+            type: mechanicalEntity.type, // 'mechanical'
+            size: mechanicalEntity.size, // 'custom'
+            relativePos,
+            config: {
+              ...mechanicalEntity.config, // Full mechanical configuration
+              cost: mechanicalEntity.cost // Include cost for refund tracking
+            }
+          });
+        }
       }
 
       // Get current scoreboard for this plot
@@ -785,11 +867,12 @@ export class PlotSaveManager {
       };
 
       // Update cache
-      const currentCash = this.playerObbyCache.get(player.id)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
-      this.playerObbyCache.set(player.id, { plotData, cash: currentCash });
+      const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+      const currentCash = this.playerObbyCache.get(playerKey)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
+      this.playerObbyCache.set(playerKey, { plotData, cash: currentCash });
 
       // Save to player persistence
-      const currentCashForSave = this.playerObbyCache.get(player.id)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
+      const currentCashForSave = this.playerObbyCache.get(playerKey)?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
       await player.setPersistedData({ obby: { plotData, cash: currentCashForSave } });
 
       // Also save to global registry for random loading in other worlds
@@ -801,13 +884,13 @@ export class PlotSaveManager {
         // Don't fail the whole save operation if global registry update fails
       }
 
-      console.log(`[PlotSaveManager] Saved plot for ${player.username}: ${blocks.length} blocks, ${obstacles.length} obstacles`);
+      console.log(`[PlotSaveManager] Saved plot for ${player.username}: ${blocks.length} blocks, ${obstacles.length} obstacles (including mechanical entities)`);
       // Use player's world to ensure message goes to correct region
       const targetWorld = player.world || this.world;
       if (targetWorld) {
         targetWorld.chatManager.sendPlayerMessage(
           player,
-          `💾 Plot saved: ${blocks.length} blocks, ${obstacles.length} obstacles!`,
+          `💾 Plot saved: ${blocks.length} blocks, ${obstacles.length} obstacles (including mechanical entities)!`,
           '00AA00'
         );
       } else {
@@ -842,7 +925,8 @@ export class PlotSaveManager {
       await player.setPersistedData({ obby: { plotData: null } });
       
       // Clear cache
-      this.playerObbyCache.set(player.id, { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH });
+      const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+      this.playerObbyCache.set(playerKey, { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH });
       
       this.world.chatManager.sendPlayerMessage(player, '🧹 Obby data and scoreboard cleared successfully!', '00FF00');
       console.log(`[PlotSaveManager] Cleared obby data and scoreboard for player ${player.username}`);
@@ -863,6 +947,9 @@ export class PlotSaveManager {
       console.error(`[PlotSaveManager] Player ${player.id} has no world for clearing plot`);
       return;
     }
+    
+    console.log(`[PlotSaveManager] clearPlotWithBoundaries called with plotId: ${plotId} (type: ${typeof plotId})`);
+    console.log(`[PlotSaveManager] plotBoundaries:`, plotBoundaries);
 
     try {
       // Delete block (ID 106) is now registered in the main block registry
@@ -937,6 +1024,12 @@ export class PlotSaveManager {
         // Clear from collision manager tracking
         this.obstacleCollisionManager.clearPlotObstacles(plotId);
         
+        // Clear mechanical entities using MechanicalBlockManager
+        const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+        const mechanicalManager = MechanicalBlockManager.getInstance();
+        mechanicalManager.clearPlotMechanicalEntities(plotId);
+        console.log(`[PlotSaveManager] Cleared mechanical entities for plot ${plotId}`);
+        
         // Clear tracked blocks for this plot - NOW WITH PLAYER'S WORLD FOR REGION AWARENESS
         this.clearTrackedBlocks(plotId, targetWorld);
       }
@@ -955,7 +1048,8 @@ export class PlotSaveManager {
    */
   public async handlePlayerDisconnect(player: Player): Promise<void> {
     // Remove from cache
-    this.playerObbyCache.delete(player.id);
+    const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
+    this.playerObbyCache.delete(playerKey);
     console.log(`[PlotSaveManager] Cleaned up data for disconnected player ${player.id}`);
   }
 
@@ -1071,8 +1165,9 @@ export class PlotSaveManager {
       try {
         const playerId = playerEntity.player.id;
         
-        // First check cache for this specific player
-        const cachedData = this.playerObbyCache.get(playerId);
+        // First check cache for this specific player (with world context)
+        const playerKey = this.getWorldAwarePlayerKey(playerId, targetWorld);
+        const cachedData = this.playerObbyCache.get(playerKey);
         if (cachedData?.plotData?.creatorName) {
           return cachedData.plotData.creatorName;
         }
@@ -1083,7 +1178,7 @@ export class PlotSaveManager {
         
         if (playerObbyData?.plotData?.creatorName) {
           // Cache the result for future use
-          this.playerObbyCache.set(playerId, playerObbyData);
+          this.playerObbyCache.set(playerKey, playerObbyData);
           return playerObbyData.plotData.creatorName;
         }
       } catch (error) {

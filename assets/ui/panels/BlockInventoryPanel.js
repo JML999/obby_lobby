@@ -94,6 +94,12 @@ class BlockInventoryPanel {
             // Hazard blocks (2 points each)
             { id: 21, name: 'lava', textureUri: 'blocks/lava.png', cost: 2, type: 'void-sand' },
             
+            // Conveyor blocks (3 points each)
+            { id: 104, name: 'conveyor-z-', textureUri: 'blocks/conveyor-z-.png', cost: 3, type: 'conveyor' },
+            { id: 105, name: 'conveyor-z+', textureUri: 'blocks/conveyor-z+.png', cost: 3, type: 'conveyor' },
+            { id: 109, name: 'conveyor-x-', textureUri: 'blocks/conveyor-x-.png', cost: 3, type: 'conveyor' },
+            { id: 110, name: 'conveyor-x+', textureUri: 'blocks/conveyor-x+.png', cost: 3, type: 'conveyor' },
+            
             // Special blocks (3 points each)
             { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines' },
             { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass' },
@@ -104,102 +110,11 @@ class BlockInventoryPanel {
     }
 
     initializeObstacles() {
-        // Define mechanical blocks with consistent color coding
-        // Yellow = Vertical (Up/Down), Blue = Horizontal (Side/Side), Pink = Rotation (Circular)
-        this.availableBeams = [
-            // Elevator Beams - Yellow for vertical movement
-            { 
-                id: 'mechanical_elevator_beam', 
-                name: 'Elevator Beam', 
-                type: 'mechanical_elevator', 
-                sizeId: 'standard',
-                description: 'A vertical moving beam that carries players up and down. Creates smooth elevator movement along its length.',
-                blockColor: '#FFD700', // Yellow
-                textureUri: 'blocks/yellow_coral.png',
-                symbol: '↕️',
-                movementType: 'vertical',
-                category: 'beam'
-            },
-            
-            // Piston Beams - Blue for horizontal movement
-            { 
-                id: 'mechanical_piston_beam', 
-                name: 'Piston Beam', 
-                type: 'mechanical_piston', 
-                sizeId: 'standard',
-                description: 'A horizontal moving beam that extends and retracts. Players ride along the beam\'s length as it moves.',
-                blockColor: '#4169E1', // Blue
-                textureUri: 'blocks/blue_coral.png',
-                symbol: '↔️',
-                movementType: 'horizontal',
-                category: 'beam'
-            },
-            
-            // Wheel Beams - Pink for rotation
-            { 
-                id: 'mechanical_wheel_beam', 
-                name: 'Wheel Beam', 
-                type: 'mechanical_wheel', 
-                sizeId: 'standard',
-                description: 'A rotating beam that spins around its center. Players experience tangential movement based on distance from center.',
-                blockColor: '#FF69B4', // Pink
-                textureUri: 'blocks/pink_coral.png',
-                symbol: '↻',
-                movementType: 'rotation',
-                category: 'beam'
-            }
-        ];
-
-        this.availablePlatforms = [
-            // Elevator Platforms - Yellow for vertical movement
-            { 
-                id: 'mechanical_elevator_platform', 
-                name: 'Elevator Platform', 
-                type: 'mechanical_elevator', 
-                sizeId: 'standard',
-                description: 'A wide platform that moves vertically. Can be expanded in X and Z directions for larger carrying capacity.',
-                blockColor: '#FFD700', // Yellow
-                textureUri: 'blocks/yellow_coral.png',
-                symbol: '↕️', // Same as beam - up/down
-                movementType: 'vertical',
-                category: 'platform'
-            },
-            
-            // Piston Platforms - Blue for horizontal movement
-            { 
-                id: 'mechanical_piston_platform', 
-                name: 'Piston Platform', 
-                type: 'mechanical_piston', 
-                sizeId: 'standard',
-                description: 'A wide platform that extends horizontally. Expands perpendicular to movement axis for more player space.',
-                blockColor: '#4169E1', // Blue
-                textureUri: 'blocks/blue_coral.png',
-                symbol: '↔️', // Same as beam - left/right
-                movementType: 'horizontal',
-                category: 'platform'
-            },
-            
-            // Wheel Platforms - Pink for rotation
-            { 
-                id: 'mechanical_wheel_platform', 
-                name: 'Wheel Platform', 
-                type: 'mechanical_wheel', 
-                sizeId: 'standard',
-                description: 'A circular platform that rotates. Can grow in radius to carry more players at different distances from center.',
-                blockColor: '#FF69B4', // Pink
-                textureUri: 'blocks/pink_coral.png',
-                symbol: '↻', // Same as beam - rotation
-                movementType: 'rotation',
-                category: 'platform'
-            }
-        ];
-
-        // Keep old obstacles for compatibility but mark as legacy
+        // Keep old obstacles for compatibility - renamed from legacy to prefabs
         this.availableObstacles = [
-            // Legacy obstacles - will be phased out
-            { id: 'bounce_pad_small', name: 'Bounce Pad', size: 'Small', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'legacy' },
-            { id: 'rotating_beam_small', name: 'Rotating Beam', size: 'Small', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'legacy' },
-            { id: 'seesaw', name: 'Seesaw', size: 'Standard', type: 'seesaw', sizeId: 'standard', icon: 'ui/icons/speed-icon.png', category: 'legacy' }
+            { id: 'bounce_pad_small', name: 'Bounce Pad', size: 'Small', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'prefab' },
+            { id: 'rotating_beam_small', name: 'Rotating Beam', size: 'Small', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'prefab' },
+            { id: 'seesaw', name: 'Seesaw', size: 'Standard', type: 'seesaw', sizeId: 'standard', icon: 'ui/icons/speed-icon.png', category: 'prefab' }
         ];
     }
 
@@ -230,17 +145,9 @@ class BlockInventoryPanel {
                             <div class="tab-icon">🔲</div>
                             <div class="tab-label">Blocks</div>
                         </button>
-                        <button class="backpack-tab" data-tab="beams" title="Beams">
-                            <div class="tab-icon">📏</div>
-                            <div class="tab-label">Beams</div>
-                        </button>
-                        <button class="backpack-tab" data-tab="platforms" title="Platforms">
-                            <div class="tab-icon">🟪</div>
-                            <div class="tab-label">Platforms</div>
-                        </button>
-                        <button class="backpack-tab" data-tab="obstacles" title="Legacy">
+                        <button class="backpack-tab" data-tab="obstacles" title="Prefabs">
                             <div class="tab-icon">⚡</div>
-                            <div class="tab-label">Legacy</div>
+                            <div class="tab-label">Prefabs</div>
                         </button>
                     </div>
 
@@ -293,12 +200,6 @@ class BlockInventoryPanel {
             case 'blocks':
                 items = this.availableBlocks;
                 break;
-            case 'beams':
-                items = this.availableBeams;
-                break;
-            case 'platforms':
-                items = this.availablePlatforms;
-                break;
             case 'obstacles':
                 items = this.availableObstacles;
                 break;
@@ -311,21 +212,19 @@ class BlockInventoryPanel {
         console.log(`[DEBUG] Total items to process: ${items.length}`);
         console.log(`[DEBUG] All items:`, items);
 
-        // Limit grid size - show only first 10 items (2 rows of 5 columns)
-        const limitedItems = items.slice(0, 10);
-        
-        limitedItems.forEach((item, index) => {
+        // Show all items (no limit - grid will auto-expand with auto rows)
+        items.forEach((item, index) => {
             console.log(`[DEBUG] Processing item ${index}:`, item);
             
-            // Check if block is unlocked (obstacles don't have level requirements yet)
-            const isUnlocked = this.currentTab === 'obstacles' || !item.level || this.playerLevel >= item.level;
+            // All blocks and mechanical blocks are available to all players at all levels
+            const isUnlocked = true;
             
             const slot = document.createElement('div');
             slot.className = `backpack-slot ${!isUnlocked ? 'locked' : ''}`;
             slot.dataset.itemId = item.id;
             slot.dataset.itemName = item.name;
             slot.dataset.itemType = this.currentTab;
-            slot.title = isUnlocked ? item.name : `${item.name} (Level ${item.level} required)`;
+            slot.title = item.name; // All blocks available at all levels
             
             console.log(`[DEBUG] Slot created with dataset:`, slot.dataset);
 
@@ -937,12 +836,6 @@ class BlockInventoryPanel {
             case 'blocks':
                 item = this.availableBlocks.find(b => b.id == itemId);
                 break;
-            case 'beams':
-                item = this.availableBeams.find(b => b.id === itemId);
-                break;
-            case 'platforms':
-                item = this.availablePlatforms.find(p => p.id === itemId);
-                break;
             case 'obstacles':
                 item = this.availableObstacles.find(o => o.id === itemId);
                 break;
@@ -963,27 +856,7 @@ class BlockInventoryPanel {
         // Create description content based on item type
         let descriptionHTML = '';
         
-        if (itemType === 'beams' || itemType === 'platforms') {
-            // Rich description for mechanical blocks
-            descriptionHTML = `
-                <div class="description-header">
-                    <div class="description-title-row">
-                        <div class="description-icon" style="background-color: ${item.blockColor};">
-                            <span class="description-symbol">${item.symbol}</span>
-                        </div>
-                        <div class="description-title-info">
-                            <h3>${item.name}</h3>
-                            <div class="description-category">${item.category.toUpperCase()} • ${item.movementType.toUpperCase()}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="description-content">
-                    <div class="description-text">
-                        <p>${item.description}</p>
-                    </div>
-                </div>
-            `;
-        } else if (itemType === 'blocks') {
+        if (itemType === 'blocks') {
             // Simple description for regular blocks
             const blockDescription = this.getBlockDescription(item);
             descriptionHTML = `
@@ -1005,15 +878,15 @@ class BlockInventoryPanel {
                 </div>
             `;
         } else {
-            // Legacy obstacles
+            // Prefab obstacles
             descriptionHTML = `
                 <div class="description-header">
                     <h3>${item.name}</h3>
-                    <div class="description-category">LEGACY • ${item.size}</div>
+                    <div class="description-category">PREFAB • ${item.size}</div>
                 </div>
                 <div class="description-content">
                     <div class="description-text">
-                        <p>Legacy obstacle from the old system. These will be replaced by the new beam/platform system.</p>
+                        <p>Prefab obstacle element that can be placed in your course.</p>
                     </div>
                 </div>
             `;
@@ -1169,11 +1042,12 @@ class BlockInventoryPanel {
             }
 
             :root {
-                --backpack-slot-size: 64px;
-                --backpack-hotbar-size: 64px;
-                --backpack-icon-size: 52px;
-                --backpack-gap: 10px;
-                --backpack-padding: 16px;
+                --backpack-slot-size: 48px;
+                --backpack-hotbar-size: 40px;
+                --backpack-icon-size: 36px;
+                --backpack-hotbar-icon-size: 28px;
+                --backpack-gap: 6px;
+                --backpack-padding: 10px;
                 --backpack-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             }
 
@@ -1191,7 +1065,9 @@ class BlockInventoryPanel {
                 z-index: 1000;
                 font-family: var(--backpack-font);
                 user-select: none;
-                gap: 16px;
+                gap: 8px;
+                padding: 20px;
+                overflow-y: auto;
             }
 
             /* Container Styles */
@@ -1200,11 +1076,12 @@ class BlockInventoryPanel {
                 border: 2px solid #444;
                 border-radius: 12px;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                width: 800px;
-                height: 480px;
+                width: 590px;
+                height: 350px;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
+                margin-bottom: 8px;
             }
 
             .backpack-hotbar-container {
@@ -1212,7 +1089,8 @@ class BlockInventoryPanel {
                 border: 2px solid #444;
                 border-radius: 12px;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                width: 680px;
+                width: 590px;
+                padding: 8px;
             }
 
             /* Header Styles */
@@ -1220,7 +1098,7 @@ class BlockInventoryPanel {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 16px 20px;
+                padding: 8px 12px;
                 background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
                 border-bottom: 1px solid #444;
                 border-radius: 10px 10px 0 0;
@@ -1229,19 +1107,19 @@ class BlockInventoryPanel {
             .backpack-info {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 8px;
             }
 
             .backpack-icon {
-                width: 48px;
-                height: 48px;
+                width: 32px;
+                height: 32px;
                 background: rgba(0, 0, 0, 0.6);
                 border: 2px solid #444;
-                border-radius: 6px;
+                border-radius: 4px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
+                font-size: 16px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
             }
 
@@ -1251,7 +1129,7 @@ class BlockInventoryPanel {
             }
 
             .backpack-name {
-                font-size: 16px;
+                font-size: 12px;
                 font-weight: 600;
                 color: #ffffff;
                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
@@ -1259,11 +1137,11 @@ class BlockInventoryPanel {
             }
 
             .backpack-subtitle {
-                font-size: 14px;
+                font-size: 10px;
                 font-weight: 500;
                 color: #cccccc;
                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-                margin-top: 2px;
+                margin-top: 1px;
                 letter-spacing: 0.3px;
             }
 
@@ -1284,14 +1162,14 @@ class BlockInventoryPanel {
             .backpack-close {
                 background: rgba(255, 0, 0, 0.2);
                 border: 1px solid rgba(255, 0, 0, 0.3);
-                border-radius: 6px;
+                border-radius: 4px;
                 color: #ff6b6b;
-                width: 24px;
-                height: 24px;
+                width: 20px;
+                height: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: bold;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -1309,15 +1187,16 @@ class BlockInventoryPanel {
                 overflow: hidden;
             }
 
-            /* Navigation Tabs */
+            /* Navigation Tabs - Vertical sidebar */
             .backpack-nav {
-                width: 80px;
                 background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
                 border-right: 1px solid #444;
                 display: flex;
                 flex-direction: column;
-                padding: 8px;
-                gap: 4px;
+                padding: 4px 3px;
+                gap: 2px;
+                width: 50px;
+                flex-shrink: 0;
             }
 
             .backpack-tab {
@@ -1325,15 +1204,13 @@ class BlockInventoryPanel {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 10px 8px;
+                padding: 4px 2px;
                 background: transparent;
                 border: 1px solid transparent;
-                border-radius: 8px;
+                border-radius: 4px;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                width: 64px;
-                height: 64px;
-                gap: 4px;
+                gap: 1px;
             }
 
             .backpack-tab:hover {
@@ -1348,13 +1225,13 @@ class BlockInventoryPanel {
             }
 
             .tab-icon {
-                font-size: 20px;
+                font-size: 12px;
                 opacity: 0.7;
                 transition: opacity 0.2s ease;
             }
 
             .tab-label {
-                font-size: 10px;
+                font-size: 6px;
                 font-weight: 600;
                 color: #cccccc;
                 text-align: center;
@@ -1373,20 +1250,20 @@ class BlockInventoryPanel {
             /* Main Content */
             .backpack-main {
                 flex: 1;
-                padding: 20px;
+                padding: 12px;
                 overflow: hidden;
             }
 
             .backpack-content-wrapper {
                 display: flex;
-                gap: 16px;
+                gap: 10px;
                 height: 100%;
             }
 
             .backpack-grid-container {
-                flex: 1;
+                flex: 2;
                 height: 100%;
-                min-height: 200px;
+                min-height: 180px;
             }
 
             /* Description Panel */
@@ -1400,19 +1277,19 @@ class BlockInventoryPanel {
                 flex-direction: column;
                 overflow: hidden;
                 box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
-                max-height: 240px;
+                max-height: 200px;
             }
 
             .description-header {
                 background: linear-gradient(135deg, #4a4a4a, #3d3d3d);
-                padding: 12px 16px;
+                padding: 8px 10px;
                 border-bottom: 1px solid #555;
             }
 
             .description-title-row {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 8px;
             }
 
             .description-icon {
@@ -1432,11 +1309,11 @@ class BlockInventoryPanel {
             }
 
             .description-block-preview {
-                width: 40px;
-                height: 40px;
+                width: 28px;
+                height: 28px;
                 background: rgba(0, 0, 0, 0.6);
                 border: 1px solid #444;
-                border-radius: 4px;
+                border-radius: 3px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1444,47 +1321,47 @@ class BlockInventoryPanel {
             }
 
             .description-block-preview img {
-                width: 32px;
-                height: 32px;
+                width: 22px;
+                height: 22px;
                 object-fit: contain;
                 image-rendering: pixelated;
             }
 
             .description-title-info h3 {
                 margin: 0;
-                font-size: 16px;
+                font-size: 12px;
                 font-weight: 600;
                 color: #ffffff;
                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-                letter-spacing: 0.3px;
+                letter-spacing: 0.2px;
             }
 
             .description-category {
-                font-size: 11px;
+                font-size: 8px;
                 font-weight: 600;
                 color: #64B5F6;
                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-                margin-top: 2px;
+                margin-top: 1px;
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.3px;
             }
 
             .description-content {
                 flex: 1;
-                padding: 12px 16px;
+                padding: 8px 10px;
                 overflow-y: auto;
                 background: rgba(0, 0, 0, 0.1);
             }
 
             .description-text {
-                margin-bottom: 24px;
-                line-height: 1.6;
+                margin-bottom: 12px;
+                line-height: 1.4;
             }
 
             .description-text p {
                 margin: 0;
-                font-size: 13px;
-                line-height: 1.4;
+                font-size: 10px;
+                line-height: 1.3;
                 color: #cccccc;
                 text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
             }
@@ -1518,14 +1395,14 @@ class BlockInventoryPanel {
             .backpack-grid {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                grid-template-rows: repeat(2, 1fr);
+                grid-template-rows: auto;
                 gap: var(--backpack-gap);
                 background: rgba(0, 0, 0, 0.3);
                 padding: var(--backpack-padding);
                 border: 1px solid #444;
                 border-radius: 8px;
                 box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
-                min-height: 160px;
+                min-height: 180px;
                 height: fit-content;
                 align-content: start;
             }
@@ -1533,9 +1410,9 @@ class BlockInventoryPanel {
             .backpack-hotbar-grid {
                 display: grid;
                 grid-template-columns: repeat(6, 1fr);
-                gap: 8px;
+                gap: 6px;
                 background: rgba(0, 0, 0, 0.3);
-                padding: 16px;
+                padding: 10px;
                 border-radius: 0 0 8px 8px;
                 box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
                 justify-items: center;
@@ -1559,8 +1436,8 @@ class BlockInventoryPanel {
             }
 
             .backpack-hotbar-slot {
-                width: 56px;
-                height: 56px;
+                width: var(--backpack-hotbar-size);
+                height: var(--backpack-hotbar-size);
                 background: rgba(0, 0, 0, 0.6);
                 border: 2px solid #333;
                 border-radius: 6px;
@@ -1661,8 +1538,8 @@ class BlockInventoryPanel {
             }
 
             .backpack-hotbar-slot-icon {
-                width: 24px;
-                height: 24px;
+                width: var(--backpack-hotbar-icon-size);
+                height: var(--backpack-hotbar-icon-size);
                 object-fit: contain;
                 image-rendering: pixelated;
                 filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
@@ -1805,14 +1682,14 @@ class BlockInventoryPanel {
 
                 .backpack-container {
                     width: 95%;
-                    max-width: 700px;
+                    max-width: 500px;
                     border-radius: 8px;
-                    height: 450px;
+                    height: 400px;
                 }
 
                 .backpack-hotbar-container {
                     width: 95%;
-                    max-width: 560px;
+                    max-width: 500px;
                     border-radius: 8px;
                 }
 
@@ -1885,13 +1762,13 @@ class BlockInventoryPanel {
                 }
 
                 .backpack-nav {
-                    width: 70px;
+                    padding: 8px;
+                    gap: 6px;
                 }
 
                 .backpack-tab {
-                    width: 54px;
-                    height: 54px;
-                    padding: 7px;
+                    min-width: 80px;
+                    padding: 6px 12px;
                 }
 
                 .tab-icon {
