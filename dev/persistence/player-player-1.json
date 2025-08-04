@@ -185,31 +185,43 @@
           }
         }
       ],
-      "lastModified": 1754104822793,
+      "lastModified": 1754321507888,
       "creatorName": "player-1",
       "creatorId": "player-1",
       "scoreboard": [
         {
           "playerId": "player-1",
           "playerName": "player-1",
+          "completionTime": 8956,
+          "timestamp": 1754163124708
+        },
+        {
+          "playerId": "player-1",
+          "playerName": "player-1",
           "completionTime": 12682,
           "timestamp": 1754104822778
+        },
+        {
+          "playerId": "player-3",
+          "playerName": "player-3",
+          "completionTime": 753680,
+          "timestamp": 1754321507876
         }
       ]
     }
   },
   "levelData": {
     "level": 7,
-    "xp": 1,
-    "totalXP": 751,
+    "xp": 216,
+    "totalXP": 966,
     "firstTimeFlags": [
       "FIRST_COMPLETE"
     ],
-    "lastActiveTime": 1754104822789,
+    "lastActiveTime": 1754163124723,
     "loginStreak": 1,
-    "lastLoginDate": "Fri Aug 01 2025"
+    "lastLoginDate": "Sat Aug 02 2025"
   },
   "level": 7,
-  "xp": 1,
-  "totalXP": 751
+  "xp": 216,
+  "totalXP": 966
 }

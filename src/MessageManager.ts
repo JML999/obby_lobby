@@ -16,9 +16,9 @@ interface GameMessageOptions {
 }
 
 export class MessageManager {
-    private static readonly MESSAGE_DURATION = 5000; // Back to 5 seconds to match original
+    private static readonly MESSAGE_DURATION = 8000; // Increased to 8 seconds to match updated duration
     private static readonly MIN_INTERVAL_MS = 800; // Reduced minimum interval
-    private static readonly QUEUE_DELAY_MS = 3000; // 3 second delay between queued messages
+    private static readonly QUEUE_DELAY_MS = 5000; // 5 second delay between queued messages to prevent rapid fire after welcome
     private recentMessages: Map<string, number> = new Map(); // Track recent messages (message -> timestamp)
     private messageQueue: QueuedMessage[] = []; // Queue for pending messages
     private isProcessingQueue: boolean = false; // Flag to track if queue is being processed

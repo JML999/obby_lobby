@@ -89,8 +89,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             z: position.z 
         };
         
-        // Debug log to verify position is set correctly
-        console.log(`[ConfigurableMechanicalEntity] Position set - start: ${this.startPosition.x},${this.startPosition.y},${this.startPosition.z}`);
         
         // Calculate target positions based on type and distance
         switch (type) {
@@ -101,7 +99,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
                     y: position.y + this.moveDistance,
                     z: position.z
                 };
-                console.log(`[ConfigurableMechanicalEntity] Elevator target position: ${this.targetPosition.x},${this.targetPosition.y},${this.targetPosition.z} (distance: ${this.moveDistance})`);
                 break;
             case 'side-to-side':
                 // Move sideways by distance
@@ -110,7 +107,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
                     y: position.y,
                     z: position.z
                 };
-                console.log(`[ConfigurableMechanicalEntity] Side-to-side target position: ${this.targetPosition.x},${this.targetPosition.y},${this.targetPosition.z} (distance: ${this.moveDistance})`);
                 break;
             case 'front-to-back':
                 // Move forward/backward by distance
@@ -119,7 +115,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
                     y: position.y,
                     z: position.z + this.moveDistance
                 };
-                console.log(`[ConfigurableMechanicalEntity] Front-to-back target position: ${this.targetPosition.x},${this.targetPosition.y},${this.targetPosition.z} (distance: ${this.moveDistance})`);
                 break;
             default:
                 this.targetPosition = { ...position };
@@ -128,7 +123,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
         // Listen for spawn event to add sensor collider
         this.on(EntityEvent.SPAWN, this.onSpawned);
         
-        console.log(`[ConfigurableMechanicalEntity] Created ${type} entity at ${position.x},${position.y},${position.z} with size ${sizeX}x${sizeY}x${sizeZ}`);
     }
     
     /**
@@ -159,16 +153,13 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
      */
     spawn(world: World, position: Vector3Like): Entity | null {
         // All mechanical blocks should be entities, including static ones
-        console.log(`[ConfigurableMechanicalEntity] Spawning ${this.entityType} entity at position: ${position.x}, ${position.y}, ${position.z}`);
         const entity = super.spawn(world, position);
         
-        console.log(`[ConfigurableMechanicalEntity] Entity spawned, rigidBody exists: ${!!this.rigidBody}, isSpawned: ${this.isSpawned}`);
         
         // Only activate movement for non-static types
         if (this.entityType !== 'static') {
             // Wait a tick before activating to ensure rigidBody is ready
             setTimeout(() => {
-                console.log(`[ConfigurableMechanicalEntity] Delayed activation check - rigidBody exists: ${!!this.rigidBody}, isSpawned: ${this.isSpawned}`);
                 this.activate();
             }, 50); // 50ms delay
         }
@@ -182,11 +173,9 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
      */
     activate(): void {
         if (this.entityType === 'static') {
-            console.log(`[ConfigurableMechanicalEntity] Static entity - no movement activation needed`);
             return;
         }
         
-        console.log(`[ConfigurableMechanicalEntity] Activating ${this.entityType} movement using parent physics system`);
         
         // Use parent class activation (which uses the existing TICK listener)
         super.activate();
@@ -196,7 +185,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
      * Called when entity spawns - add sensor collider for reliable player detection
      */
     private onSpawned = (): void => {
-        console.log(`[ConfigurableMechanicalEntity] ${this.entityType} spawned, adding sensor collider for player detection`);
         
         // Calculate sensor collider dimensions based on entity size
         // Use entity height + buffer for better player detection coverage
@@ -206,7 +194,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             z: this.dimensions.z * 0.5 + 0.2 
         };
         
-        console.log(`[ConfigurableMechanicalEntity] Creating sensor collider for ${this.dimensions.x}x${this.dimensions.y}x${this.dimensions.z} entity with halfExtents: ${sensorHalfExtents.x.toFixed(2)}x${sensorHalfExtents.y.toFixed(2)}x${sensorHalfExtents.z.toFixed(2)}`);
         
         // Add sensor collider AFTER spawning for reliable detection (like our working implementation)
         this.createAndAddChildCollider({
@@ -215,15 +202,16 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             isSensor: true,
             onCollision: (other: any, started: boolean) => {
                 if (other instanceof PlayerEntity) {
-                    if (started) {
+                    // Only register collision if player is above the platform (standing on top)
+                    const playerY = other.position.y;
+                    const platformTopY = this.position.y + (this.dimensions.y * 0.5);
+                    
+                    if (started && playerY >= platformTopY - 0.3) { // Player must be near/above platform top
                         this.playersOnPlatform.add(other);
-                        console.log(`[ConfigurableMechanicalEntity] Player ${other.id || 'unknown'} entered ${this.entityType} platform at ${this.position.x.toFixed(1)},${this.position.y.toFixed(1)},${this.position.z.toFixed(1)} | Entity size: ${this.dimensions.x}x${this.dimensions.y}x${this.dimensions.z} | Sensor: ${sensorHalfExtents.x.toFixed(2)}x${sensorHalfExtents.y.toFixed(2)}x${sensorHalfExtents.z.toFixed(2)} (total on platform: ${this.playersOnPlatform.size})`);
-                    } else {
+                    } else if (!started) {
                         this.playersOnPlatform.delete(other);
-                        console.log(`[ConfigurableMechanicalEntity] Player ${other.id || 'unknown'} left ${this.entityType} platform at ${this.position.x.toFixed(1)},${this.position.y.toFixed(1)},${this.position.z.toFixed(1)} (total on platform: ${this.playersOnPlatform.size})`);
                     }
                 } else {
-                    console.log(`[ConfigurableMechanicalEntity] Non-player collision detected: ${other.constructor.name} | started: ${started}`);
                 }
             }
         });
@@ -233,11 +221,7 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
      * Handle movement based on entity type - called by parent class TICK handler
      */
     protected override updatePhysics(payload: EventPayloads[EntityEvent.TICK]): void {
-        // Debug: Log occasionally to see if TICK events are firing
-        if (Math.random() < 0.01) { // 1% chance per tick
-            console.log(`[ConfigurableMechanicalEntity] TICK event fired for ${this.entityType} at position ${this.position.x.toFixed(1)},${this.position.y.toFixed(1)},${this.position.z.toFixed(1)}`);
-        }
-        
+      
         const currentPos = this.position;
         const deltaTime = payload.tickDeltaMs / 1000; // Convert ms to seconds
         
@@ -260,10 +244,7 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
     private handleElevatorMovement(currentPos: Vector3, deltaTime: number): void {
         const moveDistance = this.moveSpeed * deltaTime;
         
-        // Debug: Log occasionally for elevator movement
-        if (Math.random() < 0.02) { // 2% chance per tick
-            console.log(`[ConfigurableMechanicalEntity] Elevator movement: currentY=${currentPos.y.toFixed(2)}, startY=${this.startPosition.y.toFixed(2)}, targetY=${this.targetPosition.y.toFixed(2)}, movingForward=${this.movingForward}`);
-        }
+       
         
         let newPosition: Vector3Like;
         
@@ -273,7 +254,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newY >= this.targetPosition.y) {
                 this.movingForward = false;
-                console.log(`[ConfigurableMechanicalEntity] Elevator reached top, reversing direction`);
             }
         } else {
             const newY = Math.max(currentPos.y - moveDistance, this.startPosition.y);
@@ -281,7 +261,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newY <= this.startPosition.y) {
                 this.movingForward = true;
-                console.log(`[ConfigurableMechanicalEntity] Elevator reached bottom, reversing direction`);
             }
         }
         
@@ -324,10 +303,7 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             this.currentRotation -= 360;
         }
         
-        // Debug: Log occasionally for carousel movement
-        if (Math.random() < 0.02) { // 2% chance per tick
-            console.log(`[ConfigurableMechanicalEntity] Carousel rotation: currentRotation=${this.currentRotation.toFixed(1)}°, rotationSpeed=${this.rotationSpeed}`);
-        }
+        
         
         const radians = this.currentRotation * Math.PI / 180;
         const quaternion = {
@@ -384,10 +360,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
     private handlePistonMovement(currentPos: Vector3, deltaTime: number): void {
         const moveDistance = this.moveSpeed * deltaTime;
         
-        // Debug: Log occasionally for side-to-side movement
-        if (Math.random() < 0.1) { // 10% chance per tick
-            console.log(`[ConfigurableMechanicalEntity] Side-to-side movement: currentX=${currentPos.x.toFixed(2)}, startX=${this.startPosition.x.toFixed(2)}, targetX=${this.targetPosition.x.toFixed(2)}, movingForward=${this.movingForward}, moveDistance=${moveDistance.toFixed(3)}`);
-        }
         
         let newPosition: Vector3Like;
         
@@ -397,7 +369,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newX >= this.targetPosition.x) {
                 this.movingForward = false;
-                console.log(`[ConfigurableMechanicalEntity] Side-to-side reached end, reversing direction`);
             }
         } else {
             const newX = Math.max(currentPos.x - moveDistance, this.startPosition.x);
@@ -405,7 +376,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newX <= this.startPosition.x) {
                 this.movingForward = true;
-                console.log(`[ConfigurableMechanicalEntity] Side-to-side reached start, reversing direction`);
             }
         }
         
@@ -444,11 +414,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
     private handleFrontToBackMovement(currentPos: Vector3, deltaTime: number): void {
         const moveDistance = this.moveSpeed * deltaTime;
         
-        // Debug: Log occasionally for front-to-back movement
-        if (Math.random() < 0.1) { // 10% chance per tick
-            console.log(`[ConfigurableMechanicalEntity] Front-to-back movement: currentZ=${currentPos.z.toFixed(2)}, startZ=${this.startPosition.z.toFixed(2)}, targetZ=${this.targetPosition.z.toFixed(2)}, movingForward=${this.movingForward}, moveDistance=${moveDistance.toFixed(3)}`);
-        }
-        
         let newPosition: Vector3Like;
         
         if (this.movingForward) {
@@ -457,7 +422,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newZ >= this.targetPosition.z) {
                 this.movingForward = false;
-                console.log(`[ConfigurableMechanicalEntity] Front-to-back reached end, reversing direction`);
             }
         } else {
             const newZ = Math.max(currentPos.z - moveDistance, this.startPosition.z);
@@ -465,7 +429,6 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             
             if (newZ <= this.startPosition.z) {
                 this.movingForward = true;
-                console.log(`[ConfigurableMechanicalEntity] Front-to-back reached start, reversing direction`);
             }
         }
         

@@ -15,6 +15,7 @@ export interface PlacedObstacle {
   position: Vector3;
   bounds: ObstacleBounds;
   entityId?: string; // For tracking the actual entity
+  config?: any; // For mechanical entities - stores full configuration
 }
 
 export interface BoundingBox {
@@ -51,6 +52,9 @@ export class ObstacleCollisionManager {
     },
     mechanical_elevator: {
       standard: { width: 1, height: 1, length: 1 }
+    },
+    mechanical: {
+      custom: { width: 2, height: 2, length: 2 } // Default size for configurable mechanical blocks
     },
     seesaw: {
       standard: { width: 6, height: 2, length: 2 }
@@ -288,7 +292,8 @@ export class ObstacleCollisionManager {
     obstacleType: string,
     obstacleSize: string,
     position: Vector3Like,
-    entityId?: string
+    entityId?: string,
+    config?: any
   ): boolean {
     const bounds = this.getObstacleBounds(obstacleType, obstacleSize);
     if (!bounds) return false;
@@ -304,7 +309,8 @@ export class ObstacleCollisionManager {
       size: obstacleSize,
       position: new Vector3(position.x, position.y, position.z),
       bounds: bounds,
-      entityId: entityId
+      entityId: entityId,
+      config: config
     };
 
     this.placedObstacles.get(plotKey)!.push(obstacle);

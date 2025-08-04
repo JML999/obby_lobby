@@ -178,7 +178,7 @@ export default class ObbyRegion extends GameRegion {
       try {
         player.ui.sendData({
           type: 'achievementPopup',
-          title: '🏠 Welcome to the Obby Builder!',
+          title: '🏠 Welcome to OBBY LOBBY!',
           bonus: 'Walk into your plot entrance to build, or explore other plots to play!',
           duration: 3000
         });
@@ -237,7 +237,7 @@ export default class ObbyRegion extends GameRegion {
     // Auto-load player's saved obby if they have one (with delay to ensure world is fully initialized)
     setTimeout(() => {
       this.autoLoadPlayerObby(player, playerPlot.plotIndex);
-    }, 2000); // 2 seconds should be sufficient
+    }, 10000); // 2 seconds should be sufficient
 
     // Send detailed chat messages after a delay (welcome message is now handled in ObbyPlayerEntity.onUIReady)
     setTimeout(() => {

@@ -355,7 +355,17 @@ export class BlockPlacementManager {
       const mechanicalEntity = this.mechanicalBlockManager.getConfigurableEntityAt(coordinate);
       if (mechanicalEntity) {
         console.log(`[BlockPlacementManager] Removing configurable mechanical entity at ${positionKey}`);
+        
+        // Remove from MechanicalBlockManager (for refund calculation and entity despawning)
         const refundAmount = this.mechanicalBlockManager.removeMechanicalEntity(plotId, positionKey, player);
+        
+        // CRITICAL: Also remove from ObstacleCollisionManager (the primary persistence system)
+        const removedObstacle = this.obstacleCollisionManager.unregisterObstacle(plotId, coordinate, 3);
+        if (removedObstacle) {
+          console.log(`[BlockPlacementManager] ✅ Removed mechanical entity from ObstacleCollisionManager: ${removedObstacle.type} (${removedObstacle.size})`);
+        } else {
+          console.warn(`[BlockPlacementManager] ⚠️ Failed to remove mechanical entity from ObstacleCollisionManager at ${positionKey}`);
+        }
         
         if (refundAmount > 0) {
           // Refund the player

@@ -3,8 +3,8 @@ class BuildModePanel {
         this.container = null;
         this.cashDisplay = null;
         this.cashAmount = null;
-        this.currentCash = 100; // Default starting cash
-        this.maxCash = 100;
+        this.currentCash = 10000; // Default starting cash
+        this.maxCash = 10000;
         this.initialized = false;
         
         // State management
@@ -153,8 +153,8 @@ class BuildModePanel {
         style.textContent = `
             .build-mode-panel {
                 position: fixed;
-                bottom: 20px;
-                right: 20px;
+                bottom: 32px;
+                left: 32px;
                 z-index: 1000;
                 font-family: 'Inter', sans-serif;
                 user-select: none;

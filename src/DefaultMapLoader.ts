@@ -130,8 +130,8 @@ export class DefaultMapLoader {
                 return null;
             }
             
-            // Set the owner ID to indicate this is a pool map
-            mapData.ownerId = `pool-${mapNumber}`;
+            // Pool creator name is already set in the pool file itself
+            console.log(`[DefaultMapLoader] Loaded pool-${mapNumber} with creator: ${mapData.obby?.plotData?.creatorName || 'unknown'}`);
             
             return mapData;
             

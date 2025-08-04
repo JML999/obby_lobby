@@ -10,6 +10,8 @@ import { MechanicalWheelEntity } from "./entities/MechanicalWheelEntity";
 import { MechanicalElevatorEntity } from "./entities/MechanicalElevatorEntity";
 import { MechanicalBlockManager } from "./MechanicalBlockManager";
 import { ResizableMechanicalBlock } from "./interfaces/ResizableMechanicalBlock";
+import { ConfigurableMechanicalEntity } from "./entities/ConfigurableMechanicalEntity";
+import { PlotSaveManager } from "./PlotSaveManager";
 
 export interface ObstacleType {
   id: string;
@@ -40,7 +42,10 @@ export class ObstaclePlacementManager {
     // Mechanical Blocks (treated as obstacles for entity-based behavior)
     { id: 'mechanical_piston', name: 'Mechanical Piston', type: 'mechanical_piston', size: 'standard', description: 'Piston that extends and retracts', category: 'mechanical' },
     { id: 'mechanical_wheel', name: 'Mechanical Wheel', type: 'mechanical_wheel', size: 'standard', description: 'Wheel that rotates around a center', category: 'mechanical' },
-    { id: 'mechanical_elevator', name: 'Mechanical Elevator', type: 'mechanical_elevator', size: 'standard', description: 'Elevator that moves up and down', category: 'mechanical' }
+    { id: 'mechanical_elevator', name: 'Mechanical Elevator', type: 'mechanical_elevator', size: 'standard', description: 'Elevator that moves up and down', category: 'mechanical' },
+    
+    // General Configurable Mechanical Block (matches block ID 115 from BlockPlacementManager)
+    { id: 'mechanical', name: 'Mechanical Block', type: 'mechanical', size: 'custom', description: 'Configurable mechanical block with various types and sizes', category: 'mechanical' }
   ];
 
   public static getInstance(): ObstaclePlacementManager {
@@ -179,21 +184,95 @@ export class ObstaclePlacementManager {
         const obstacleName = obstacle.constructor.name;
         obstacle.despawn();
         
-        // Unregister from collision manager and get obstacle data
-        const removedObstacleData = this.obstacleCollisionManager.unregisterObstacle(plotId, obstaclePos, searchRadius);
+        // Check if this is a mechanical entity and handle accordingly
+        if (obstacle instanceof ConfigurableMechanicalEntity) {
+          console.log(`[ObstaclePlacementManager] Removing mechanical entity: ${obstacleName} at ${obstaclePos.x}, ${obstaclePos.y}, ${obstaclePos.z}`);
+          
+          // Since mechanical entities are now tracked ONLY in ObstacleCollisionManager,
+          // remove directly from there instead of trying to use MechanicalBlockManager tracking
+          if (plotId) {
+            console.log(`[ObstaclePlacementManager] Removing mechanical entity from ObstacleCollisionManager at position (${obstaclePos.x}, ${obstaclePos.y}, ${obstaclePos.z})`);
+            
+            // First, let's see what obstacles are registered for this plot
+            const allPlotObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
+            console.log(`[ObstaclePlacementManager] Total obstacles in plot ${plotId}:`, allPlotObstacles.length);
+            allPlotObstacles.forEach((obs, index) => {
+              console.log(`[ObstaclePlacementManager] Obstacle ${index}: type=${obs.type}, size=${obs.size}, pos=(${obs.position.x}, ${obs.position.y}, ${obs.position.z}), id=${obs.id}`);
+            });
+            
+            // The entity's current position might be offset from the chunk lattice position used for registration
+            // Try searching at both the entity position and the chunk lattice position
+            const chunkLatticePos = {
+              x: Math.floor(obstaclePos.x),
+              y: Math.floor(obstaclePos.y), 
+              z: Math.floor(obstaclePos.z)
+            };
+            
+            console.log(`[ObstaclePlacementManager] Searching for mechanical entity at:
+              Entity pos: (${obstaclePos.x}, ${obstaclePos.y}, ${obstaclePos.z})
+              Chunk lattice pos: (${chunkLatticePos.x}, ${chunkLatticePos.y}, ${chunkLatticePos.z})
+              Search radius: ${searchRadius}`);
+            
+            // Try removing from entity position first
+            let removedObstacle = this.obstacleCollisionManager.unregisterObstacle(plotId, obstaclePos, searchRadius);
+            
+            // If that didn't work, try chunk lattice position
+            if (!removedObstacle) {
+              console.log(`[ObstaclePlacementManager] Entity position search failed, trying chunk lattice position...`);
+              removedObstacle = this.obstacleCollisionManager.unregisterObstacle(plotId, chunkLatticePos, searchRadius);
+            }
+            
+            if (removedObstacle) {
+              console.log(`[ObstaclePlacementManager] ✅ Successfully removed mechanical entity from ObstacleCollisionManager: ${removedObstacle.type} (${removedObstacle.size})`);
+              
+              // Calculate refund based on mechanical entity config if available
+              let refundAmount = 0;
+              if (removedObstacle.config && removedObstacle.config.cost) {
+                refundAmount = Math.floor(removedObstacle.config.cost * 0.8); // 80% refund
+                
+                // Apply the refund to player
+                const plotSaveManager = PlotSaveManager.getInstance();
+                const currentCash = plotSaveManager.getPlayerCash(player);
+                const newCash = currentCash + refundAmount;
+                plotSaveManager.setPlayerCash(player, newCash);
+                
+                this.world.chatManager.sendPlayerMessage(player, `Removed ${obstacleName} (+${refundAmount} cash)`, 'FFA500');
+                console.log(`[ObstaclePlacementManager] Refunded ${refundAmount} cash to player ${player.id} (new balance: ${newCash})`);
+              } else {
+                this.world.chatManager.sendPlayerMessage(player, `Removed ${obstacleName}`, 'FFA500');
+              }
+              
+              return { 
+                success: true, 
+                obstacleType: removedObstacle.type, 
+                obstacleSize: removedObstacle.size 
+              };
+            } else {
+              console.warn(`[ObstaclePlacementManager] ⚠️ Failed to remove mechanical entity from ObstacleCollisionManager at (${obstaclePos.x}, ${obstaclePos.y}, ${obstaclePos.z})`);
+              // Still provide feedback to player even if removal failed
+              this.world.chatManager.sendPlayerMessage(player, `Removed ${obstacleName} (no refund available)`, 'FFA500');
+              return { success: true, obstacleType: 'mechanical', obstacleSize: 'custom' };
+            }
+          }
+        } else {
+          // Regular obstacle - use existing collision manager system
+          console.log(`[ObstaclePlacementManager] Removing regular obstacle: ${obstacleName} at ${obstaclePos.x}, ${obstaclePos.y}, ${obstaclePos.z}`);
+          
+          // Unregister from collision manager and get obstacle data
+          const removedObstacleData = this.obstacleCollisionManager.unregisterObstacle(plotId, obstaclePos, searchRadius);
+          
+          // Return obstacle data for cash refund
+          if (removedObstacleData) {
+            return { 
+              success: true, 
+              obstacleType: removedObstacleData.type, 
+              obstacleSize: removedObstacleData.size 
+            };
+          }
+        }
         
         this.world.chatManager.sendPlayerMessage(player, `Removed ${obstacleName}`, 'FFA500');
-        
-        // Return obstacle data for cash refund
-        if (removedObstacleData) {
-          return { 
-            success: true, 
-            obstacleType: removedObstacleData.type, 
-            obstacleSize: removedObstacleData.size 
-          };
-        } else {
-          return { success: true }; // Fallback if no data available
-        }
+        return { success: true }; // Fallback if no specific data available
       }
     }
     

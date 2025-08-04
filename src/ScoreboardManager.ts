@@ -1,4 +1,6 @@
 import { Player } from 'hytopia';
+import { PoolPersistenceManager } from './PoolPersistenceManager';
+import { isPoolCreator } from './PoolCreatorMapping';
 
 export interface ScoreboardEntry {
     playerId: string;
@@ -17,12 +19,17 @@ export class ScoreboardManager {
     private static instance: ScoreboardManager;
     private plotScoreboards: Map<string, PlotScoreboard> = new Map();
     private readonly MAX_ENTRIES = 3; // Keep top 3 times
+    private poolPersistenceManager: PoolPersistenceManager;
 
     public static getInstance(): ScoreboardManager {
         if (!ScoreboardManager.instance) {
             ScoreboardManager.instance = new ScoreboardManager();
         }
         return ScoreboardManager.instance;
+    }
+
+    private constructor() {
+        this.poolPersistenceManager = PoolPersistenceManager.getInstance();
     }
 
     /**
@@ -41,10 +48,24 @@ export class ScoreboardManager {
         console.log('[ScoreboardManager] Loading all scoreboards from persistence...');
         
         try {
-            // This would require access to all players' persistence data
-            // For now, we'll rely on scoreboards being loaded when plots are loaded
-            // The scoreboard will be loaded when a player loads their plot
-            console.log('[ScoreboardManager] Scoreboards will be loaded when plots are accessed');
+            // Initialize pool persistence
+            await this.poolPersistenceManager.initialize();
+            
+            // Load all pool scoreboards
+            const pools = await this.poolPersistenceManager.loadAllPools();
+            for (const [poolId, poolData] of pools) {
+                if (poolData.scoreboard && poolData.scoreboard.length > 0) {
+                    const scoreboard: PlotScoreboard = {
+                        plotId: poolId,
+                        entries: poolData.scoreboard,
+                        lastUpdated: poolData.lastModified
+                    };
+                    this.plotScoreboards.set(poolId, scoreboard);
+                    console.log(`[ScoreboardManager] Loaded ${poolData.scoreboard.length} scores for pool ${poolId}`);
+                }
+            }
+            
+            console.log('[ScoreboardManager] Pool scoreboards loaded. Player scoreboards will be loaded when plots are accessed');
         } catch (error) {
             console.error('[ScoreboardManager] Error loading scoreboards from persistence:', error);
         }
@@ -70,18 +91,51 @@ export class ScoreboardManager {
     }
 
     /**
-     * Save scoreboard to plot owner's persistence data
+     * Load scoreboard for a pool plot
+     */
+    public async loadPoolScoreboard(poolId: string): Promise<void> {
+        try {
+            const scoreboard = await this.poolPersistenceManager.getPoolScoreboard(poolId);
+            if (scoreboard.length > 0) {
+                const plotScoreboard: PlotScoreboard = {
+                    plotId: poolId,
+                    entries: scoreboard,
+                    lastUpdated: Date.now()
+                };
+                this.plotScoreboards.set(poolId, plotScoreboard);
+                console.log(`[ScoreboardManager] Loaded ${scoreboard.length} scores for pool ${poolId}`);
+            }
+        } catch (error) {
+            console.error(`[ScoreboardManager] Error loading pool scoreboard for ${poolId}:`, error);
+        }
+    }
+
+    /**
+     * Load pool scoreboard into memory from persistence
+     */
+    private async loadPoolScoreboardIntoMemory(poolId: string): Promise<void> {
+        try {
+            await this.poolPersistenceManager.initialize();
+            const scoreboard = await this.poolPersistenceManager.getPoolScoreboard(poolId);
+            if (scoreboard.length > 0) {
+                const plotScoreboard: PlotScoreboard = {
+                    plotId: poolId,
+                    entries: scoreboard,
+                    lastUpdated: Date.now()
+                };
+                this.plotScoreboards.set(poolId, plotScoreboard);
+                console.log(`[ScoreboardManager] Loaded ${scoreboard.length} existing scores into memory for pool ${poolId}`);
+            }
+        } catch (error) {
+            console.error(`[ScoreboardManager] Error loading pool scoreboard into memory for ${poolId}:`, error);
+        }
+    }
+
+
+    /**
+     * Save scoreboard to plot owner's persistence data or pool persistence
      */
     public async saveScoreboardToPlot(plotId: string, player: Player): Promise<void> {
-        // Use region-aware key to get the correct scoreboard
-        const regionAwareKey = this.getRegionAwarePlotKey(plotId, player.world);
-        const scoreboard = this.plotScoreboards.get(regionAwareKey);
-        
-        if (!scoreboard?.entries || scoreboard.entries.length === 0) {
-            console.log(`[ScoreboardManager] No scoreboard to save for ${regionAwareKey}`);
-            return;
-        }
-
         try {
             // Get the plot owner's name from the specific world
             const { PlotSaveManager } = await import('./PlotSaveManager');
@@ -102,8 +156,36 @@ export class ScoreboardManager {
                 return;
             }
 
-            // Skip persistence for default maps - keep scoreboards in memory only
-            if (creatorName.startsWith('pool-') || creatorName.startsWith('OBBY-') || creatorName === 'default-map') {
+            // Determine the correct scoreboard key
+            let scoreboardKey: string;
+            let scoreboard: PlotScoreboard | undefined;
+            
+            if (isPoolCreator(creatorName)) {
+                // For pool plots, use global creator name as key
+                scoreboardKey = creatorName;
+                scoreboard = this.plotScoreboards.get(creatorName);
+            } else {
+                // For regular plots, use region-aware key
+                scoreboardKey = this.getRegionAwarePlotKey(plotId, player.world);
+                scoreboard = this.plotScoreboards.get(scoreboardKey);
+            }
+            
+            if (!scoreboard?.entries || scoreboard.entries.length === 0) {
+                console.log(`[ScoreboardManager] No scoreboard to save for ${scoreboardKey}`);
+                return;
+            }
+
+            // Handle pool plot persistence using creator-based approach
+            if (isPoolCreator(creatorName)) {
+                console.log(`[ScoreboardManager] Pool map ${plotId} (creator: ${creatorName}) - saving to pool persistence: ${creatorName}`);
+                // Ensure pool persistence is initialized
+                await this.poolPersistenceManager.initialize();
+                await this.poolPersistenceManager.updatePoolScoreboard(creatorName, scoreboard.entries);
+                return;
+            }
+            
+            // Skip persistence for other default maps
+            if (creatorName.startsWith('OBBY-') || creatorName === 'default-map') {
                 console.log(`[ScoreboardManager] Default map ${plotId} (creator: ${creatorName}) - keeping scoreboard in memory only`);
                 return;
             }
@@ -156,20 +238,56 @@ export class ScoreboardManager {
     /**
      * Add a completion time to a plot's scoreboard
      */
-    public addScore(plotId: string, player: Player, completionTime: number, world?: { name?: string }): ScoreboardResult {
-        // Use region-aware key to prevent cross-region contamination
-        const regionAwareKey = this.getRegionAwarePlotKey(plotId, world || player.world);
-        console.log(`[ScoreboardManager] Adding score for player ${player.id} on ${regionAwareKey}: ${completionTime}ms`);
-
-        // Get or create scoreboard for this plot
-        let scoreboard = this.plotScoreboards.get(regionAwareKey);
+    public async addScore(plotId: string, player: Player, completionTime: number, world?: { name?: string }): Promise<ScoreboardResult> {
+        const targetWorld = world || player.world;
+        
+        // Check if this is a pool plot by getting creator name
+        const { PlotSaveManager } = await import('./PlotSaveManager');
+        const plotSaveManager = PlotSaveManager.getInstance();
+        
+        // Extract plot index from plotId (e.g., "plot_3" -> 3)
+        const plotIndexStr = plotId.split('_')[1] ?? '0';
+        const plotIndex = parseInt(plotIndexStr);
+        let scoreboardKey: string;
+        let isPoolPlot = false;
+        
+        if (!isNaN(plotIndex)) {
+            const creatorName = await plotSaveManager.getPlotCreatorName(plotIndex, targetWorld);
+            if (creatorName && isPoolCreator(creatorName)) {
+                // For pool plots, use global creator name as key
+                scoreboardKey = creatorName;
+                isPoolPlot = true;
+                console.log(`[ScoreboardManager] Adding score for player ${player.id} on GLOBAL pool ${creatorName}: ${completionTime}ms`);
+            } else {
+                // For regular plots, use region-aware key
+                scoreboardKey = this.getRegionAwarePlotKey(plotId, targetWorld);
+                console.log(`[ScoreboardManager] Adding score for player ${player.id} on ${scoreboardKey}: ${completionTime}ms`);
+            }
+        } else {
+            // Fallback to region-aware key
+            scoreboardKey = this.getRegionAwarePlotKey(plotId, targetWorld);
+            console.log(`[ScoreboardManager] Adding score for player ${player.id} on ${scoreboardKey}: ${completionTime}ms`);
+        }
+        
+        let scoreboard = this.plotScoreboards.get(scoreboardKey);
         if (!scoreboard) {
             scoreboard = {
-                plotId: regionAwareKey,
+                plotId: scoreboardKey,
                 entries: [],
                 lastUpdated: Date.now()
             };
-            this.plotScoreboards.set(regionAwareKey, scoreboard);
+            this.plotScoreboards.set(scoreboardKey, scoreboard);
+            
+            // For pool plots, try to load existing scores from persistence
+            if (isPoolPlot) {
+                try {
+                    await this.loadPoolScoreboardIntoMemory(scoreboardKey);
+                    // Reload the scoreboard after loading from persistence
+                    scoreboard = this.plotScoreboards.get(scoreboardKey) || scoreboard;
+                } catch (error) {
+                    console.error(`[ScoreboardManager] Error loading pool scoreboard for ${scoreboardKey}:`, error);
+                }
+            }
         }
 
         // Always add the new entry (do not remove old entries for the same player)
@@ -189,13 +307,13 @@ export class ScoreboardManager {
         const isNewRecord = position === 1;
         const isTopThree = position > 0 && position <= 3;
 
-        let logMessage = `[ScoreboardManager] Player ${player.id} achieved position ${position} on ${regionAwareKey}`;
+        let logMessage = `[ScoreboardManager] Player ${player.id} achieved position ${position} on ${scoreboardKey}`;
         if (isNewRecord) logMessage += ' (NEW RECORD!)';
         console.log(logMessage);
 
         // Save to persistence when score is added (use original plotId for persistence)
         this.saveScoreboardToPlot(plotId, player).catch(error => {
-            console.error(`[ScoreboardManager] Failed to save scoreboard for ${regionAwareKey}:`, error);
+            console.error(`[ScoreboardManager] Failed to save scoreboard for ${scoreboardKey}:`, error);
         });
 
         return {
@@ -203,7 +321,7 @@ export class ScoreboardManager {
             isNewRecord,
             isTopThree,
             wasUpdated: true,
-            scoreboard: this.getScoreboard(plotId, world || player.world),
+            scoreboard: await this.getScoreboard(plotId, targetWorld),
             playerTime: completionTime
         };
     }
@@ -211,10 +329,34 @@ export class ScoreboardManager {
     /**
      * Get the current scoreboard for a plot
      */
-    public getScoreboard(plotId: string, world?: { name?: string }): ScoreboardEntry[] {
-        const regionAwareKey = this.getRegionAwarePlotKey(plotId, world);
-        const scoreboard = this.plotScoreboards.get(regionAwareKey);
-        console.log(`[ScoreboardManager] getScoreboard for ${regionAwareKey}: found ${scoreboard?.entries?.length || 0} entries`);
+    public async getScoreboard(plotId: string, world?: { name?: string }): Promise<ScoreboardEntry[]> {
+        // Check if this is a pool plot by getting creator name
+        const { PlotSaveManager } = await import('./PlotSaveManager');
+        const plotSaveManager = PlotSaveManager.getInstance();
+        
+        // Extract plot index from plotId (e.g., "plot_3" -> 3)
+        const plotIndexStr = plotId.split('_')[1] ?? '0';
+        const plotIndex = parseInt(plotIndexStr);
+        let scoreboardKey: string;
+        
+        if (!isNaN(plotIndex)) {
+            const creatorName = await plotSaveManager.getPlotCreatorName(plotIndex, world);
+            if (creatorName && isPoolCreator(creatorName)) {
+                // For pool plots, use global creator name as key
+                scoreboardKey = creatorName;
+                console.log(`[ScoreboardManager] getScoreboard for GLOBAL pool ${creatorName}: found ${this.plotScoreboards.get(scoreboardKey)?.entries?.length || 0} entries`);
+            } else {
+                // For regular plots, use region-aware key
+                scoreboardKey = this.getRegionAwarePlotKey(plotId, world);
+                console.log(`[ScoreboardManager] getScoreboard for ${scoreboardKey}: found ${this.plotScoreboards.get(scoreboardKey)?.entries?.length || 0} entries`);
+            }
+        } else {
+            // Fallback to region-aware key
+            scoreboardKey = this.getRegionAwarePlotKey(plotId, world);
+            console.log(`[ScoreboardManager] getScoreboard for ${scoreboardKey}: found ${this.plotScoreboards.get(scoreboardKey)?.entries?.length || 0} entries`);
+        }
+        
+        const scoreboard = this.plotScoreboards.get(scoreboardKey);
         return scoreboard ? [...scoreboard.entries] : [];
     }
 
@@ -271,18 +413,17 @@ export class ScoreboardManager {
     /**
      * Format scoreboard for display
      */
-    public formatScoreboard(plotId: string, world?: { name?: string }): string[] {
-        const regionAwareKey = this.getRegionAwarePlotKey(plotId, world);
-        const scoreboard = this.plotScoreboards.get(regionAwareKey);
+    public async formatScoreboard(plotId: string, world?: { name?: string }): Promise<string[]> {
+        const scores = await this.getScoreboard(plotId, world);
         
-        if (!scoreboard || scoreboard.entries.length === 0) {
+        if (!scores || scores.length === 0) {
             return ['📊 No scores yet - be the first to complete this course!'];
         }
 
         const lines: string[] = [];
         lines.push('📊 Leaderboard:');
         
-        scoreboard.entries.forEach((entry, index) => {
+        scores.forEach((entry, index) => {
             const position = index + 1;
             const time = (entry.completionTime / 1000).toFixed(2);
             const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉';

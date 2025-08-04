@@ -360,20 +360,21 @@
           "timestamp": 1754110138010
         }
       ]
-    }
+    },
+    "cash": 56
   },
   "levelData": {
-    "level": 3,
-    "xp": 48,
-    "totalXP": 148,
+    "level": 4,
+    "xp": 78,
+    "totalXP": 278,
     "firstTimeFlags": [
       "FIRST_COMPLETE"
     ],
-    "lastActiveTime": 1754110138014,
+    "lastActiveTime": 1754159935133,
     "loginStreak": 1,
-    "lastLoginDate": "Fri Aug 01 2025"
+    "lastLoginDate": "Sat Aug 02 2025"
   },
-  "level": 3,
-  "xp": 48,
-  "totalXP": 148
+  "level": 4,
+  "xp": 78,
+  "totalXP": 278
 }

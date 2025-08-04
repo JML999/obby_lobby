@@ -1,0 +1,30 @@
+{
+  "poolId": "pool-7-e5n9z4",
+  "displayName": "Pool 7-e5n9z4",
+  "creator": "System",
+  "version": "1.0",
+  "lastModified": 1754159518761,
+  "scoreboard": [
+    {
+      "playerId": "player-1",
+      "playerName": "player-1",
+      "completionTime": 9345,
+      "timestamp": 1754159372966
+    },
+    {
+      "playerId": "player-1",
+      "playerName": "player-1",
+      "completionTime": 9345,
+      "timestamp": 1754159372966
+    },
+    {
+      "playerId": "player-6",
+      "playerName": "player-6",
+      "completionTime": 9911,
+      "timestamp": 1754159518756
+    }
+  ],
+  "metadata": {
+    "playCount": 3
+  }
+}

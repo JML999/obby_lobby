@@ -137,7 +137,9 @@ export class ObbyLevelController {
                     this.continueStartPlaying();
                 } else {
                     console.error('[ObbyLevelController] Still no player entity found after retry');
-                    this.playManager.handlePlayerFailed('Player entity not found');
+                    this.playManager.handlePlayerFailed('Player entity not found').catch(error => {
+                        console.error(`[ObbyLevelController] Error handling player failed:`, error);
+                    });
                 }
             }, 500);
             return;

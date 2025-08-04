@@ -4,42 +4,42 @@ import { MessageManager } from './MessageManager';
 // Level configuration with linear cash progression - ALL BLOCKS UNLOCKED AT ALL LEVELS
 const LEVEL_CONFIG: Record<number, { cash: number; blocks: string[]; xpRequired: number }> = {
   1: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels - no unlocking system
     xpRequired: 0 
   },
   2: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 50
   },
   3: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 100
   },
   4: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 200
   },
   5: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 350
   },
   6: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 500
   },
   7: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Dev mode: 10000 allowance for all levels
     blocks: [], // All blocks available at all levels
     xpRequired: 750
   },
   8: { 
-    cash: 1000, // Dev mode: 1000 allowance for all levels
+    cash: 10000, // Level 8 max cash allowance
     blocks: [], // All blocks available at all levels
     xpRequired: 1000
   }
@@ -134,7 +134,7 @@ export class SimpleLevelingSystem {
     
     try {
       const persistedData = await player.getPersistedData();
-      console.log(`[SimpleLevelingSystem] Raw persisted data for ${player.id}:`, JSON.stringify(persistedData, null, 2));
+      
       
       let level = 1;
       let xp = 0;
@@ -238,7 +238,7 @@ export class SimpleLevelingSystem {
           player,
           {
             bonus: bonusText,
-            duration: 4000
+            duration: 8000
           }
         );
       } catch (error) {
@@ -446,7 +446,7 @@ export class SimpleLevelingSystem {
             player,
             {
               bonus: `+${XP_REWARDS.FIRST_COMPLETE} XP bonus`,
-              duration: 4000
+              duration: 8000
             }
           );
         } catch (error) {
@@ -479,7 +479,7 @@ export class SimpleLevelingSystem {
             player,
             {
               bonus: `+${XP_REWARDS.COURSE_COMPLETED} XP earned`,
-              duration: 3000
+              duration: 8000
             }
           );
         } catch (error) {
@@ -663,7 +663,6 @@ export class SimpleLevelingSystem {
       
       // Verify the save worked
       const verification = await playerEntity.player.getPersistedData();
-      console.log(`[SimpleLevelingSystem] 🔍 VERIFICATION for ${playerId}:`, JSON.stringify(verification, null, 2));
       
     } catch (error) {
       console.error(`[SimpleLevelingSystem] ❌ Error saving player data for ${playerId}:`, error);

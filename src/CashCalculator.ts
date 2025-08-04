@@ -37,7 +37,7 @@ export class CashCalculator {
     };
 
     // Default starting cash
-    public static readonly DEFAULT_STARTING_CASH = 100;
+    public static readonly DEFAULT_STARTING_CASH = 10000;
 
     /**
      * Get the cost of placing a block

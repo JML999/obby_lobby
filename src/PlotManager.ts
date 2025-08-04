@@ -487,7 +487,8 @@ export class PlotManager {
                 
                 if (poolMap) {
                     const displayNumber = this.getClockwiseDisplayNumber(i);
-                    console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool map`);
+                    const creatorName = poolMap.obby?.plotData?.creatorName || 'unknown';
+                    console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool map (${creatorName})`);
                 }
             }
         }
@@ -598,13 +599,17 @@ export class PlotManager {
             const plotSaveManager = (await import('./PlotSaveManager')).PlotSaveManager.getInstance();
             plotSaveManager.trackBlockPlacement(plotId, coordinate, block.blockTypeId, world);
             // Also track as user-placed block so validation can find start/goal blocks
-            plotSaveManager.trackUserPlacedBlock(world, coordinate, block.blockTypeId, plot.ownerId || `pool-${plot.plotIndex}`, plotId);
+            plotSaveManager.trackUserPlacedBlock(world, coordinate, block.blockTypeId, plot.ownerId || plotData.creatorName, plotId);
         }
 
-        // Spawn obstacles using direct obstacle creation
+        // Spawn obstacles using direct obstacle creation, handling mechanical entities separately
         const obstaclePlacementManager = (await import('./ObstaclePlacementManager')).ObstaclePlacementManager.getInstance();
         obstaclePlacementManager.initializeWorld(world);
-
+        
+        // Separate mechanical entities from regular obstacles
+        const mechanicalEntities: any[] = [];
+        const regularObstacles: any[] = [];
+        
         for (const obstacle of plotData.obstacles) {
             // Apply transformation if needed (same logic as PlotSaveManager)
             const transformedRelativePos = needsTransformation 
@@ -617,6 +622,27 @@ export class PlotManager {
                 z: plotCenter.z + transformedRelativePos.z
             };
             
+            // Check if this is a mechanical entity (same logic as PlotSaveManager)
+            const mechanicalTypes = ['mechanical', 'static', 'elevator', 'carousel', 'side-to-side', 'front-to-back'];
+            if (mechanicalTypes.includes(obstacle.type) && obstacle.size === 'custom' && obstacle.config) {
+                // Store mechanical entity data for later loading
+                mechanicalEntities.push({
+                    id: obstacle.id || `${obstacle.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    position: worldPos,
+                    type: obstacle.type,
+                    size: 'custom',
+                    config: obstacle.config,
+                    cost: obstacle.config.cost || 2
+                });
+                console.log(`[PlotManager] Prepared mechanical entity ${obstacle.config.entityType} for loading at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+            } else {
+                // Regular obstacle
+                regularObstacles.push({ obstacle, worldPos });
+            }
+        }
+        
+        // Load regular obstacles
+        for (const { obstacle, worldPos } of regularObstacles) {
             try {
                 // Create obstacle type for the catalog lookup
                 const obstacleType = {
@@ -647,6 +673,15 @@ export class PlotManager {
             } catch (error) {
                 console.error(`[PlotManager] Error spawning obstacle ${obstacle.type}:`, error);
             }
+        }
+        
+        // Load mechanical entities using MechanicalBlockManager
+        if (mechanicalEntities.length > 0) {
+            const { MechanicalBlockManager } = await import('./MechanicalBlockManager');
+            const mechanicalManager = MechanicalBlockManager.getInstance();
+            mechanicalManager.initializeWorld(world); // Initialize with world context
+            mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, world);
+            console.log(`[PlotManager] Loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} from default map`);
         }
     }
 

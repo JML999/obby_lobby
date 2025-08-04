@@ -672,8 +672,7 @@ export class PlotSaveManager {
         }
       }
 
-      // Load obstacles and mechanical entities using relative positions
-      const mechanicalEntities: any[] = [];
+      // Load obstacles using relative positions (including mechanical entities)
       for (const savedObstacle of plotData.obstacles) {
         // Apply transformation if needed
         const transformedRelativePos = needsTransformation 
@@ -686,19 +685,22 @@ export class PlotSaveManager {
           z: newPlotCenter.z + transformedRelativePos.z
         };
         
-        // Check if this is a mechanical entity (handle both old format 'mechanical' and new specific types)
-        const mechanicalTypes = ['mechanical', 'static', 'elevator', 'carousel', 'side-to-side', 'front-to-back'];
-        if (mechanicalTypes.includes(savedObstacle.type) && savedObstacle.size === 'custom' && savedObstacle.config) {
-          // Store mechanical entity data for later loading
-          mechanicalEntities.push({
-            id: savedObstacle.id,
-            position: worldPos,
-            type: savedObstacle.type, // Use the actual saved type
-            size: 'custom',
-            config: savedObstacle.config,
-            cost: savedObstacle.config.cost || 2 // Default cost if not stored
-          });
-          console.log(`[PlotSaveManager] Prepared mechanical entity ${savedObstacle.config.entityType} for loading at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+        // Check if this is a mechanical entity
+        if (savedObstacle.type === 'mechanical' && savedObstacle.size === 'custom' && savedObstacle.config) {
+          // Create mechanical entity AND register with ObstacleCollisionManager in one step
+          const success = this.createAndRegisterMechanicalEntity(
+            plotId,
+            savedObstacle.id,
+            worldPos,
+            savedObstacle.config,
+            player.world || this.world!
+          );
+          
+          if (success) {
+            console.log(`[PlotSaveManager] Loaded and registered mechanical entity ${savedObstacle.config.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+          } else {
+            console.warn(`[PlotSaveManager] Failed to load mechanical entity ${savedObstacle.config.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+          }
         } else {
           // Handle regular obstacles
           const obstacleId = `${savedObstacle.type}_${savedObstacle.size}`;
@@ -715,14 +717,6 @@ export class PlotSaveManager {
           }
         }
       }
-      
-      // Load mechanical entities using MechanicalBlockManager
-      if (mechanicalEntities.length > 0) {
-        const { MechanicalBlockManager } = require('./MechanicalBlockManager');
-        const mechanicalManager = MechanicalBlockManager.getInstance();
-        mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, player.world || this.world!);
-        console.log(`[PlotSaveManager] Loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId}`);
-      }
 
       // Load scoreboard data if it exists
       if (plotData.scoreboard && plotData.scoreboard.length > 0) {
@@ -734,9 +728,12 @@ export class PlotSaveManager {
         console.log(`[PlotSaveManager] No scoreboard data found in plot ${plotId}`);
       }
 
+      // Count mechanical entities for the message
+      const mechanicalCount = plotData.obstacles.filter(obs => obs.type === 'mechanical').length;
+      
       this.world.chatManager.sendPlayerMessage(
         player,
-        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (including ${mechanicalEntities.length} mechanical entities)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
+        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (including ${mechanicalCount} mechanical entities)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
         '00FF00'
       );
 
@@ -797,7 +794,7 @@ export class PlotSaveManager {
         });
       }
 
-      // Collect obstacles from ObstacleCollisionManager
+      // Collect obstacles from ObstacleCollisionManager (including mechanical entities)
       const obstacles: SavedObstacle[] = [];
       if (plotId) {
         const plotObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
@@ -807,35 +804,16 @@ export class PlotSaveManager {
             y: obstacle.position.y - plotCenter.y,
             z: obstacle.position.z - plotCenter.z
           };
+          
+          // Use config stored directly in ObstacleCollisionManager
+          let config = obstacle.config || {};
+          
           obstacles.push({
             id: obstacle.id,
             type: obstacle.type,
             size: obstacle.size,
             relativePos,
-            config: {} // Additional config can be added later
-          });
-        }
-        
-        // Collect mechanical entities from MechanicalBlockManager
-        const { MechanicalBlockManager } = require('./MechanicalBlockManager');
-        const mechanicalManager = MechanicalBlockManager.getInstance();
-        const mechanicalEntities = mechanicalManager.getPlotMechanicalEntities(plotId);
-        
-        for (const mechanicalEntity of mechanicalEntities) {
-          const relativePos = {
-            x: mechanicalEntity.position.x - plotCenter.x,
-            y: mechanicalEntity.position.y - plotCenter.y,
-            z: mechanicalEntity.position.z - plotCenter.z
-          };
-          obstacles.push({
-            id: mechanicalEntity.id,
-            type: mechanicalEntity.type, // 'mechanical'
-            size: mechanicalEntity.size, // 'custom'
-            relativePos,
-            config: {
-              ...mechanicalEntity.config, // Full mechanical configuration
-              cost: mechanicalEntity.cost // Include cost for refund tracking
-            }
+            config
           });
         }
       }
@@ -843,7 +821,7 @@ export class PlotSaveManager {
       // Get current scoreboard for this plot
       const { ScoreboardManager } = await import('./ScoreboardManager');
       const scoreboardManager = ScoreboardManager.getInstance();
-      const currentScoreboard = scoreboardManager.getScoreboard(plotId || 'unknown', this.world);
+      const currentScoreboard = await scoreboardManager.getScoreboard(plotId || 'unknown', this.world);
 
       // Determine plot side based on plotId
       const plotSide = plotId ? this.getPlotSide(this.getPlotIndexFromId(plotId)) : 'left';
@@ -1140,8 +1118,16 @@ export class PlotSaveManager {
     );
     
     if (isPoolMap) {
-      console.log(`[PlotSaveManager] Plot ${plotId} is a pool map - using local leaderboards only`);
-      return null; // Pool maps don't have creators - use local leaderboards only
+      // Get the pool creator name from the user-placed blocks
+      const poolBlock = userPlacedBlocks.find(block => 
+        block.playerId && block.playerId.startsWith('pool-')
+      );
+      if (poolBlock?.playerId) {
+        console.log(`[PlotSaveManager] Plot ${plotId} is a pool map with creator: ${poolBlock.playerId}`);
+        return poolBlock.playerId; // Return the pool creator name for global leaderboards
+      }
+      console.log(`[PlotSaveManager] Plot ${plotId} is a pool map but no pool creator found`);
+      return null;
     }
 
     // PRIORITY CHECK: First check if this is a default map by looking at PlotManager
@@ -1199,6 +1185,76 @@ export class PlotSaveManager {
     // Since position detection is problematic, use a broad area for plot 3
     // This is a temporary solution - we'll scan the entire plot area
     return { x: -25, y: 5, z: 95 }; // Center of plot 3 area based on logs
+  }
+
+  /**
+   * Create and register a mechanical entity in the ObstacleCollisionManager system
+   */
+  private createAndRegisterMechanicalEntity(plotId: string, entityId: string, position: Vector3Like, config: any, world: World): boolean {
+    try {
+      const { MechanicalBlockManager } = require('./MechanicalBlockManager');
+      const { ConfigurableMechanicalEntity } = require('./entities/ConfigurableMechanicalEntity');
+      
+      // Add +0.5 offset to center entities properly (position is chunk lattice corner)
+      const entitySpawnPosition = {
+        x: position.x + 0.5,
+        y: position.y + 0.5,
+        z: position.z + 0.5
+      };
+      
+      console.log(`[PlotSaveManager] Creating mechanical entity ${config.entityType} at spawn pos [${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}]`);
+      
+      // Create the entity
+      const entity = new ConfigurableMechanicalEntity(
+        world,
+        entitySpawnPosition,
+        config.entityType,
+        config.dimensions.x,
+        config.dimensions.y,
+        config.dimensions.z,
+        config.speed || 2.0,
+        config.distance || 2
+      );
+      
+      // Spawn the entity
+      entity.spawn(world, entitySpawnPosition);
+      
+      // Activate if not in build mode and not static
+      const mechanicalManager = MechanicalBlockManager.getInstance();
+      const isInBuildMode = mechanicalManager.getIsInBuildMode();
+      console.log(`[PlotSaveManager] Build mode status: ${isInBuildMode}, Entity type: ${config.entityType}`);
+      
+      if (!isInBuildMode && config.entityType !== 'static') {
+        entity.activate();
+        console.log(`[PlotSaveManager] 🔄 Activated ${config.entityType} entity`);
+      } else {
+        console.log(`[PlotSaveManager] ⏸️ NOT activating ${config.entityType} entity (buildMode: ${isInBuildMode}, isStatic: ${config.entityType === 'static'})`);
+      }
+      
+      // Register with ObstacleCollisionManager with full config
+      const success = this.obstacleCollisionManager.registerObstacle(
+        plotId,
+        entityId,
+        'mechanical',
+        'custom',
+        position, // chunk lattice position for bounds checking
+        entityId,
+        config // full mechanical config
+      );
+      
+      if (success) {
+        console.log(`[PlotSaveManager] ✅ Successfully created and registered mechanical entity ${config.entityType}`);
+        return true;
+      } else {
+        console.error(`[PlotSaveManager] ❌ Failed to register mechanical entity with ObstacleCollisionManager`);
+        entity.despawn();
+        return false;
+      }
+      
+    } catch (error) {
+      console.error(`[PlotSaveManager] Error creating mechanical entity:`, error);
+      return false;
+    }
   }
 
   /**

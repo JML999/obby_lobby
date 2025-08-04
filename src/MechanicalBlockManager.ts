@@ -34,11 +34,51 @@ export class MechanicalBlockManager {
     private wheelEntities: Map<string, MechanicalWheelEntity> = new Map();
     private elevatorEntities: Map<string, MechanicalElevatorEntity> = new Map();
     private configurableEntities: Map<string, ConfigurableMechanicalEntity> = new Map();
-    private isInBuildMode: boolean = true; // Default to build mode enabled (matches BlockPlacementManager)
+    private isInBuildMode: boolean = false; // Default to movement enabled - build mode should be explicitly activated
     
     // Track mechanical entities per plot for saving/loading
     private plotMechanicalEntities: Map<string, Map<string, PlotMechanicalEntity>> = new Map();
     
+
+    /**
+     * Initialize the manager with a world context
+     */
+    public initializeWorld(world: World): void {
+        this.world = world;
+        console.log(`[MechanicalBlockManager] Initialized with world: ${world.name}`);
+    }
+
+    /**
+     * Register a mechanical entity with the ObstacleCollisionManager for proper persistence
+     */
+    private registerMechanicalEntityAsObstacle(
+        plotId: string, 
+        positionKey: string, 
+        position: Vector3Like, 
+        entity: ConfigurableMechanicalEntity
+    ): void {
+        if (!this.world) return;
+        
+        const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
+        const obstacleManager = ObstacleCollisionManager.getInstance();
+        obstacleManager.initializeWorld(this.world);
+        
+        const success = obstacleManager.registerObstacle(
+            plotId,
+            positionKey,
+            'mechanical', // type
+            'custom', // size
+            position,
+            positionKey // entityId
+        );
+        
+        if (success) {
+            console.log(`[MechanicalBlockManager] 📋 Registered mechanical entity with ObstacleCollisionManager`);
+        } else {
+            console.warn(`[MechanicalBlockManager] ⚠️ Failed to register mechanical entity with ObstacleCollisionManager`);
+        }
+    }
+
     /**
      * Create world-aware plot key to prevent cross-world contamination
      */
@@ -74,12 +114,13 @@ export class MechanicalBlockManager {
         plotEntities.set(entityId, {
             id: entityId,
             position: { x: position.x, y: position.y, z: position.z },
-            type: entityType,
+            type: 'mechanical', // Always use 'mechanical' as base type for consistency
             size: 'custom',
-            config,
+            config, // The actual entity type is stored in config.entityType
             cost,
             entity
         });
+        console.log(`[MechanicalBlockManager] 💾 TRACK DEBUG - Stored entity ${entityId} for plot ${plotId} at position: ${position.x}, ${position.y}, ${position.z}`);
         
         console.log(`[MechanicalBlockManager] Tracked mechanical entity ${entityId} for plot ${plotId}`);
     }
@@ -91,7 +132,15 @@ export class MechanicalBlockManager {
         const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
         const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
         if (!plotEntities) {
+            console.log(`[MechanicalBlockManager] 💾 GET DEBUG - No entities found for plot ${plotId} (${worldAwarePlotId})`);
             return [];
+        }
+        
+        console.log(`[MechanicalBlockManager] 💾 GET DEBUG - Found ${plotEntities.size} tracked entities for plot ${plotId}`);
+        
+        // Debug: list all tracked entities
+        for (const [entityId, entity] of plotEntities.entries()) {
+            console.log(`[MechanicalBlockManager] 💾 GET DEBUG - Entity ${entityId}: position ${entity.position.x}, ${entity.position.y}, ${entity.position.z}, type ${entity.config.entityType}`);
         }
         
         // Return entities with properties read directly from the actual spawned entities
@@ -103,7 +152,7 @@ export class MechanicalBlockManager {
                 
                 return {
                     ...trackedEntity,
-                    type: entity.getEntityType(),
+                    type: 'mechanical', // Keep consistent base type
                     config: {
                         entityType: entity.getEntityType(),
                         dimensions: actualDimensions,
@@ -171,66 +220,6 @@ export class MechanicalBlockManager {
         return refundAmount;
     }
     
-    /**
-     * Load mechanical entities from saved data
-     */
-    public loadMechanicalEntities(plotId: string, mechanicalEntities: PlotMechanicalEntity[], world: World): void {
-        if (!world) {
-            console.error('[MechanicalBlockManager] No world provided for loading mechanical entities');
-            return;
-        }
-        
-        // Clear existing entities first
-        this.clearPlotMechanicalEntities(plotId);
-        
-        for (const savedEntity of mechanicalEntities) {
-            console.log(`[MechanicalBlockManager] Loading mechanical entity ${savedEntity.id} of type ${savedEntity.config.entityType} with dimensions ${savedEntity.config.dimensions.x}x${savedEntity.config.dimensions.y}x${savedEntity.config.dimensions.z}`);
-            
-            // Generate position key for tracking
-            const positionKey = this.getPositionKey(savedEntity.position);
-            
-            // Create config object that matches the creation methods
-            const config = {
-                type: savedEntity.config.entityType,
-                sizeX: savedEntity.config.dimensions.x,
-                sizeY: savedEntity.config.dimensions.y,
-                sizeZ: savedEntity.config.dimensions.z,
-                speed: savedEntity.config.speed,
-                distance: savedEntity.config.distance,
-                rotationSpeed: savedEntity.config.rotationSpeed
-            };
-            
-            // Use the same creation methods we use during normal placement (with loading flag and saved cost)
-            const savedCost = savedEntity.cost || CashCalculator.getMechanicalEntityCost(savedEntity.config.dimensions);
-            let success = false;
-            switch (savedEntity.config.entityType) {
-                case 'static':
-                    success = this.createStaticEntity(savedEntity.position, positionKey, config, plotId, undefined, true, savedCost);
-                    break;
-                case 'elevator':
-                    success = this.createElevatorEntity(savedEntity.position, positionKey, config, plotId, undefined, true, savedCost);
-                    break;
-                case 'carousel':
-                    success = this.createCarouselEntity(savedEntity.position, positionKey, config, plotId, undefined, true, savedCost);
-                    break;
-                case 'side-to-side':
-                    success = this.createSideToSideEntity(savedEntity.position, positionKey, config, plotId, undefined, true, savedCost);
-                    break;
-                case 'front-to-back':
-                    success = this.createFrontToBackEntity(savedEntity.position, positionKey, config, plotId, undefined, true, savedCost);
-                    break;
-                default:
-                    console.error(`[MechanicalBlockManager] Unknown entity type: ${savedEntity.config.entityType}`);
-                    continue;
-            }
-            
-            if (success) {
-                console.log(`[MechanicalBlockManager] Successfully loaded mechanical entity ${savedEntity.id} of type ${savedEntity.config.entityType} at ${savedEntity.position.x},${savedEntity.position.y},${savedEntity.position.z} with dimensions ${savedEntity.config.dimensions.x}x${savedEntity.config.dimensions.y}x${savedEntity.config.dimensions.z}`);
-            } else {
-                console.error(`[MechanicalBlockManager] Failed to load mechanical entity ${savedEntity.id} of type ${savedEntity.config.entityType}`);
-            }
-        }
-    }
     
     public static getInstance(): MechanicalBlockManager {
         if (!MechanicalBlockManager.instance) {
@@ -647,24 +636,6 @@ export class MechanicalBlockManager {
         return this.isInBuildMode;
     }
 
-    /**
-     * Enter build mode - pause and reset all mechanical entities
-     */
-    public enterBuildMode(): void {
-        this.isInBuildMode = true;
-        this.pauseAllEntities();
-        this.resetAllEntitiesToHome();
-        console.log('[MechanicalBlockManager] Entered build mode - all entities paused and reset');
-    }
-
-    /**
-     * Exit build mode - resume all mechanical entities
-     */
-    public exitBuildMode(): void {
-        this.isInBuildMode = false;
-        this.resumeAllEntities();
-        console.log('[MechanicalBlockManager] Exited build mode - all entities resumed');
-    }
 
     /**
      * Handle mechanical config panel confirmation
@@ -723,20 +694,40 @@ export class MechanicalBlockManager {
                 const entity = this.configurableEntities.get(positionKey)!;
                 
                 // Remove any existing tracked entity first to avoid duplicates
-                const plotEntities = this.plotMechanicalEntities.get(plotId);
+                const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
+                const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
                 if (plotEntities) {
                     plotEntities.delete(positionKey);
                 }
                 
-                // Track with the final confirmed configuration
-                this.trackMechanicalEntity(plotId, positionKey, position, config.type, {
+                // Register ONLY with ObstacleCollisionManager (like jump pads) with full config
+                const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
+                const obstacleManager = ObstacleCollisionManager.getInstance();
+                
+                const fullConfig = {
                     entityType: config.type,
                     dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                     speed: config.speed || 2.0,
                     distance: config.distance || 2,
-                    rotationSpeed: config.type === 'carousel' ? 1.0 : undefined
-                }, cost, entity);
-                console.log(`[MechanicalBlockManager] Entity confirmed and tracked for plot ${plotId} at ${positionKey} for ${cost} cash`);
+                    rotationSpeed: config.type === 'carousel' ? 1.0 : undefined,
+                    cost: cost
+                };
+                
+                const success = obstacleManager.registerObstacle(
+                    plotId,
+                    positionKey,
+                    'mechanical',
+                    'custom', 
+                    position, // chunk lattice position
+                    positionKey,
+                    fullConfig // Pass full mechanical config
+                );
+                
+                if (success) {
+                    console.log(`[MechanicalBlockManager] ✅ Registered mechanical entity with ObstacleCollisionManager ONLY`);
+                } else {
+                    console.error(`[MechanicalBlockManager] ❌ Failed to register with ObstacleCollisionManager`);
+                }
             } else {
                 console.log(`[MechanicalBlockManager] Entity confirmed and kept at ${positionKey} (no plot tracking)`);
             }
@@ -787,10 +778,21 @@ export class MechanicalBlockManager {
         
         this.configurableEntities.set(positionKey, staticEntity);
         
+        // Register with ObstacleCollisionManager for proper persistence
+        if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, staticEntity);
+        }
+        
         // Only track for saving if this is during loading (isLoading = true)
         // Preview entities should NOT be tracked - only confirmed entities
         if (plotId && isLoading) {
-            this.trackMechanicalEntity(plotId, positionKey, position, 'static', {
+            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
+            const chunkLatticePos = {
+                x: position.x - 0.5,
+                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
+                z: position.z - 0.5
+            };
+            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'static', {
                 entityType: 'static',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
@@ -841,10 +843,21 @@ export class MechanicalBlockManager {
         
         this.configurableEntities.set(positionKey, elevatorEntity);
         
+        // Register with ObstacleCollisionManager for proper persistence
+        if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, elevatorEntity);
+        }
+        
         // Only track for saving if this is during loading (isLoading = true)
         // Preview entities should NOT be tracked - only confirmed entities
         if (plotId && isLoading) {
-            this.trackMechanicalEntity(plotId, positionKey, position, 'elevator', {
+            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
+            const chunkLatticePos = {
+                x: position.x - 0.5,
+                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
+                z: position.z - 0.5
+            };
+            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'elevator', {
                 entityType: 'elevator',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
@@ -895,10 +908,21 @@ export class MechanicalBlockManager {
         
         this.configurableEntities.set(positionKey, carouselEntity);
         
+        // Register with ObstacleCollisionManager for proper persistence
+        if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, carouselEntity);
+        }
+        
         // Only track for saving if this is during loading (isLoading = true)
         // Preview entities should NOT be tracked - only confirmed entities
         if (plotId && isLoading) {
-            this.trackMechanicalEntity(plotId, positionKey, position, 'carousel', {
+            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
+            const chunkLatticePos = {
+                x: position.x - 0.5,
+                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
+                z: position.z - 0.5
+            };
+            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'carousel', {
                 entityType: 'carousel',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
@@ -950,10 +974,21 @@ export class MechanicalBlockManager {
         
         this.configurableEntities.set(positionKey, sideToSideEntity);
         
+        // Register with ObstacleCollisionManager for proper persistence
+        if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, sideToSideEntity);
+        }
+        
         // Only track for saving if this is during loading (isLoading = true)
         // Preview entities should NOT be tracked - only confirmed entities
         if (plotId && isLoading) {
-            this.trackMechanicalEntity(plotId, positionKey, position, 'side-to-side', {
+            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
+            const chunkLatticePos = {
+                x: position.x - 0.5,
+                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
+                z: position.z - 0.5
+            };
+            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'side-to-side', {
                 entityType: 'side-to-side',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
@@ -1004,10 +1039,21 @@ export class MechanicalBlockManager {
         
         this.configurableEntities.set(positionKey, frontToBackEntity);
         
+        // Register with ObstacleCollisionManager for proper persistence
+        if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, frontToBackEntity);
+        }
+        
         // Only track for saving if this is during loading (isLoading = true)
         // Preview entities should NOT be tracked - only confirmed entities
         if (plotId && isLoading) {
-            this.trackMechanicalEntity(plotId, positionKey, position, 'front-to-back', {
+            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
+            const chunkLatticePos = {
+                x: position.x - 0.5,
+                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
+                z: position.z - 0.5
+            };
+            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'front-to-back', {
                 entityType: 'front-to-back',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
@@ -1088,12 +1134,14 @@ export class MechanicalBlockManager {
     private createPreviewEntity(position: Vector3Like, positionKey: string, config: any, plotId?: string, player?: any): boolean {
         try {
             // Entities are center-based, chunk lattice blocks are corner-based
-            // Offset by +0.5 to make 1x1x1 entities appear in same position as chunk blocks
+            // Offset all axes by +0.5 to center entities properly
             const entityPosition = {
                 x: position.x + 0.5,
-                y: position.y + 0.5,
+                y: position.y + 0.5,  // Add 0.5 to Y to lift entities to correct height
                 z: position.z + 0.5
             };
+            console.log(`[MechanicalBlockManager] 🔨 PLACEMENT DEBUG - Chunk lattice position: ${position.x}, ${position.y}, ${position.z}`);
+            console.log(`[MechanicalBlockManager] 🔨 PLACEMENT DEBUG - Entity spawn position: ${entityPosition.x}, ${entityPosition.y}, ${entityPosition.z}`);
             
             switch (config.type) {
                 case 'static':
@@ -1130,6 +1178,65 @@ export class MechanicalBlockManager {
     }
 
     /**
+     * Load a single mechanical entity and register it with ObstacleCollisionManager (like jump pads)
+     */
+    public loadSingleMechanicalEntity(plotId: string, entityId: string, position: Vector3Like, config: any, world: World): boolean {
+        try {
+            const positionKey = this.getPositionKey(position);
+            
+            // Add +0.5 offset to center entities properly (saved position is chunk lattice corner)
+            const entitySpawnPosition = {
+                x: position.x + 0.5,
+                y: position.y + 0.5,
+                z: position.z + 0.5
+            };
+            
+            console.log(`[MechanicalBlockManager] Loading single mechanical entity ${config.entityType} at ${positionKey}`);
+            console.log(`[MechanicalBlockManager] 📂 SINGLE-LOAD DEBUG - Saved position: ${position.x}, ${position.y}, ${position.z}`);
+            console.log(`[MechanicalBlockManager] 📂 SINGLE-LOAD DEBUG - Entity spawn position: ${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}`);
+            
+            // Create the entity using the stored configuration
+            const entity = new ConfigurableMechanicalEntity(
+                world,
+                entitySpawnPosition,
+                config.entityType,
+                config.dimensions.x,
+                config.dimensions.y,
+                config.dimensions.z,
+                config.speed || 2.0,
+                config.distance || 2
+            );
+
+            // Note: rotationSpeed is automatically calculated from speed in the entity constructor
+
+            // Spawn the entity
+            entity.spawn(world, entitySpawnPosition);
+            
+            // Ensure entity is activated (loaded entities should move immediately)
+            if (!this.isInBuildMode && config.entityType !== 'static') {
+                entity.activate();
+                console.log(`[MechanicalBlockManager] 🔄 Explicitly activated loaded ${config.entityType} entity`);
+            }
+            
+            // Store the entity
+            this.configurableEntities.set(positionKey, entity);
+            
+            // Register with ObstacleCollisionManager for proper persistence (like jump pads)
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity);
+            
+            // Track it for saving
+            this.trackMechanicalEntity(plotId, positionKey, position, config.entityType, config, config.cost || 2, entity);
+            
+            console.log(`[MechanicalBlockManager] Successfully loaded single ${config.entityType} entity with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z} at ${positionKey}`);
+            return true;
+            
+        } catch (error) {
+            console.error(`[MechanicalBlockManager] Error loading single mechanical entity:`, error);
+            return false;
+        }
+    }
+
+    /**
      * Load mechanical entities from saved data (called during plot loading)
      */
     public loadMechanicalEntities(plotId: string, mechanicalEntities: any[], world: World): void {
@@ -1145,12 +1252,22 @@ export class MechanicalBlockManager {
                 const { position, config } = entityData;
                 const positionKey = this.getPositionKey(position);
                 
+                // Add +0.5 offset to all axes to center entities properly
+                const entitySpawnPosition = {
+                    x: position.x + 0.5,
+                    y: position.y + 0.5,  // Add back the Y offset
+                    z: position.z + 0.5
+                };
+                
+                console.log(`[MechanicalBlockManager] 📂 RESTORE DEBUG - Saved position: ${position.x}, ${position.y}, ${position.z}`);
+                console.log(`[MechanicalBlockManager] 📂 RESTORE DEBUG - Entity spawn position: ${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}`);
+                
                 console.log(`[MechanicalBlockManager] Loading ${config.entityType} entity at ${positionKey} with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z}`);
 
                 // Create the entity using the stored configuration
                 const entity = new ConfigurableMechanicalEntity(
                     world,
-                    position,
+                    entitySpawnPosition,
                     config.entityType,
                     config.dimensions.x,
                     config.dimensions.y,
@@ -1160,12 +1277,22 @@ export class MechanicalBlockManager {
                 );
 
                 // Spawn the entity
-                entity.spawn(world, position);
+                entity.spawn(world, entitySpawnPosition);
+                
+                // Ensure entity is activated (loaded entities should move immediately)
+                if (!this.isInBuildMode && config.entityType !== 'static') {
+                    entity.activate();
+                    console.log(`[MechanicalBlockManager] 🔄 Explicitly activated loaded ${config.entityType} entity`);
+                }
                 
                 // Store the entity
                 this.configurableEntities.set(positionKey, entity);
                 
+                // Register with ObstacleCollisionManager for proper persistence (like jump pads)
+                this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity);
+                
                 // Track it for saving (use isLoading = true to ensure proper tracking)
+                console.log(`[MechanicalBlockManager] 💾 RESTORE-TRACK DEBUG - Tracking loaded entity at position: ${position.x}, ${position.y}, ${position.z}`);
                 this.trackMechanicalEntity(plotId, positionKey, position, config.entityType, config, entityData.cost || 2, entity);
                 
                 console.log(`[MechanicalBlockManager] Successfully loaded ${config.entityType} entity with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z} at ${positionKey}`);
@@ -1176,5 +1303,43 @@ export class MechanicalBlockManager {
         }
         
         console.log(`[MechanicalBlockManager] Completed loading mechanical entities. Total entities: ${this.configurableEntities.size}`);
+    }
+    
+    /**
+     * Enter build mode - pause all mechanical entities and reset them to home positions
+     */
+    public enterBuildMode(): void {
+        console.log(`[MechanicalBlockManager] 🔨 Entering build mode - pausing mechanical entities`);
+        this.isInBuildMode = true;
+        
+        // Pause and reset all mechanical entities
+        for (const entity of this.configurableEntities.values()) {
+            if (entity && typeof entity.setPauseMovement === 'function') {
+                entity.setPauseMovement(true);
+            }
+            if (entity && typeof entity.reset === 'function') {
+                entity.reset();
+            }
+        }
+        
+        // IMPORTANT: Do NOT clear plotMechanicalEntities - this preserves loaded entity tracking
+        console.log(`[MechanicalBlockManager] 🔨 Build mode entered. Tracked plots: ${this.plotMechanicalEntities.size}`);
+    }
+    
+    /**
+     * Exit build mode - resume all mechanical entities
+     */
+    public exitBuildMode(): void {
+        console.log(`[MechanicalBlockManager] 🏃 Exiting build mode - resuming mechanical entities`);
+        this.isInBuildMode = false;
+        
+        // Resume all mechanical entities
+        for (const entity of this.configurableEntities.values()) {
+            if (entity && typeof entity.setPauseMovement === 'function') {
+                entity.setPauseMovement(false);
+            }
+        }
+        
+        console.log(`[MechanicalBlockManager] 🏃 Build mode exited. Tracked plots: ${this.plotMechanicalEntities.size}`);
     }
 }

@@ -58,25 +58,28 @@ class AchievementPopupPanel {
                 #achievement-popup-main {
                     width: auto;
                     max-width: 90vw;
-                    background: rgba(20,20,20,0.97);
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 8px 2px rgba(255,255,255,0.08);
-                    border-radius: 16px;
-                    padding: 8px 24px;
-                    color: #fff;
-                    font-family: 'Segoe UI', 'Arial', sans-serif;
-                    font-size: 16px;
-                    font-weight: 700;
-                    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+                    background: linear-gradient(135deg, rgba(123, 104, 238, 0.9), rgba(147, 112, 219, 0.85));
+                    box-shadow: 0 6px 20px rgba(123, 104, 238, 0.4), 0 0 15px rgba(64, 224, 208, 0.3);
+                    border: 2px solid rgba(221, 160, 221, 0.6);
+                    border-radius: 12px;
+                    padding: 12px 28px;
+                    color: #FFFFFF;
+                    font-family: 'Comic Neue', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+                    font-size: 18px;
+                    font-weight: 800;
+                    text-shadow: 2px 2px 0px #4B0082, 3px 3px 6px rgba(0, 0, 0, 0.3);
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
                     opacity: 0;
                     transform: translateY(20px) scale(0.9);
-                    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+                    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
                     margin: 0 auto 6px auto;
-                    backdrop-filter: blur(6px);
+                    backdrop-filter: blur(15px);
                     display: none;
                 }
                 
                 #achievement-popup-main.show {
-                    opacity: 0.76;
+                    opacity: 1;
                     transform: translateY(0) scale(1);
                     display: block;
                 }
@@ -84,25 +87,26 @@ class AchievementPopupPanel {
                 #achievement-popup-sub {
                     width: auto;
                     max-width: 80vw;
-                    background: rgba(20,20,20,0.85);
-                    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
-                    border-radius: 14px;
-                    padding: 6px 20px;
-                    color: #e0e0e0;
-                    font-family: 'Segoe UI', 'Arial', sans-serif;
-                    font-size: 14px;
-                    font-weight: 600;
-                    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+                    background: rgba(230, 230, 250, 0.85);
+                    box-shadow: 0 4px 15px rgba(75, 0, 130, 0.3);
+                    border: 1px solid rgba(221, 160, 221, 0.4);
+                    border-radius: 10px;
+                    padding: 8px 24px;
+                    color: #4B0082;
+                    font-family: 'Comic Neue', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+                    font-size: 15px;
+                    font-weight: 700;
+                    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.6);
                     opacity: 0;
                     transform: translateY(15px) scale(0.95);
-                    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+                    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
                     margin: 0 auto 4px auto;
-                    backdrop-filter: blur(4px);
+                    backdrop-filter: blur(10px);
                     display: none;
                 }
                 
                 #achievement-popup-sub.show {
-                    opacity: 0.64;
+                    opacity: 0.9;
                     transform: translateY(0) scale(1);
                     display: block;
                 }
@@ -146,8 +150,8 @@ class AchievementPopupPanel {
 
                 #achievement-bonus-main {
                     font-size: 12px;
-                    color: #cccccc;
-                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+                    color: #000000;
+                    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
                 }
 
                 #achievement-title-sub {
@@ -159,8 +163,8 @@ class AchievementPopupPanel {
 
                 #achievement-bonus-sub {
                     font-size: 11px;
-                    color: #b0b0b0;
-                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+                    color: #000000;
+                    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.4);
                 }
 
                 #achievement-title-subsub {
@@ -172,8 +176,8 @@ class AchievementPopupPanel {
 
                 #achievement-bonus-subsub {
                     font-size: 10px;
-                    color: #999999;
-                    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+                    color: #000000;
+                    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.3);
                 }
 
                 /* Fade-out animations matching original */
@@ -235,7 +239,7 @@ class AchievementPopupPanel {
             id: Date.now() + Math.random(),
             title: data.title || 'Achievement Unlocked!',
             bonus: data.bonus || '',
-            duration: data.duration || 5000,
+            duration: data.duration || 8000,
             timeoutId: null
         };
         console.log('[AchievementPopupPanel] Created message object:', message);

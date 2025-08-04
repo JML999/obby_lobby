@@ -15,8 +15,8 @@ export interface ObbyPlayResult {
 // Interface that ObbyLevelController expects from its manager
 export interface IObbyPlayManager {
     getCurrentPlayer(): Player | null;
-    handlePlayerFailed(reason: string): void;
-    handlePlayerFinished(): void;
+    handlePlayerFailed(reason: string): Promise<void>;
+    handlePlayerFinished(): Promise<void>;
 }
 
 export class PlayerObbySession implements IObbyPlayManager {
@@ -31,6 +31,7 @@ export class PlayerObbySession implements IObbyPlayManager {
     private startTime: number = 0;
     private gameTimer: NodeJS.Timeout | null = null;
     private countdownTimer: NodeJS.Timeout | null = null;
+    private completionInfo?: { completed: boolean; plotId: string; playerId: string };
     
     // Constants
     private readonly COUNTDOWN_DURATION = 3; // 3 seconds countdown
@@ -83,6 +84,13 @@ export class PlayerObbySession implements IObbyPlayManager {
         return true;
     }
 
+    // Array of pool creators to randomly select from
+    private static readonly POOL_CREATORS = [
+        'Cake',
+        'Obby Lobby Staff'
+        // Add more creator names here as needed
+    ];
+
     /**
      * Show the course starting message with creator info
      */
@@ -97,14 +105,26 @@ export class PlayerObbySession implements IObbyPlayManager {
         
         console.log(`[PlayerObbySession] Creator lookup for plot ${this.plotIndex} in world ${this.world.name}: "${creatorName}"`);
         
-        // For pool maps (no creator), just show the plot number
+        // For pool maps, show random creator from array
         // For player builds, show "by [creator]"
-        // Convert plot index to clockwise display number (same logic as PlotManager)
+        // For empty plots, show plot number
         const clockwiseMap: { [key: number]: number } = {
             0: 4, 1: 3, 2: 2, 3: 1, 4: 5, 5: 6, 6: 7, 7: 8
         };
         const displayNumber = clockwiseMap[this.plotIndex] || this.plotIndex + 1;
-        const creatorText = creatorName ? `by ${creatorName}` : `Plot ${displayNumber}`;
+        
+        let creatorText: string;
+        if (creatorName && creatorName.includes('pool-')) {
+            // Pool maps - randomly select a creator from the array
+            const randomCreator = PlayerObbySession.POOL_CREATORS[Math.floor(Math.random() * PlayerObbySession.POOL_CREATORS.length)];
+            creatorText = `by ${randomCreator}`;
+        } else if (creatorName) {
+            // Player builds - show actual creator
+            creatorText = `by ${creatorName}`;
+        } else {
+            // Empty plots - show plot number
+            creatorText = `Plot ${displayNumber}`;
+        }
         console.log(`[PlayerObbySession] Displaying text: "COURSE STARTING" / "${creatorText}"`);
         
         playerEntity.showAnimatedText('COURSE STARTING', creatorText, 2000, 'default');
@@ -206,7 +226,7 @@ export class PlayerObbySession implements IObbyPlayManager {
     /**
      * Handle player completing the course
      */
-    public handlePlayerFinished(): void {
+    public async handlePlayerFinished(): Promise<void> {
         if (this.gameState !== 'Playing') return;
 
         const completionTime = Date.now() - this.startTime;
@@ -215,11 +235,11 @@ export class PlayerObbySession implements IObbyPlayManager {
         // Add score to scoreboard
         const { ScoreboardManager } = require('./ScoreboardManager');
         const scoreboardManager = ScoreboardManager.getInstance();
-        const scoreboardResult = scoreboardManager.addScore(this.plotId, this.player, completionTime, this.world);
+        const scoreboardResult = await scoreboardManager.addScore(this.plotId, this.player, completionTime, this.world);
 
         // Animated text removed - using leaderboard UI instead
 
-        this.showResults({
+        await this.showResults({
             completed: true,
             completionTime,
             reason: 'completed'
@@ -229,7 +249,7 @@ export class PlayerObbySession implements IObbyPlayManager {
     /**
      * Handle player failing (falling too much, quitting, etc.)
      */
-    public handlePlayerFailed(reason: string): void {
+    public async handlePlayerFailed(reason: string): Promise<void> {
         if (this.gameState !== 'Playing') return;
 
         console.log(`[PlayerObbySession] Player ${this.playerId} failed: ${reason}`);
@@ -240,7 +260,7 @@ export class PlayerObbySession implements IObbyPlayManager {
             playerEntity.showWarning('COURSE FAILED!', reason, 3000);
         }
 
-        this.showResults({
+        await this.showResults({
             completed: false,
             reason: 'failed'
         });
@@ -249,7 +269,7 @@ export class PlayerObbySession implements IObbyPlayManager {
     /**
      * Show results and return to lobby after delay
      */
-    private showResults(result: ObbyPlayResult, scoreboardResult?: any): void {
+    private async showResults(result: ObbyPlayResult, scoreboardResult?: any): Promise<void> {
         this.gameState = 'Results';
         
         // Pause movement and set camera to spectator
@@ -258,10 +278,12 @@ export class PlayerObbySession implements IObbyPlayManager {
         if (result.completed && result.completionTime) {
             const timeInSeconds = (result.completionTime / 1000).toFixed(2);
             
-            // Grant XP for course completion
-            const levelingSystem = SimpleLevelingSystem.getInstance();
-            levelingSystem.onFirstCourseCompleted(this.playerId, this.player); // First-time bonus
-            levelingSystem.onCourseCompleted(this.playerId, this.plotId, this.player); // Per-course bonus
+            // Store completion info for XP granting after leaderboard display
+            this.completionInfo = {
+                completed: true,
+                plotId: this.plotId,
+                playerId: this.playerId
+            };
             
             // Show new completion leaderboard UI if available
             if (scoreboardResult) {
@@ -272,7 +294,7 @@ export class PlayerObbySession implements IObbyPlayManager {
                 const playerEntity = this.getPlayerEntity();
                 if (playerEntity) {
                     // Get leaderboard data
-                    const allScores = scoreboardManager.getScoreboard(this.plotId, this.world); // All scores
+                    const allScores = await scoreboardManager.getScoreboard(this.plotId, this.world); // All scores
                     console.log('[PlayerObbySession] Raw leaderboard data:', allScores);
                     const leaderboard = allScores.slice(0, 3).map((score, index) => ({
                         position: index + 1,
@@ -303,6 +325,7 @@ export class PlayerObbySession implements IObbyPlayManager {
                         'COMPLETED!';
                     
                     // Get player's level and XP info
+                    const levelingSystem = SimpleLevelingSystem.getInstance();
                     const xpProgress = levelingSystem.getXPProgress(this.playerId);
                     const metrics = {
                         time: timeInSeconds + 's',
@@ -353,6 +376,14 @@ export class PlayerObbySession implements IObbyPlayManager {
      */
     private returnToLobby(): void {
         console.log(`[PlayerObbySession] Returning player ${this.playerId} to lobby`);
+
+        // Grant XP and show achievements after leaderboard display is complete
+        if (this.completionInfo?.completed) {
+            const levelingSystem = SimpleLevelingSystem.getInstance();
+            levelingSystem.onFirstCourseCompleted(this.completionInfo.playerId, this.player); // First-time bonus
+            levelingSystem.onCourseCompleted(this.completionInfo.playerId, this.completionInfo.plotId, this.player); // Per-course bonus
+            this.completionInfo = undefined; // Clear completion info
+        }
 
         const playerEntity = this.getPlayerEntity();
         if (playerEntity) {
@@ -426,8 +457,8 @@ export class PlayerObbySession implements IObbyPlayManager {
     /**
      * Create position-based messages for animated text display
      */
-    private createPositionBasedMessage(scoreboardResult: any, scoreboardManager: any): { primaryMessage: string; secondaryMessage: string } {
-        const leaderboardLines = scoreboardManager.formatScoreboard(this.plotId, this.world);
+    private async createPositionBasedMessage(scoreboardResult: any, scoreboardManager: any): Promise<{ primaryMessage: string; secondaryMessage: string }> {
+        const leaderboardLines = await scoreboardManager.formatScoreboard(this.plotId, this.world);
         const compactLeaderboard = this.createCompactLeaderboard(leaderboardLines);
         
         let primaryMessage: string;

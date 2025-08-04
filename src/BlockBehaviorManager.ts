@@ -101,7 +101,9 @@ export class BlockBehaviorManager {
                         // Get the player's session and trigger completion
                         const playerSession = obbyPlayManager.getPlayerSession(player.player.id);
                         if (playerSession) {
-                            playerSession.handlePlayerFinished();
+                            playerSession.handlePlayerFinished().catch(error => {
+                                console.error(`[BlockBehaviorManager] Error handling player finish:`, error);
+                            });
                         } else {
                             console.warn(`[BlockBehaviorManager] No session found for player ${player.player.id}`);
                             world.chatManager.sendPlayerMessage(player.player, '❌ Error completing course - no active session found!', 'FF0000');
