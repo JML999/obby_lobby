@@ -685,21 +685,40 @@ export class PlotSaveManager {
           z: newPlotCenter.z + transformedRelativePos.z
         };
         
-        // Check if this is a mechanical entity
-        if (savedObstacle.type === 'mechanical' && savedObstacle.size === 'custom' && savedObstacle.config) {
+        // Check if this is a mechanical entity (handle both old and new formats)
+        const isMechanicalEntity = (
+          (savedObstacle.type === 'mechanical' && savedObstacle.size === 'custom' && savedObstacle.config) ||
+          (savedObstacle.size === 'custom' && savedObstacle.config && savedObstacle.config.entityType) ||
+          (['elevator', 'carousel', 'side-to-side', 'front-to-back', 'static'].includes(savedObstacle.type) && savedObstacle.size === 'custom')
+        );
+        
+        if (isMechanicalEntity) {
+          // Normalize config for backward compatibility
+          let normalizedConfig = savedObstacle.config || {};
+          
+          // Handle old format where entityType was stored as obstacle.type
+          if (!normalizedConfig.entityType && ['elevator', 'carousel', 'side-to-side', 'front-to-back', 'static'].includes(savedObstacle.type)) {
+            normalizedConfig.entityType = savedObstacle.type;
+            // Set default values for missing properties
+            normalizedConfig.dimensions = normalizedConfig.dimensions || { x: 1, y: 1, z: 1 };
+            normalizedConfig.speed = normalizedConfig.speed || 2.0;
+            normalizedConfig.distance = normalizedConfig.distance || 2;
+            normalizedConfig.cost = normalizedConfig.cost || 2;
+          }
+          
           // Create mechanical entity AND register with ObstacleCollisionManager in one step
           const success = this.createAndRegisterMechanicalEntity(
             plotId,
             savedObstacle.id,
             worldPos,
-            savedObstacle.config,
+            normalizedConfig,
             player.world || this.world!
           );
           
           if (success) {
-            console.log(`[PlotSaveManager] Loaded and registered mechanical entity ${savedObstacle.config.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+            console.log(`[PlotSaveManager] Loaded and registered mechanical entity ${normalizedConfig.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
           } else {
-            console.warn(`[PlotSaveManager] Failed to load mechanical entity ${savedObstacle.config.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+            console.warn(`[PlotSaveManager] Failed to load mechanical entity ${normalizedConfig.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
           }
         } else {
           // Handle regular obstacles
@@ -798,6 +817,10 @@ export class PlotSaveManager {
       const obstacles: SavedObstacle[] = [];
       if (plotId) {
         const plotObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
+        console.log(`[PlotSaveManager] 🔍 DEBUG: Found ${plotObstacles.length} obstacles in ObstacleCollisionManager for plot ${plotId}:`);
+        plotObstacles.forEach((obs, index) => {
+          console.log(`[PlotSaveManager]   ${index + 1}. type=${obs.type}, size=${obs.size}, pos=(${obs.position.x}, ${obs.position.y}, ${obs.position.z}), id=${obs.id}`);
+        });
         for (const obstacle of plotObstacles) {
           const relativePos = {
             x: obstacle.position.x - plotCenter.x,
@@ -1195,12 +1218,18 @@ export class PlotSaveManager {
       const { MechanicalBlockManager } = require('./MechanicalBlockManager');
       const { ConfigurableMechanicalEntity } = require('./entities/ConfigurableMechanicalEntity');
       
-      // Add +0.5 offset to center entities properly (position is chunk lattice corner)
+      // Position from save data is already the entity spawn position (no offset needed)
       const entitySpawnPosition = {
-        x: position.x + 0.5,
-        y: position.y + 0.5,
-        z: position.z + 0.5
+        x: position.x,
+        y: position.y,
+        z: position.z
       };
+      
+      // Validate config data
+      if (!config || !config.entityType || !config.dimensions) {
+        console.error(`[PlotSaveManager] Invalid mechanical entity config:`, config);
+        return false;
+      }
       
       console.log(`[PlotSaveManager] Creating mechanical entity ${config.entityType} at spawn pos [${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}]`);
       
@@ -1219,25 +1248,22 @@ export class PlotSaveManager {
       // Spawn the entity
       entity.spawn(world, entitySpawnPosition);
       
-      // Activate if not in build mode and not static
-      const mechanicalManager = MechanicalBlockManager.getInstance();
-      const isInBuildMode = mechanicalManager.getIsInBuildMode();
-      console.log(`[PlotSaveManager] Build mode status: ${isInBuildMode}, Entity type: ${config.entityType}`);
-      
-      if (!isInBuildMode && config.entityType !== 'static') {
+      // Always activate entities (except static ones) since we removed build mode pause
+      if (config.entityType !== 'static') {
         entity.activate();
         console.log(`[PlotSaveManager] 🔄 Activated ${config.entityType} entity`);
       } else {
-        console.log(`[PlotSaveManager] ⏸️ NOT activating ${config.entityType} entity (buildMode: ${isInBuildMode}, isStatic: ${config.entityType === 'static'})`);
+        console.log(`[PlotSaveManager] Static entity - no activation needed`);
       }
       
       // Register with ObstacleCollisionManager with full config
+      // Use entity spawn position for consistency with preview/confirmation flow
       const success = this.obstacleCollisionManager.registerObstacle(
         plotId,
         entityId,
         'mechanical',
         'custom',
-        position, // chunk lattice position for bounds checking
+        entitySpawnPosition, // Use same position as entity spawn for consistency
         entityId,
         config // full mechanical config
       );

@@ -84,20 +84,14 @@ export class BlockPlacementManager {
     const currentMode = this.playerBuildModes.get(playerId) || false;
     this.playerBuildModes.set(playerId, !currentMode);
     
-    const mechanicalBlockManager = MechanicalBlockManager.getInstance();
-    
     if (!currentMode) {
       // Entering build mode
-      mechanicalBlockManager.enterBuildMode();
       world.chatManager.sendPlayerMessage(player, '🔨 Build mode enabled!', 'FFD700');
-      world.chatManager.sendPlayerMessage(player, '⚙️ Mechanical blocks paused and reset to home positions', 'FFA500');
       world.chatManager.sendPlayerMessage(player, 'Left click to place blocks, right click to remove');
       this.showBlockCatalog(player, world);
     } else {
       // Exiting build mode
-      mechanicalBlockManager.exitBuildMode();
       world.chatManager.sendPlayerMessage(player, '🏃 Build mode disabled!', 'FF6B6B');
-      world.chatManager.sendPlayerMessage(player, '⚙️ Mechanical blocks resumed motion', '90EE90');
     }
   }
 
@@ -356,13 +350,41 @@ export class BlockPlacementManager {
       if (mechanicalEntity) {
         console.log(`[BlockPlacementManager] Removing configurable mechanical entity at ${positionKey}`);
         
-        // Remove from MechanicalBlockManager (for refund calculation and entity despawning)
-        const refundAmount = this.mechanicalBlockManager.removeMechanicalEntity(plotId, positionKey, player);
+        // First despawn the entity from the scene
+        mechanicalEntity.despawn();
         
-        // CRITICAL: Also remove from ObstacleCollisionManager (the primary persistence system)
-        const removedObstacle = this.obstacleCollisionManager.unregisterObstacle(plotId, coordinate, 3);
-        if (removedObstacle) {
-          console.log(`[BlockPlacementManager] ✅ Removed mechanical entity from ObstacleCollisionManager: ${removedObstacle.type} (${removedObstacle.size})`);
+        // Remove from MechanicalBlockManager local tracking (call public method)
+        this.mechanicalBlockManager.removeFromLocalTracking(positionKey);
+        
+        // Remove from ObstacleCollisionManager using entity spawn position
+        const entitySpawnPosition = {
+          x: coordinate.x + 0.5,
+          y: coordinate.y + 0.5,
+          z: coordinate.z + 0.5
+        };
+        
+        // DEBUG: Show what's in ObstacleCollisionManager before removal
+        const allObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
+        console.log(`[BlockPlacementManager] 🔍 DEBUG: Before removal, ObstacleCollisionManager has ${allObstacles.length} obstacles:`);
+        allObstacles.forEach((obs, i) => {
+          console.log(`[BlockPlacementManager]   ${i+1}. type=${obs.type}, pos=(${obs.position.x}, ${obs.position.y}, ${obs.position.z}), id=${obs.id}`);
+        });
+        console.log(`[BlockPlacementManager] 🎯 Trying to remove obstacle at entity spawn position: (${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}) with radius 3`);
+        
+        const removedObstacles = this.obstacleCollisionManager.unregisterAllObstaclesAt(plotId, entitySpawnPosition, 3);
+        
+        // DEBUG: Show what's left after removal
+        const afterObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
+        console.log(`[BlockPlacementManager] 🔍 DEBUG: After removal, ObstacleCollisionManager has ${afterObstacles.length} obstacles remaining`);
+        
+        // Calculate refund from obstacle config (use first removed obstacle for refund)
+        let refundAmount = 0;
+        if (removedObstacles.length > 0) {
+          const firstRemoved = removedObstacles[0];
+          if (firstRemoved.config && firstRemoved.config.cost) {
+            refundAmount = Math.floor(firstRemoved.config.cost * 0.8); // 80% refund
+          }
+          console.log(`[BlockPlacementManager] ✅ Removed ${removedObstacles.length} mechanical entity duplicates from ObstacleCollisionManager`);
         } else {
           console.warn(`[BlockPlacementManager] ⚠️ Failed to remove mechanical entity from ObstacleCollisionManager at ${positionKey}`);
         }

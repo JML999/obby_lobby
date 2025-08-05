@@ -34,10 +34,6 @@ export class MechanicalBlockManager {
     private wheelEntities: Map<string, MechanicalWheelEntity> = new Map();
     private elevatorEntities: Map<string, MechanicalElevatorEntity> = new Map();
     private configurableEntities: Map<string, ConfigurableMechanicalEntity> = new Map();
-    private isInBuildMode: boolean = false; // Default to movement enabled - build mode should be explicitly activated
-    
-    // Track mechanical entities per plot for saving/loading
-    private plotMechanicalEntities: Map<string, Map<string, PlotMechanicalEntity>> = new Map();
     
 
     /**
@@ -55,7 +51,8 @@ export class MechanicalBlockManager {
         plotId: string, 
         positionKey: string, 
         position: Vector3Like, 
-        entity: ConfigurableMechanicalEntity
+        entity: ConfigurableMechanicalEntity,
+        config?: any
     ): void {
         if (!this.world) return;
         
@@ -69,7 +66,9 @@ export class MechanicalBlockManager {
             'mechanical', // type
             'custom', // size
             position,
-            positionKey // entityId
+            positionKey, // entityId
+            config, // Pass full config
+            entity // Pass entity reference for build mode control
         );
         
         if (success) {
@@ -79,145 +78,80 @@ export class MechanicalBlockManager {
         }
     }
 
-    /**
-     * Create world-aware plot key to prevent cross-world contamination
-     */
-    private getWorldAwarePlotKey(plotId: string): string {
-        const worldName = this.world?.name || 'unknown';
-        return `${worldName}:${plotId}`;
-    }
-
-    /**
-     * Track a mechanical entity for saving/loading
-     */
-    private trackMechanicalEntity(
-        plotId: string, 
-        entityId: string, 
-        position: Vector3Like, 
-        entityType: 'static' | 'elevator' | 'carousel' | 'side-to-side' | 'front-to-back',
-        config: {
-            entityType: 'static' | 'elevator' | 'carousel' | 'side-to-side' | 'front-to-back';
-            dimensions: { x: number; y: number; z: number };
-            speed: number;
-            distance: number;
-            rotationSpeed?: number;
-        },
-        cost: number,
-        entity?: ConfigurableMechanicalEntity
-    ): void {
-        const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-        if (!this.plotMechanicalEntities.has(worldAwarePlotId)) {
-            this.plotMechanicalEntities.set(worldAwarePlotId, new Map());
-        }
-        
-        const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId)!;
-        plotEntities.set(entityId, {
-            id: entityId,
-            position: { x: position.x, y: position.y, z: position.z },
-            type: 'mechanical', // Always use 'mechanical' as base type for consistency
-            size: 'custom',
-            config, // The actual entity type is stored in config.entityType
-            cost,
-            entity
-        });
-        console.log(`[MechanicalBlockManager] 💾 TRACK DEBUG - Stored entity ${entityId} for plot ${plotId} at position: ${position.x}, ${position.y}, ${position.z}`);
-        
-        console.log(`[MechanicalBlockManager] Tracked mechanical entity ${entityId} for plot ${plotId}`);
-    }
     
     /**
-     * Get all mechanical entities in a plot for saving - read actual properties from spawned entities
+     * Get all mechanical entities in a plot for saving - delegate to ObstacleCollisionManager
      */
     public getPlotMechanicalEntities(plotId: string): PlotMechanicalEntity[] {
-        const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-        const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
-        if (!plotEntities) {
-            console.log(`[MechanicalBlockManager] 💾 GET DEBUG - No entities found for plot ${plotId} (${worldAwarePlotId})`);
-            return [];
-        }
+        const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
+        const obstacleManager = ObstacleCollisionManager.getInstance();
+        const mechanicalEntities = obstacleManager.getPlotMechanicalEntities(plotId);
         
-        console.log(`[MechanicalBlockManager] 💾 GET DEBUG - Found ${plotEntities.size} tracked entities for plot ${plotId}`);
+        console.log(`[MechanicalBlockManager] 💾 GET DEBUG - Found ${mechanicalEntities.length} mechanical entities for plot ${plotId} from ObstacleCollisionManager`);
         
-        // Debug: list all tracked entities
-        for (const [entityId, entity] of plotEntities.entries()) {
-            console.log(`[MechanicalBlockManager] 💾 GET DEBUG - Entity ${entityId}: position ${entity.position.x}, ${entity.position.y}, ${entity.position.z}, type ${entity.config.entityType}`);
-        }
-        
-        // Return entities with properties read directly from the actual spawned entities
-        return Array.from(plotEntities.values()).map(trackedEntity => {
-            if (trackedEntity.entity && trackedEntity.entity instanceof ConfigurableMechanicalEntity) {
-                // Read actual properties from the spawned entity using getter methods
-                const entity = trackedEntity.entity;
-                const actualDimensions = entity.getDimensions();
-                
-                return {
-                    ...trackedEntity,
-                    type: 'mechanical', // Keep consistent base type
-                    config: {
-                        entityType: entity.getEntityType(),
-                        dimensions: actualDimensions,
-                        speed: entity.getMoveSpeed(),
-                        distance: entity.getMoveDistance(),
-                        rotationSpeed: entity.getRotationSpeed(),
-                        cost: trackedEntity.config.cost // Keep the original cost for refunds
-                    }
-                };
-            } else {
-                // Fallback to tracked config if entity is not available
-                return trackedEntity;
-            }
-        });
+        // Convert to PlotMechanicalEntity format if needed
+        return mechanicalEntities.map(entity => ({
+            id: entity.id,
+            position: entity.position,
+            type: entity.type,
+            size: entity.size,
+            config: entity.config,
+            cost: entity.cost || entity.config?.cost || 2
+        }));
     }
     
     /**
-     * Clear all mechanical entities in a plot
+     * Clear all mechanical entities in a plot - delegate to ObstacleCollisionManager
      */
     public clearPlotMechanicalEntities(plotId: string): void {
-        const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-        const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
-        if (plotEntities) {
-            // Despawn all entities first
-            for (const mechanicalEntity of plotEntities.values()) {
-                if (mechanicalEntity.entity) {
-                    mechanicalEntity.entity.despawn();
-                }
-                // Also remove from configurableEntities map
-                this.configurableEntities.delete(mechanicalEntity.id);
+        // Clear from local tracking first
+        for (const [key, entity] of this.configurableEntities.entries()) {
+            // Check if this entity belongs to the plot
+            if (entity) {
+                entity.despawn();
+                this.configurableEntities.delete(key);
             }
-            plotEntities.clear();
         }
-        console.log(`[MechanicalBlockManager] Cleared all mechanical entities for plot ${plotId} (${worldAwarePlotId})`);
+        
+        // Delegate to ObstacleCollisionManager for main tracking
+        const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
+        const obstacleManager = ObstacleCollisionManager.getInstance();
+        obstacleManager.clearPlotMechanicalEntities(plotId);
+        
+        console.log(`[MechanicalBlockManager] Cleared all mechanical entities for plot ${plotId} via ObstacleCollisionManager`);
     }
     
     /**
-     * Remove a specific mechanical entity and refund its cost
+     * Remove a specific mechanical entity and refund its cost - delegate to ObstacleCollisionManager
      */
     public removeMechanicalEntity(plotId: string, entityId: string, player?: any): number {
-        const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-        const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
-        if (!plotEntities) {
-            return 0;
+        // Find and remove from local tracking
+        const entity = this.configurableEntities.get(entityId);
+        if (entity) {
+            entity.despawn();
+            this.configurableEntities.delete(entityId);
         }
         
-        const mechanicalEntity = plotEntities.get(entityId);
-        if (!mechanicalEntity) {
-            return 0;
+        // Delegate to ObstacleCollisionManager for removal and get refund amount
+        const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
+        const obstacleManager = ObstacleCollisionManager.getInstance();
+        const obstacles = obstacleManager.getPlotObstacles(plotId);
+        
+        // Find the obstacle to remove
+        for (const obstacle of obstacles) {
+            if (obstacle.id === entityId && obstacle.type === 'mechanical') {
+                // Remove the obstacle
+                const removed = obstacleManager.unregisterObstacle(plotId, obstacle.position);
+                if (removed && removed.config) {
+                    const refundAmount = removed.config.cost || 2;
+                    console.log(`[MechanicalBlockManager] Removed mechanical entity ${entityId} from plot ${plotId}, refunding ${refundAmount} cash`);
+                    return refundAmount;
+                }
+                break;
+            }
         }
         
-        // Despawn the entity
-        if (mechanicalEntity.entity) {
-            mechanicalEntity.entity.despawn();
-        }
-        
-        // Remove from maps
-        plotEntities.delete(entityId);
-        this.configurableEntities.delete(entityId);
-        
-        // Return the stored cost for refund
-        const refundAmount = mechanicalEntity.cost;
-        console.log(`[MechanicalBlockManager] Removed mechanical entity ${entityId} from plot ${plotId}, refunding ${refundAmount} cash`);
-        
-        return refundAmount;
+        return 0;
     }
     
     
@@ -357,10 +291,8 @@ export class MechanicalBlockManager {
             const elevatorEntity = new MechanicalElevatorEntity(this.world!, position);
             elevatorEntity.spawn(this.world!, position);
             
-            // Activate if not in build mode
-            if (!this.isInBuildMode) {
-                elevatorEntity.activate();
-            }
+            // Always activate elevator entities
+            elevatorEntity.activate();
             
             // Store entity reference
             this.elevatorEntities.set(positionKey, elevatorEntity);
@@ -507,6 +439,13 @@ export class MechanicalBlockManager {
     }
 
     /**
+     * Remove entity from local tracking only (used by BlockPlacementManager)
+     */
+    public removeFromLocalTracking(positionKey: string): void {
+        this.configurableEntities.delete(positionKey);
+    }
+
+    /**
      * Clear all mechanical entities (for cleanup)
      */
     public clearAllEntities(): void {
@@ -532,31 +471,10 @@ export class MechanicalBlockManager {
     }
 
     /**
-     * Clear all mechanical entities in a specific plot
+     * Clear all mechanical entities in a specific plot - delegate to clearPlotMechanicalEntities
      */
     public clearAllEntitiesInPlot(plotId: string): void {
-        const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-        const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
-        if (!plotEntities) {
-            console.log(`[MechanicalBlockManager] No mechanical entities found in plot ${plotId} (${worldAwarePlotId})`);
-            return;
-        }
-
-        console.log(`[MechanicalBlockManager] Clearing ${plotEntities.size} mechanical entities in plot ${plotId} (${worldAwarePlotId})`);
-        
-        // Despawn each entity and remove from configurableEntities
-        for (const [positionKey, entityData] of plotEntities.entries()) {
-            const entity = this.configurableEntities.get(positionKey);
-            if (entity) {
-                entity.despawn();
-                this.configurableEntities.delete(positionKey);
-                console.log(`[MechanicalBlockManager] Despawned and removed entity at ${positionKey}`);
-            }
-        }
-        
-        // Clear the plot's entity tracking
-        plotEntities.clear();
-        console.log(`[MechanicalBlockManager] Cleared all entities from plot ${plotId}`);
+        this.clearPlotMechanicalEntities(plotId);
     }
 
     /**
@@ -590,51 +508,6 @@ export class MechanicalBlockManager {
         };
     }
 
-    /**
-     * Pause all mechanical entities
-     */
-    public pauseAllEntities(): void {
-        // Pistons don't have pause/resume yet, but wheels do
-        for (const wheelEntity of this.wheelEntities.values()) {
-            wheelEntity.pauseRotation();
-        }
-        console.log('[MechanicalBlockManager] Paused all wheel entities');
-    }
-
-    /**
-     * Resume all mechanical entities
-     */
-    public resumeAllEntities(): void {
-        // Resume wheels
-        for (const wheelEntity of this.wheelEntities.values()) {
-            wheelEntity.resumeRotation();
-        }
-        console.log('[MechanicalBlockManager] Resumed all wheel entities');
-    }
-
-    /**
-     * Reset all mechanical entities to their home positions (for build mode)
-     */
-    public resetAllEntitiesToHome(): void {
-        // Reset wheels to 0 rotation and static positions
-        for (const wheelEntity of this.wheelEntities.values()) {
-            wheelEntity.resetToHome();
-        }
-        
-        // TODO: Add piston reset when implemented
-        // for (const pistonEntity of this.pistonEntities.values()) {
-        //     pistonEntity.resetToHome();
-        // }
-        
-        console.log('[MechanicalBlockManager] Reset all mechanical entities to home positions');
-    }
-
-    /**
-     * Check if currently in build mode
-     */
-    public getIsInBuildMode(): boolean {
-        return this.isInBuildMode;
-    }
 
 
     /**
@@ -693,17 +566,22 @@ export class MechanicalBlockManager {
                 
                 const entity = this.configurableEntities.get(positionKey)!;
                 
-                // Remove any existing tracked entity first to avoid duplicates
-                const worldAwarePlotId = this.getWorldAwarePlotKey(plotId);
-                const plotEntities = this.plotMechanicalEntities.get(worldAwarePlotId);
-                if (plotEntities) {
-                    plotEntities.delete(positionKey);
-                }
-                
-                // Register ONLY with ObstacleCollisionManager (like jump pads) with full config
+                // Remove the preview registration first
                 const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
                 const obstacleManager = ObstacleCollisionManager.getInstance();
                 
+                // Calculate entity spawn position that was used for preview
+                const entitySpawnPosition = {
+                    x: position.x + 0.5,
+                    y: position.y + 0.5,
+                    z: position.z + 0.5
+                };
+                
+                // Remove ALL registrations at this position (including duplicates from previous loads)
+                const removedCount = obstacleManager.unregisterAllObstaclesAt(plotId, entitySpawnPosition);
+                console.log(`[MechanicalBlockManager] 🗑️ Removed ${removedCount.length} obstacle registrations from ObstacleCollisionManager`);
+                
+                // Register ONLY with ObstacleCollisionManager (like jump pads) with full config
                 const fullConfig = {
                     entityType: config.type,
                     dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
@@ -713,21 +591,9 @@ export class MechanicalBlockManager {
                     cost: cost
                 };
                 
-                const success = obstacleManager.registerObstacle(
-                    plotId,
-                    positionKey,
-                    'mechanical',
-                    'custom', 
-                    position, // chunk lattice position
-                    positionKey,
-                    fullConfig // Pass full mechanical config
-                );
-                
-                if (success) {
-                    console.log(`[MechanicalBlockManager] ✅ Registered mechanical entity with ObstacleCollisionManager ONLY`);
-                } else {
-                    console.error(`[MechanicalBlockManager] ❌ Failed to register with ObstacleCollisionManager`);
-                }
+                // Use entity spawn position for consistency with save/load
+                this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity, fullConfig);
+                console.log(`[MechanicalBlockManager] ✅ Registered confirmed entity with ObstacleCollisionManager`);
             } else {
                 console.log(`[MechanicalBlockManager] Entity confirmed and kept at ${positionKey} (no plot tracking)`);
             }
@@ -780,24 +646,14 @@ export class MechanicalBlockManager {
         
         // Register with ObstacleCollisionManager for proper persistence
         if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, staticEntity);
-        }
-        
-        // Only track for saving if this is during loading (isLoading = true)
-        // Preview entities should NOT be tracked - only confirmed entities
-        if (plotId && isLoading) {
-            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
-            const chunkLatticePos = {
-                x: position.x - 0.5,
-                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
-                z: position.z - 0.5
-            };
-            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'static', {
+            const fullConfig = {
                 entityType: 'static',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
-                distance: config.distance || 2
-            }, cost, staticEntity);
+                distance: config.distance || 2,
+                cost: cost
+            };
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, staticEntity, fullConfig);
         }
         
         console.log(`[MechanicalBlockManager] Created configurable static entity (FIXED entity) at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash`);
@@ -845,27 +701,17 @@ export class MechanicalBlockManager {
         
         // Register with ObstacleCollisionManager for proper persistence
         if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, elevatorEntity);
-        }
-        
-        // Only track for saving if this is during loading (isLoading = true)
-        // Preview entities should NOT be tracked - only confirmed entities
-        if (plotId && isLoading) {
-            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
-            const chunkLatticePos = {
-                x: position.x - 0.5,
-                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
-                z: position.z - 0.5
-            };
-            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'elevator', {
+            const fullConfig = {
                 entityType: 'elevator',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
-                distance: config.distance || 2
-            }, cost, elevatorEntity);
+                distance: config.distance || 2,
+                cost: cost
+            };
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, elevatorEntity, fullConfig);
         }
         
-        console.log(`[MechanicalBlockManager] Created configurable elevator at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash, buildMode: ${this.isInBuildMode}`);
+        console.log(`[MechanicalBlockManager] Created configurable elevator at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash`);
         return true;
     }
 
@@ -910,25 +756,15 @@ export class MechanicalBlockManager {
         
         // Register with ObstacleCollisionManager for proper persistence
         if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, carouselEntity);
-        }
-        
-        // Only track for saving if this is during loading (isLoading = true)
-        // Preview entities should NOT be tracked - only confirmed entities
-        if (plotId && isLoading) {
-            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
-            const chunkLatticePos = {
-                x: position.x - 0.5,
-                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
-                z: position.z - 0.5
-            };
-            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'carousel', {
+            const fullConfig = {
                 entityType: 'carousel',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
                 distance: config.distance || 2,
-                rotationSpeed: config.rotationSpeed || 1.0
-            }, cost, carouselEntity);
+                rotationSpeed: 1.0,
+                cost: cost
+            };
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, carouselEntity, fullConfig);
         }
         
         console.log(`[MechanicalBlockManager] Created configurable carousel (KINEMATIC entity) at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash`);
@@ -976,24 +812,14 @@ export class MechanicalBlockManager {
         
         // Register with ObstacleCollisionManager for proper persistence
         if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, sideToSideEntity);
-        }
-        
-        // Only track for saving if this is during loading (isLoading = true)
-        // Preview entities should NOT be tracked - only confirmed entities
-        if (plotId && isLoading) {
-            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
-            const chunkLatticePos = {
-                x: position.x - 0.5,
-                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
-                z: position.z - 0.5
-            };
-            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'side-to-side', {
+            const fullConfig = {
                 entityType: 'side-to-side',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
-                distance: config.distance || 2
-            }, cost, sideToSideEntity);
+                distance: config.distance || 2,
+                cost: cost
+            };
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, sideToSideEntity, fullConfig);
         }
         
         console.log(`[MechanicalBlockManager] Created configurable side-to-side (X-axis KINEMATIC entity) at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash`);
@@ -1041,24 +867,14 @@ export class MechanicalBlockManager {
         
         // Register with ObstacleCollisionManager for proper persistence
         if (plotId && !isLoading) { // Only register new entities, not loaded ones (they get registered in loadMechanicalEntities)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, frontToBackEntity);
-        }
-        
-        // Only track for saving if this is during loading (isLoading = true)
-        // Preview entities should NOT be tracked - only confirmed entities
-        if (plotId && isLoading) {
-            // When loading, position has +0.5 offset on all axes. We need to track the chunk lattice position
-            const chunkLatticePos = {
-                x: position.x - 0.5,
-                y: position.y - 0.5,  // Subtract 0.5 from Y to get chunk lattice position
-                z: position.z - 0.5
-            };
-            this.trackMechanicalEntity(plotId, positionKey, chunkLatticePos, 'front-to-back', {
+            const fullConfig = {
                 entityType: 'front-to-back',
                 dimensions: { x: config.sizeX, y: config.sizeY, z: config.sizeZ },
                 speed: config.speed || 2.0,
-                distance: config.distance || 2
-            }, cost, frontToBackEntity);
+                distance: config.distance || 2,
+                cost: cost
+            };
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, frontToBackEntity, fullConfig);
         }
         
         console.log(`[MechanicalBlockManager] Created configurable front-to-back (Z-axis KINEMATIC entity) at ${positionKey} with size ${config.sizeX}x${config.sizeY}x${config.sizeZ} for ${cost} cash`);
@@ -1212,20 +1028,20 @@ export class MechanicalBlockManager {
             // Spawn the entity
             entity.spawn(world, entitySpawnPosition);
             
-            // Ensure entity is activated (loaded entities should move immediately)
-            if (!this.isInBuildMode && config.entityType !== 'static') {
+            // Always activate loaded entities (except static ones)
+            if (config.entityType !== 'static') {
                 entity.activate();
-                console.log(`[MechanicalBlockManager] 🔄 Explicitly activated loaded ${config.entityType} entity`);
+                console.log(`[MechanicalBlockManager] 🔄 Activated loaded ${config.entityType} entity`);
             }
             
             // Store the entity
             this.configurableEntities.set(positionKey, entity);
             
             // Register with ObstacleCollisionManager for proper persistence (like jump pads)
-            this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity);
+            // Use original chunk lattice position for consistency with entity creation
+            this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, entity, config);
             
-            // Track it for saving
-            this.trackMechanicalEntity(plotId, positionKey, position, config.entityType, config, config.cost || 2, entity);
+            // No need to track separately - ObstacleCollisionManager handles it
             
             console.log(`[MechanicalBlockManager] Successfully loaded single ${config.entityType} entity with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z} at ${positionKey}`);
             return true;
@@ -1279,21 +1095,20 @@ export class MechanicalBlockManager {
                 // Spawn the entity
                 entity.spawn(world, entitySpawnPosition);
                 
-                // Ensure entity is activated (loaded entities should move immediately)
-                if (!this.isInBuildMode && config.entityType !== 'static') {
+                // Always activate loaded entities (except static ones)
+                if (config.entityType !== 'static') {
                     entity.activate();
-                    console.log(`[MechanicalBlockManager] 🔄 Explicitly activated loaded ${config.entityType} entity`);
+                    console.log(`[MechanicalBlockManager] 🔄 Activated loaded ${config.entityType} entity`);
                 }
                 
                 // Store the entity
                 this.configurableEntities.set(positionKey, entity);
                 
                 // Register with ObstacleCollisionManager for proper persistence (like jump pads)
-                this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity);
+                // Use original chunk lattice position for consistency with entity creation
+                this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, entity, config);
                 
-                // Track it for saving (use isLoading = true to ensure proper tracking)
-                console.log(`[MechanicalBlockManager] 💾 RESTORE-TRACK DEBUG - Tracking loaded entity at position: ${position.x}, ${position.y}, ${position.z}`);
-                this.trackMechanicalEntity(plotId, positionKey, position, config.entityType, config, entityData.cost || 2, entity);
+                // No need to track separately - ObstacleCollisionManager handles it
                 
                 console.log(`[MechanicalBlockManager] Successfully loaded ${config.entityType} entity with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z} at ${positionKey}`);
                 
@@ -1306,40 +1121,16 @@ export class MechanicalBlockManager {
     }
     
     /**
-     * Enter build mode - pause all mechanical entities and reset them to home positions
+     * Enter build mode - no-op since we removed pause/resume functionality
      */
     public enterBuildMode(): void {
-        console.log(`[MechanicalBlockManager] 🔨 Entering build mode - pausing mechanical entities`);
-        this.isInBuildMode = true;
-        
-        // Pause and reset all mechanical entities
-        for (const entity of this.configurableEntities.values()) {
-            if (entity && typeof entity.setPauseMovement === 'function') {
-                entity.setPauseMovement(true);
-            }
-            if (entity && typeof entity.reset === 'function') {
-                entity.reset();
-            }
-        }
-        
-        // IMPORTANT: Do NOT clear plotMechanicalEntities - this preserves loaded entity tracking
-        console.log(`[MechanicalBlockManager] 🔨 Build mode entered. Tracked plots: ${this.plotMechanicalEntities.size}`);
+        console.log(`[MechanicalBlockManager] enterBuildMode called - no-op (build mode pause/resume removed)`);
     }
     
     /**
-     * Exit build mode - resume all mechanical entities
+     * Exit build mode - no-op since we removed pause/resume functionality
      */
     public exitBuildMode(): void {
-        console.log(`[MechanicalBlockManager] 🏃 Exiting build mode - resuming mechanical entities`);
-        this.isInBuildMode = false;
-        
-        // Resume all mechanical entities
-        for (const entity of this.configurableEntities.values()) {
-            if (entity && typeof entity.setPauseMovement === 'function') {
-                entity.setPauseMovement(false);
-            }
-        }
-        
-        console.log(`[MechanicalBlockManager] 🏃 Build mode exited. Tracked plots: ${this.plotMechanicalEntities.size}`);
+        console.log(`[MechanicalBlockManager] exitBuildMode called - no-op (build mode pause/resume removed)`);
     }
 }

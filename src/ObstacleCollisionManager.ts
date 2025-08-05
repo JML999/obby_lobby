@@ -16,6 +16,7 @@ export interface PlacedObstacle {
   bounds: ObstacleBounds;
   entityId?: string; // For tracking the actual entity
   config?: any; // For mechanical entities - stores full configuration
+  entity?: any; // Reference to the actual entity instance (for mechanical entities)
 }
 
 export interface BoundingBox {
@@ -293,7 +294,8 @@ export class ObstacleCollisionManager {
     obstacleSize: string,
     position: Vector3Like,
     entityId?: string,
-    config?: any
+    config?: any,
+    entity?: any
   ): boolean {
     const bounds = this.getObstacleBounds(obstacleType, obstacleSize);
     if (!bounds) return false;
@@ -310,12 +312,49 @@ export class ObstacleCollisionManager {
       position: new Vector3(position.x, position.y, position.z),
       bounds: bounds,
       entityId: entityId,
-      config: config
+      config: config,
+      entity: entity
     };
 
     this.placedObstacles.get(plotKey)!.push(obstacle);
     console.log(`[ObstacleCollisionManager] Registered obstacle: ${obstacleType} (${obstacleSize}) at`, position);
     return true;
+  }
+
+  /**
+   * Remove ALL registered obstacles at a position (for cleaning up duplicates)
+   */
+  public unregisterAllObstaclesAt(plotId: string | undefined, position: Vector3Like, searchRadius: number = 3): PlacedObstacle[] {
+    const plotKey = this.getRegionAwarePlotKey(plotId);
+    const obstacles = this.placedObstacles.get(plotKey);
+    if (!obstacles) return [];
+
+    const targetPos = new Vector3(position.x, position.y, position.z);
+    const removedObstacles: PlacedObstacle[] = [];
+    
+    // Remove all obstacles within the search radius
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const obstacle = obstacles[i];
+      if (!obstacle) continue;
+      
+      const distance = Math.sqrt(
+        Math.pow(obstacle.position.x - targetPos.x, 2) +
+        Math.pow(obstacle.position.y - targetPos.y, 2) +
+        Math.pow(obstacle.position.z - targetPos.z, 2)
+      );
+      
+      if (distance <= searchRadius) {
+        const removedObstacleArray = obstacles.splice(i, 1);
+        const removedObstacle = removedObstacleArray[0];
+        if (removedObstacle) {
+          removedObstacles.push(removedObstacle);
+          console.log(`[ObstacleCollisionManager] Unregistered duplicate obstacle: ${removedObstacle.type} (${removedObstacle.size})`);
+        }
+      }
+    }
+
+    console.log(`[ObstacleCollisionManager] Removed ${removedObstacles.length} duplicate obstacles at position (${position.x}, ${position.y}, ${position.z})`);
+    return removedObstacles;
   }
 
   /**
@@ -405,5 +444,50 @@ export class ObstacleCollisionManager {
     }
 
     return { valid: true };
+  }
+
+  
+  /**
+   * Get all mechanical entities for a plot (for saving)
+   */
+  public getPlotMechanicalEntities(plotId: string): any[] {
+    const plotKey = this.getRegionAwarePlotKey(plotId);
+    const obstacles = this.placedObstacles.get(plotKey) || [];
+    
+    return obstacles
+      .filter(obstacle => obstacle.type === 'mechanical')
+      .map(obstacle => ({
+        id: obstacle.id,
+        position: obstacle.position,
+        type: obstacle.type,
+        size: obstacle.size,
+        config: obstacle.config,
+        cost: obstacle.config?.cost || 2
+      }));
+  }
+  
+  /**
+   * Clear all mechanical entities in a plot
+   */
+  public clearPlotMechanicalEntities(plotId: string): void {
+    const plotKey = this.getRegionAwarePlotKey(plotId);
+    const obstacles = this.placedObstacles.get(plotKey);
+    
+    if (!obstacles) return;
+    
+    // Remove mechanical entities
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const obstacle = obstacles[i];
+      if (obstacle.type === 'mechanical') {
+        // Despawn the entity if it exists
+        if (obstacle.entity && typeof obstacle.entity.despawn === 'function') {
+          obstacle.entity.despawn();
+        }
+        // Remove from array
+        obstacles.splice(i, 1);
+      }
+    }
+    
+    console.log(`[ObstacleCollisionManager] Cleared mechanical entities for plot ${plotId}`);
   }
 } 
