@@ -570,16 +570,17 @@ export class MechanicalBlockManager {
                 const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
                 const obstacleManager = ObstacleCollisionManager.getInstance();
                 
-                // Calculate entity spawn position that was used for preview
+                // Calculate entity spawn position for entity creation (already done above)
                 const entitySpawnPosition = {
                     x: position.x + 0.5,
                     y: position.y + 0.5,
                     z: position.z + 0.5
                 };
                 
-                // Remove ALL registrations at this position (including duplicates from previous loads)
-                const removedCount = obstacleManager.unregisterAllObstaclesAt(plotId, entitySpawnPosition);
-                console.log(`[MechanicalBlockManager] 🗑️ Removed ${removedCount.length} obstacle registrations from ObstacleCollisionManager`);
+                // STANDARDIZATION: Remove ALL registrations at this position using chunk lattice coordinates
+                // ObstacleCollisionManager now standardizes on chunk lattice, so pass the original position
+                const removedCount = obstacleManager.unregisterAllObstaclesAt(plotId, position);
+                console.log(`[MechanicalBlockManager] 🗑️ Removed ${removedCount.length} obstacle registrations from ObstacleCollisionManager at chunk position (${position.x}, ${position.y}, ${position.z})`);
                 
                 // Register ONLY with ObstacleCollisionManager (like jump pads) with full config
                 const fullConfig = {
@@ -591,8 +592,8 @@ export class MechanicalBlockManager {
                     cost: cost
                 };
                 
-                // Use entity spawn position for consistency with save/load
-                this.registerMechanicalEntityAsObstacle(plotId, positionKey, entitySpawnPosition, entity, fullConfig);
+                // STANDARDIZATION: Use chunk lattice position for registration (ObstacleCollisionManager will handle conversion)
+                this.registerMechanicalEntityAsObstacle(plotId, positionKey, position, entity, fullConfig);
                 console.log(`[MechanicalBlockManager] ✅ Registered confirmed entity with ObstacleCollisionManager`);
             } else {
                 console.log(`[MechanicalBlockManager] Entity confirmed and kept at ${positionKey} (no plot tracking)`);

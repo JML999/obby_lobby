@@ -260,6 +260,20 @@
       "creatorId": "player-5",
       "scoreboard": []
     },
-    "cash": 7
-  }
+    "cash": 9906
+  },
+  "levelData": {
+    "level": 1,
+    "xp": 21,
+    "totalXP": 21,
+    "firstTimeFlags": [
+      "FIRST_BUILD"
+    ],
+    "lastActiveTime": 1754367458203,
+    "loginStreak": 1,
+    "lastLoginDate": "Mon Aug 04 2025"
+  },
+  "level": 1,
+  "xp": 21,
+  "totalXP": 21
 }

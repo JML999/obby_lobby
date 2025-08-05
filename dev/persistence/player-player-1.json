@@ -24,54 +24,6 @@
         },
         {
           "relativePos": {
-            "x": 30.5,
-            "y": 0,
-            "z": -1.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 29.5,
-            "y": 0,
-            "z": -1.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 0,
-            "z": -1.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 30.5,
-            "y": 0,
-            "z": 0.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 29.5,
-            "y": 0,
-            "z": 0.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 0,
-            "z": 0.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
             "x": 29.5,
             "y": 0,
             "z": -0.5
@@ -88,66 +40,496 @@
         },
         {
           "relativePos": {
-            "x": 6.5,
+            "x": 27.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 26.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 24.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 29.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 28.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 27.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 26.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 25.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 24.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 23.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 23.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 22.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 15.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "blockTypeId": 109
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
             "y": 1,
             "z": -2.5
           },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": -1.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": 0.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": 1.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 2.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 1.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -2.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": -3.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": -2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": -1.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": 0.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": 1.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -4.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -3.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -1.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -0.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 2.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": 3.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -2.5,
+            "y": 1,
+            "z": 2.5
+          },
+          "blockTypeId": 6
+        },
+        {
+          "relativePos": {
+            "x": 15.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 109
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 7,
+            "z": 1.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 7,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 8,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -13.5,
+            "y": 8,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 9,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 9,
+            "z": 3.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 10,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -11.5,
+            "y": 10,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 11,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 11,
+            "z": 1.5
+          },
+          "blockTypeId": 9
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 12,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -12.5,
+            "y": 13,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": -13.5,
+            "y": 12,
+            "z": 2.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 18.5,
+            "y": 19,
+            "z": -6.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 13.5,
+            "y": 19,
+            "z": -5.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 24.5,
+            "y": 11,
+            "z": -12.5
+          },
           "blockTypeId": 101
+        },
+        {
+          "relativePos": {
+            "x": 4.5,
+            "y": 1,
+            "z": -0.5
+          },
+          "blockTypeId": 9
         }
       ],
       "obstacles": [
         {
-          "id": "-14,1,-98",
-          "type": "elevator",
+          "id": "-13,4,-99",
+          "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 25.5,
-            "y": 0,
-            "z": -1.5
-          },
-          "config": {
-            "entityType": "elevator",
-            "dimensions": {
-              "x": 1,
-              "y": 2,
-              "z": 1
-            },
-            "speed": 1,
-            "distance": 2,
-            "rotationSpeed": 20,
-            "cost": 3
-          }
-        },
-        {
-          "id": "-18,2,-99",
-          "type": "carousel",
-          "size": "custom",
-          "relativePos": {
-            "x": 21.5,
-            "y": 1,
+            "x": 26.5,
+            "y": 3,
             "z": -2.5
           },
           "config": {
-            "entityType": "carousel",
+            "entityType": "front-to-back",
             "dimensions": {
-              "x": 2,
+              "x": 1,
               "y": 1,
-              "z": 2
+              "z": 1
             },
-            "speed": 2.299999952316284,
-            "distance": 2,
-            "rotationSpeed": 45.999999046325684,
-            "cost": 5
+            "speed": 4,
+            "distance": 3,
+            "cost": 2
           }
         },
         {
-          "id": "-23,2,-100",
-          "type": "side-to-side",
+          "id": "-21,2,-100",
+          "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 16.5,
+            "x": 18.5,
             "y": 1,
             "z": -3.5
+          },
+          "config": {
+            "entityType": "static",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-22,2,-97",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 17.5,
+            "y": 1,
+            "z": -0.5
           },
           "config": {
             "entityType": "side-to-side",
@@ -156,72 +538,284 @@
               "y": 1,
               "z": 1
             },
-            "speed": 2.299999952316284,
-            "distance": 2,
-            "rotationSpeed": 45.999999046325684,
+            "speed": 4,
+            "distance": 3,
             "cost": 2
           }
         },
         {
-          "id": "-28,2,-100",
-          "type": "front-to-back",
+          "id": "-26,2,-97",
+          "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 11.5,
+            "x": 13.5,
             "y": 1,
-            "z": -3.5
+            "z": -0.5
           },
           "config": {
-            "entityType": "front-to-back",
+            "entityType": "static",
             "dimensions": {
-              "x": 5,
-              "y": 2,
+              "x": 1,
+              "y": 1,
               "z": 1
             },
-            "speed": 2.299999952316284,
-            "distance": 5,
-            "rotationSpeed": 45.999999046325684,
-            "cost": 11
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-26,1,-98",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 13.5,
+            "y": 0,
+            "z": -1.5
+          },
+          "config": {
+            "entityType": "static",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-30,3,-96",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 9.5,
+            "y": 2,
+            "z": 0.5
+          },
+          "config": {
+            "entityType": "carousel",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 5
+            },
+            "speed": 4,
+            "distance": 3,
+            "rotationSpeed": 1,
+            "cost": 6
+          }
+        },
+        {
+          "id": "-38,3,-94",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 1.5,
+            "y": 2,
+            "z": 2.5
+          },
+          "config": {
+            "entityType": "static",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-48,1,-97",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": -8.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "config": {
+            "entityType": "elevator",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2.5,
+            "distance": 8,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-52,14,-93",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": -12.5,
+            "y": 13,
+            "z": 3.5
+          },
+          "config": {
+            "entityType": "side-to-side",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2.5,
+            "distance": 8,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-41,14,-93",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": -1.5,
+            "y": 13,
+            "z": 3.5
+          },
+          "config": {
+            "entityType": "side-to-side",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 3.200000047683716,
+            "distance": 8,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-31,12,-98",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 8.5,
+            "y": 11,
+            "z": -1.5
+          },
+          "config": {
+            "entityType": "elevator",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 3.200000047683716,
+            "distance": 8,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-27,15,-102",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 12.5,
+            "y": 14,
+            "z": -5.5
+          },
+          "config": {
+            "entityType": "static",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-32,14,-102",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 7.5,
+            "y": 13,
+            "z": -5.5
+          },
+          "config": {
+            "entityType": "elevator",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 3.200000047683716,
+            "distance": 8,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-20,17,-105",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 19.5,
+            "y": 16,
+            "z": -8.5
+          },
+          "config": {
+            "entityType": "static",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 2,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-18,11,-105",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 21.5,
+            "y": 10,
+            "z": -8.5
+          },
+          "config": {
+            "entityType": "side-to-side",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 3.200000047683716,
+            "distance": 6,
+            "cost": 2
           }
         }
       ],
-      "lastModified": 1754321507888,
+      "lastModified": 1754366138521,
       "creatorName": "player-1",
       "creatorId": "player-1",
-      "scoreboard": [
-        {
-          "playerId": "player-1",
-          "playerName": "player-1",
-          "completionTime": 8956,
-          "timestamp": 1754163124708
-        },
-        {
-          "playerId": "player-1",
-          "playerName": "player-1",
-          "completionTime": 12682,
-          "timestamp": 1754104822778
-        },
-        {
-          "playerId": "player-3",
-          "playerName": "player-3",
-          "completionTime": 753680,
-          "timestamp": 1754321507876
-        }
-      ]
-    }
+      "scoreboard": []
+    },
+    "cash": 9883
   },
   "levelData": {
-    "level": 7,
-    "xp": 216,
-    "totalXP": 966,
+    "level": 8,
+    "xp": 351,
+    "totalXP": 1351,
     "firstTimeFlags": [
-      "FIRST_COMPLETE"
+      "FIRST_BUILD"
     ],
-    "lastActiveTime": 1754163124723,
+    "lastActiveTime": 1754366588530,
     "loginStreak": 1,
-    "lastLoginDate": "Sat Aug 02 2025"
+    "lastLoginDate": "Mon Aug 04 2025"
   },
-  "level": 7,
-  "xp": 216,
-  "totalXP": 966
+  "level": 8,
+  "xp": 351,
+  "totalXP": 1351
 }

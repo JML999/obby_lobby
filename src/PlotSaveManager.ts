@@ -1218,11 +1218,12 @@ export class PlotSaveManager {
       const { MechanicalBlockManager } = require('./MechanicalBlockManager');
       const { ConfigurableMechanicalEntity } = require('./entities/ConfigurableMechanicalEntity');
       
-      // Position from save data is already the entity spawn position (no offset needed)
+      // STANDARDIZATION: Position from save data is in chunk lattice coordinates (saved from ObstacleCollisionManager)
+      // Convert to entity spawn position for entity creation (chunk lattice + 0.5)
       const entitySpawnPosition = {
-        x: position.x,
-        y: position.y,
-        z: position.z
+        x: position.x + 0.5,
+        y: position.y + 0.5,
+        z: position.z + 0.5
       };
       
       // Validate config data
@@ -1257,19 +1258,27 @@ export class PlotSaveManager {
       }
       
       // Register with ObstacleCollisionManager with full config
-      // Use entity spawn position for consistency with preview/confirmation flow
+      // STANDARDIZATION: Use chunk lattice position for registration (ObstacleCollisionManager will standardize it)
       const success = this.obstacleCollisionManager.registerObstacle(
         plotId,
         entityId,
         'mechanical',
         'custom',
-        entitySpawnPosition, // Use same position as entity spawn for consistency
+        position, // Use original chunk lattice position from save data
         entityId,
         config // full mechanical config
       );
       
       if (success) {
         console.log(`[PlotSaveManager] ✅ Successfully created and registered mechanical entity ${config.entityType}`);
+        
+        // After registering, sync the collision manager with world state
+        // This ensures any entities loaded before world initialization are properly tracked
+        if (this.world) {
+          this.obstacleCollisionManager.initializeWorld(this.world);
+          this.obstacleCollisionManager.syncWithWorldState(plotId);
+        }
+        
         return true;
       } else {
         console.error(`[PlotSaveManager] ❌ Failed to register mechanical entity with ObstacleCollisionManager`);

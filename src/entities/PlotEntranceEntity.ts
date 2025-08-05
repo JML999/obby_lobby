@@ -317,12 +317,21 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         const world = this.world;
         if (!world) return;
         
-        // Only allow owner to build
-        if (this.owner !== player.id) {
-            if (world) {
-                world.chatManager.sendPlayerMessage(player, '❌ You can only build on plots you own!', 'FF0000');
-            }
-            return;
+        // Check if plot has a different owner
+        if (this.owner && this.owner !== player.id) {
+            // Plot was owned by someone else - need to clear it first
+            console.log(`[PlotEntranceEntity] Plot ${this.plotIndex} was owned by ${this.owner}, transferring to ${player.id}`);
+            
+            // Clear the previous owner's content
+            await this.clearPlotForNewOwner(player);
+            
+            // Transfer ownership
+            this.owner = player.id;
+            console.log(`[PlotEntranceEntity] Plot ${this.plotIndex} ownership transferred to ${player.id}`);
+        } else if (!this.owner) {
+            // Plot was unowned, assign to this player
+            this.owner = player.id;
+            console.log(`[PlotEntranceEntity] Plot ${this.plotIndex} assigned to new owner ${player.id}`);
         }
         
         // Set player state to BUILDING
@@ -429,7 +438,25 @@ export class PlotEntranceEntity extends SmartBlockEntity {
             console.log(`[PlotEntranceEntity] plotId type: ${typeof plotId}, value: ${plotId}`);
             await this.plotSaveManager.clearPlotWithBoundaries(player, clearBoundaries, plotId);
             
-            // Step 3: Clear the scoreboard for this plot
+            // Step 3: Extra cleanup layer for mechanical entities using boundaries
+            console.log(`[PlotEntranceEntity] Running extra cleanup for mechanical entities with boundaries`);
+            try {
+                const { ObstacleCollisionManager } = require('../ObstacleCollisionManager');
+                const obstacleManager = ObstacleCollisionManager.getInstance();
+                const removedCount = obstacleManager.clearPlotObstaclesWithBoundaries(plotId, clearBoundaries);
+                console.log(`[PlotEntranceEntity] Extra cleanup removed ${removedCount} additional obstacles`);
+                
+                // Final safety check: if any obstacles remain, clear them all
+                const remainingObstacles = obstacleManager.getPlotObstacles(plotId);
+                if (remainingObstacles.length > 0) {
+                    console.warn(`[PlotEntranceEntity] Found ${remainingObstacles.length} remaining obstacles after boundary cleanup, clearing all`);
+                    obstacleManager.clearPlotObstacles(plotId);
+                }
+            } catch (cleanupError) {
+                console.error(`[PlotEntranceEntity] Error during extra obstacle cleanup:`, cleanupError);
+            }
+            
+            // Step 4: Clear the scoreboard for this plot
             console.log(`[PlotEntranceEntity] Clearing scoreboard for plot ${this.plotIndex}`);
             try {
                 const { ScoreboardManager } = await import('../ScoreboardManager');
@@ -526,6 +553,69 @@ export class PlotEntranceEntity extends SmartBlockEntity {
         const playerCooldowns = this.playerCooldowns.get(playerId)!;
         const cooldownEndTime = Date.now() + cooldownDuration;
         playerCooldowns.set(option, cooldownEndTime);
+    }
+
+    /**
+     * Clear plot content when transferring ownership to a new player
+     */
+    private async clearPlotForNewOwner(newOwner: Player): Promise<void> {
+        const world = this.world;
+        if (!world) return;
+        
+        console.log(`[PlotEntranceEntity] Clearing plot ${this.plotIndex} for new owner ${newOwner.id}`);
+        
+        // Send notification to new owner
+        world.chatManager.sendPlayerMessage(newOwner, `🔄 Clearing previous owner's content...`, 'FFFF00');
+        
+        // Use the same clearing logic as clearPlot but without permission checks
+        const plotId = `plot_${this.plotIndex}`;
+        const plotBoundaries = this.plotBuildManager.getPlotBoundaries(plotId);
+        
+        if (!plotBoundaries) {
+            console.error(`[PlotEntranceEntity] Could not get plot boundaries for ${plotId}`);
+            return;
+        }
+        
+        const clearBoundaries = {
+            minX: plotBoundaries.minX,
+            maxX: plotBoundaries.maxX,
+            minY: plotBoundaries.minY,
+            maxY: plotBoundaries.maxY,
+            minZ: plotBoundaries.minZ,
+            maxZ: plotBoundaries.maxZ
+        };
+        
+        try {
+            // Clear saved data
+            await this.plotSaveManager.clearPlayerObby(newOwner, plotId);
+            
+            // Clear physical blocks and obstacles
+            await this.plotSaveManager.clearPlotWithBoundaries(newOwner, clearBoundaries, plotId);
+            
+            // Clear mechanical entities with extra cleanup
+            const { ObstacleCollisionManager } = require('../ObstacleCollisionManager');
+            const obstacleManager = ObstacleCollisionManager.getInstance();
+            obstacleManager.clearPlotObstaclesWithBoundaries(plotId, clearBoundaries);
+            
+            // Final safety check - clear ALL obstacles for this plot
+            obstacleManager.clearPlotObstacles(plotId);
+            
+            // Clear scoreboard
+            try {
+                const { ScoreboardManager } = await import('../ScoreboardManager');
+                const scoreboardManager = ScoreboardManager.getInstance();
+                scoreboardManager.clearPlotScoreboard(this.plotIndex, world);
+            } catch (e) {
+                console.error(`[PlotEntranceEntity] Error clearing scoreboard:`, e);
+            }
+            
+            console.log(`[PlotEntranceEntity] Successfully cleared plot ${this.plotIndex} for new owner`);
+            world.chatManager.sendPlayerMessage(newOwner, `✅ Plot cleared! You can now build your course.`, '00FF00');
+            
+        } catch (error) {
+            console.error(`[PlotEntranceEntity] Error clearing plot for new owner:`, error);
+            world.chatManager.sendPlayerMessage(newOwner, `⚠️ There was an issue clearing the plot, but you can still build.`, 'FFAA00');
+        }
     }
 
 

@@ -15,6 +15,7 @@ import { GreeterNpc } from './entities/GreeterNpc';
 import { type NpcConfig } from './entities/DialogNpc';
 import { SimpleLevelingSystem } from './SimpleLevelingSystem';
 import { MechanicalBlockManager } from './MechanicalBlockManager';
+import { PlotBoundaryManager } from './PlotBoundaryManager';
 // import { TrafficManager } from './TrafficManager'; // TODO: Enable for next version - Traffic system ready but disabled for production
 
 export default class ObbyRegion extends GameRegion {
@@ -27,6 +28,7 @@ export default class ObbyRegion extends GameRegion {
   private plotSaveManager: PlotSaveManager;
   private simpleLevelingSystem: SimpleLevelingSystem;
   private mechanicalBlockManager: MechanicalBlockManager;
+  private plotBoundaryManager: PlotBoundaryManager;
   // TODO: Enable for next version - Traffic system ready but disabled for production
   // private trafficManager?: TrafficManager;
   private maxPlayers: number = 5;
@@ -61,6 +63,7 @@ export default class ObbyRegion extends GameRegion {
     this.plotSaveManager = PlotSaveManager.getInstance();
     this.simpleLevelingSystem = SimpleLevelingSystem.getInstance();
     this.mechanicalBlockManager = MechanicalBlockManager.getInstance();
+    this.plotBoundaryManager = PlotBoundaryManager.getInstance();
     // TODO: Enable for next version - Traffic system ready but disabled for production
     // this.trafficManager = new TrafficManager(this.world);
     
@@ -391,6 +394,22 @@ export default class ObbyRegion extends GameRegion {
       // Clear physical blocks AND metadata when new player claims the plot
       await this.plotSaveManager.clearPlotPhysicalContent(plotId, player.world);
       
+      // COMPREHENSIVE CLEANUP: Clear ALL entities within plot boundaries from the actual world
+      // This handles entities that exist in the scene but aren't properly tracked
+      try {
+        const plotBoundaries = this.plotBoundaryManager.getCalculatedBoundaries(plotId);
+        if (plotBoundaries) {
+          const clearedCount = this.clearAllEntitiesInBoundaries(plotBoundaries);
+          console.log(`[ObbyRegion] Cleared ${clearedCount} entities from world within plot boundaries`);
+        }
+        
+        // Also clear the registry as backup
+        this.obstacleCollisionManager.clearPlotObstacles(plotId);
+        console.log(`[ObbyRegion] Registry cleanup completed for ${plotId}`);
+      } catch (error) {
+        console.error(`[ObbyRegion] Error during comprehensive entity cleanup:`, error);
+      }
+      
       // Also clear metadata tracking since this is a new player claiming the plot
       this.plotSaveManager.clearTrackedBlocks(plotId, player.world);
       
@@ -473,6 +492,54 @@ export default class ObbyRegion extends GameRegion {
       console.error(`[ObbyRegion] Error processing plot assignment for player ${player.id}:`, error);
       this.world.chatManager.sendPlayerMessage(player, '⚠️ Error setting up your plot', 'FFAA00');
     }
+  }
+
+  /**
+   * Clear ALL entities (mechanical, obstacles, etc.) within plot boundaries from the world
+   */
+  private clearAllEntitiesInBoundaries(boundaries: any): number {
+    let clearedCount = 0;
+    
+    // Get all entities from the world
+    const allEntities = this.world.entityManager.getAllEntities();
+    
+    console.log(`[ObbyRegion] Scanning ${allEntities.length} world entities for cleanup`);
+    
+    for (const entity of allEntities) {
+      // Skip player entities
+      if (entity.constructor.name.includes('Player')) {
+        continue;
+      }
+      
+      // Check if entity has a position and is within plot boundaries
+      if (entity.position && 
+          entity.position.x >= boundaries.minX && entity.position.x <= boundaries.maxX &&
+          entity.position.y >= boundaries.minY && entity.position.y <= boundaries.maxY &&
+          entity.position.z >= boundaries.minZ && entity.position.z <= boundaries.maxZ) {
+        
+        // Check if this looks like a mechanical entity or obstacle
+        const entityName = entity.constructor.name;
+        if (entityName.includes('Mechanical') || 
+            entityName.includes('Configurable') ||
+            entityName.includes('Bounce') ||
+            entityName.includes('Rotating') ||
+            entityName.includes('Seesaw') ||
+            entity.entityType === 'mechanical' ||
+            (entity as any).isMechanicalEntity) {
+          
+          console.log(`[ObbyRegion] Despawning ${entityName} entity at (${entity.position.x}, ${entity.position.y}, ${entity.position.z})`);
+          
+          try {
+            entity.despawn();
+            clearedCount++;
+          } catch (error) {
+            console.error(`[ObbyRegion] Error despawning entity:`, error);
+          }
+        }
+      }
+    }
+    
+    return clearedCount;
   }
 
   private sendDetailedInstructions(player: Player, plotNumber: number): void {

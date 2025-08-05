@@ -356,12 +356,8 @@ export class BlockPlacementManager {
         // Remove from MechanicalBlockManager local tracking (call public method)
         this.mechanicalBlockManager.removeFromLocalTracking(positionKey);
         
-        // Remove from ObstacleCollisionManager using entity spawn position
-        const entitySpawnPosition = {
-          x: coordinate.x + 0.5,
-          y: coordinate.y + 0.5,
-          z: coordinate.z + 0.5
-        };
+        // STANDARDIZATION: Remove from ObstacleCollisionManager using chunk lattice position
+        // ObstacleCollisionManager now standardizes on chunk lattice coordinates for storage
         
         // DEBUG: Show what's in ObstacleCollisionManager before removal
         const allObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
@@ -369,9 +365,9 @@ export class BlockPlacementManager {
         allObstacles.forEach((obs, i) => {
           console.log(`[BlockPlacementManager]   ${i+1}. type=${obs.type}, pos=(${obs.position.x}, ${obs.position.y}, ${obs.position.z}), id=${obs.id}`);
         });
-        console.log(`[BlockPlacementManager] 🎯 Trying to remove obstacle at entity spawn position: (${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}) with radius 3`);
+        console.log(`[BlockPlacementManager] 🎯 Trying to remove obstacle at chunk lattice position: (${coordinate.x}, ${coordinate.y}, ${coordinate.z}) with radius 3`);
         
-        const removedObstacles = this.obstacleCollisionManager.unregisterAllObstaclesAt(plotId, entitySpawnPosition, 3);
+        const removedObstacles = this.obstacleCollisionManager.unregisterAllObstaclesAt(plotId, coordinate, 3);
         
         // DEBUG: Show what's left after removal
         const afterObstacles = this.obstacleCollisionManager.getPlotObstacles(plotId);
