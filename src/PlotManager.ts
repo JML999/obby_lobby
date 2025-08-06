@@ -26,6 +26,14 @@ export class PlotManager {
     private static instance: PlotManager;
     private managedWorlds: ManagedWorld[] = [];
     private defaultMapLoader: DefaultMapLoader;
+    
+    // Directional block mapping for 180° rotation (same as PlotSaveManager)
+    private static readonly DIRECTIONAL_BLOCK_FLIP_MAP: { [key: number]: number } = {
+        104: 105, // conveyor-z- → conveyor-z+ (South → North)
+        105: 104, // conveyor-z+ → conveyor-z- (North → South)  
+        109: 110, // conveyor-x- → conveyor-x+ (West → East)
+        110: 109  // conveyor-x+ → conveyor-x- (East → West)
+    };
 
     private constructor() {
         this.defaultMapLoader = DefaultMapLoader.getInstance();
@@ -280,6 +288,19 @@ export class PlotManager {
     }
 
     /**
+     * Transform directional block IDs when loading pool maps from one side to the other
+     * This flips directional blocks (conveyor belts) to maintain proper orientation after 180° rotation
+     */
+    private transformDirectionalBlockId(blockTypeId: number): number {
+        const flippedId = PlotManager.DIRECTIONAL_BLOCK_FLIP_MAP[blockTypeId];
+        if (flippedId !== undefined) {
+            console.log(`[PlotManager] 🔄 Transforming directional block: ${blockTypeId} → ${flippedId}`);
+            return flippedId;
+        }
+        return blockTypeId; // Not a directional block, return unchanged
+    }
+
+    /**
      * Handle backward compatibility for existing saved data without plotSide field
      * Attempts to determine plot side from plot center position
      */
@@ -461,8 +482,8 @@ export class PlotManager {
         // Load all available pool maps
         const allPoolMaps = await this.defaultMapLoader.loadAllPoolMaps();
         
-        // Randomly select 5 unique pool maps for plots 3-7 (the remaining plots after first 3 players)
-        const selectedPoolMaps = this.selectRandomUniquePoolMaps(allPoolMaps, 5);
+        // Select pool maps ensuring exactly one of the big pool maps (13 or 14) is included
+        const selectedPoolMaps = await this.selectPoolMapsWithOneBigMap(allPoolMaps, 5);
         
         // Create all 8 plots
         for (let i = 0; i < 8; i++) {
@@ -494,6 +515,68 @@ export class PlotManager {
         }
         
         return plots;
+    }
+
+    /**
+     * Select pool maps ensuring exactly one of the big pool maps (13 or 14) is included
+     */
+    private async selectPoolMapsWithOneBigMap(availablePoolMaps: DefaultMapData[], count: number): Promise<DefaultMapData[]> {
+        if (count < 1) return [];
+        
+        // Since the pool maps don't have reliable ownerId, we need to work with what's loaded
+        // For now, we'll implement this by ensuring we attempt to load pool-13 and pool-14
+        // and include one if available
+        
+        console.log(`[PlotManager] Selecting from ${availablePoolMaps.length} available pool maps`);
+        
+        // Try to load the big pool maps specifically
+        const bigPoolNumbers = [13, 14];
+        const bigPoolMaps: DefaultMapData[] = [];
+        
+        // Attempt to load each big pool map
+        for (const mapNumber of bigPoolNumbers) {
+            try {
+                const bigMap = await this.defaultMapLoader.loadSpecificPoolMap(mapNumber);
+                if (bigMap) {
+                    // Add a marker to identify this as a big map
+                    (bigMap as any).mapNumber = mapNumber;
+                    bigPoolMaps.push(bigMap);
+                }
+            } catch (error) {
+                console.warn(`[PlotManager] Could not load big pool map ${mapNumber}:`, error);
+            }
+        }
+        
+        console.log(`[PlotManager] Found ${bigPoolMaps.length} big pool maps (13/14) available`);
+        
+        // If no big pool maps are available, fall back to regular selection
+        if (bigPoolMaps.length === 0) {
+            console.warn(`[PlotManager] No big pool maps (13/14) found, using regular selection from available maps`);
+            return this.selectRandomUniquePoolMaps(availablePoolMaps, count);
+        }
+        
+        // Select exactly one big pool map randomly
+        const selectedBigMap = bigPoolMaps[Math.floor(Math.random() * bigPoolMaps.length)];
+        const selectedMapNumber = (selectedBigMap as any).mapNumber;
+        console.log(`[PlotManager] Selected big pool map: pool-${selectedMapNumber}`);
+        
+        // Select remaining maps from the available pool maps (excluding big maps)
+        const remainingCount = count - 1;
+        // Filter out maps that match the selected big map to avoid duplicates
+        const availableWithoutBigMaps = availablePoolMaps.filter(map => {
+            // Compare by checking if this map's data matches any of the big pool maps
+            return !bigPoolMaps.some(bigMap => 
+                map.obby?.plotData?.creatorName === bigMap.obby?.plotData?.creatorName &&
+                map.obby?.plotData?.blocks?.length === bigMap.obby?.plotData?.blocks?.length
+            );
+        });
+        const selectedRegularMaps = this.selectRandomUniquePoolMaps(availableWithoutBigMaps, remainingCount);
+        
+        // Combine: one big map + regular maps
+        const finalSelection = [selectedBigMap, ...selectedRegularMaps];
+        
+        console.log(`[PlotManager] Final pool map selection: big map pool-${selectedMapNumber} + ${selectedRegularMaps.length} regular maps`);
+        return finalSelection;
     }
 
     /**
@@ -581,6 +664,11 @@ export class PlotManager {
                 ? this.transformCoordinatesForDifferentSide(block.relativePos, plotCenter, plotId)
                 : block.relativePos;
 
+            // Apply directional block transformation if needed (same logic as PlotSaveManager)
+            const transformedBlockTypeId = needsTransformation 
+                ? this.transformDirectionalBlockId(block.blockTypeId)
+                : block.blockTypeId;
+
             const worldPos = {
                 x: plotCenter.x + transformedRelativePos.x,
                 y: plotCenter.y + transformedRelativePos.y,
@@ -593,7 +681,7 @@ export class PlotManager {
                 z: Math.floor(worldPos.z)
             };
 
-            world.chunkLattice.setBlock(coordinate, block.blockTypeId);
+            world.chunkLattice.setBlock(coordinate, transformedBlockTypeId);
 
             // Track the block placement in BOTH systems to ensure validation works
             const plotSaveManager = (await import('./PlotSaveManager')).PlotSaveManager.getInstance();

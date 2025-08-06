@@ -72,8 +72,8 @@ class MobileControlPanel {
                     </div>
                 </div>
 
-                <!-- Inventory Button (BUILDING only) - Top right -->
-                <div class="mobile-game-button mobile-inventory" id="mobile-inventory" style="display: none;">
+                <!-- Inventory Button (BUILDING only) - HIDDEN ON MOBILE -->
+                <div class="mobile-game-button mobile-inventory desktop-only" id="mobile-inventory" style="display: none;">
                     <div class="mobile-button-icon">🎒</div>
                     <div class="mobile-button-text">Inventory</div>
                 </div>
@@ -81,7 +81,7 @@ class MobileControlPanel {
                 <!-- Place/Break Buttons (BUILDING only) - Right side, centered -->
                 <div class="mobile-build-container" id="mobile-build-container" style="display: none;">
                     <div class="mobile-game-button mobile-place" id="mobile-place">
-                        <div class="mobile-button-icon">🔨</div>
+                        <div class="mobile-button-icon">🎯</div>
                         <div class="mobile-button-text">Place</div>
                     </div>
                     <div class="mobile-game-button mobile-break" id="mobile-break">
@@ -131,7 +131,10 @@ class MobileControlPanel {
             this.controls.flyUp.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 this.controls.flyUp.classList.add('active');
+                console.log('[MobileControlPanel] Fly up touchstart - calling hytopia.pressInput(sp, true)');
+                console.log('[MobileControlPanel] hytopia object:', typeof hytopia, hytopia);
                 hytopia.pressInput('sp', true); // Space key for fly up - this is correct
+                console.log('[MobileControlPanel] pressInput called successfully');
                 console.log('[MobileControlPanel] Fly up pressed');
             }, { passive: false });
 
@@ -143,19 +146,24 @@ class MobileControlPanel {
             }, { passive: false });
         }
 
-        // Fly down button - shift key for fly down (correct for fly mode)
+        // Fly down button - direct fly control bypass
         if (this.controls.flyDown) {
             this.controls.flyDown.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 this.controls.flyDown.classList.add('active');
-                hytopia.pressInput('sh', true); // Shift key for fly down - this is correct
+                console.log('[MobileControlPanel] Fly down - sending direct fly down command');
+                
+                // Send direct fly command instead of input simulation
+                hytopia.sendData({ type: 'mobileFlyDown', active: true });
                 console.log('[MobileControlPanel] Fly down pressed');
             }, { passive: false });
 
             this.controls.flyDown.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 this.controls.flyDown.classList.remove('active');
-                hytopia.pressInput('sh', false);
+                
+                // Stop direct fly command
+                hytopia.sendData({ type: 'mobileFlyDown', active: false });
                 console.log('[MobileControlPanel] Fly down released');
             }, { passive: false });
         }
@@ -337,10 +345,10 @@ class MobileControlPanel {
                 pointer-events: none;
             }
 
-            /* Jump button - ergonomic, further up and in, and 33% bigger */
+            /* Jump button - moved up more to clear level UI */
             .mobile-jump {
                 position: absolute !important;
-                bottom: 44px !important;
+                bottom: 120px !important;
                 right: 66px !important;
                 width: 96px !important;
                 height: 96px !important;
@@ -399,10 +407,10 @@ class MobileControlPanel {
                 right: 20px;
             }
 
-            /* Place/Break buttons - right side, vertically centered */
+            /* Place/Break buttons - moved away from edge for iPhone bezel */
             .mobile-build-container {
                 position: absolute;
-                right: 20px;
+                right: 60px; /* Move away from edge */
                 top: 50%;
                 transform: translateY(-50%);
                 display: flex;
@@ -511,7 +519,7 @@ class MobileControlPanel {
                 }
 
                 .mobile-build-container {
-                    right: 15px;
+                    right: 50px; /* Keep away from edge */
                     gap: 8px;
                 }
 
@@ -578,7 +586,7 @@ class MobileControlPanel {
                 }
 
                 .mobile-build-container {
-                    right: 10px;
+                    right: 45px; /* Keep away from edge in landscape */
                     gap: 6px;
                 }
 

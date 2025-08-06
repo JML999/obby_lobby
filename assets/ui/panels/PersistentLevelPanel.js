@@ -3,15 +3,19 @@ class PersistentLevelPanel {
         // Create persistent level display element that shows across all game states
         this.levelContainer = document.createElement('div');
         this.levelContainer.style.position = 'fixed';
-        this.levelContainer.style.bottom = '32px'; // Same level as plot panel
-        this.levelContainer.style.right = '32px'; // Right side to not conflict with plot panel
-        this.levelContainer.style.fontFamily = "'Comic Neue', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif";
-        this.levelContainer.style.fontSize = '14px';
-        this.levelContainer.style.fontWeight = 'bold';
-        this.levelContainer.style.color = '#333';
+        this.levelContainer.style.bottom = '32px'; // Match plot panel position
+        this.levelContainer.style.right = '32px'; // Match plot panel position
+        this.levelContainer.style.background = '#fffbe6'; // Match plot panel background
+        this.levelContainer.style.border = '2px solid #ffb300'; // Match plot panel border
+        this.levelContainer.style.borderRadius = '12px'; // Match plot panel border radius
+        this.levelContainer.style.padding = '8px 12px'; // Smaller padding
+        this.levelContainer.style.fontFamily = "'Comic Neue', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif"; // Match plot panel font
+        this.levelContainer.style.fontSize = '14px'; // Smaller font size
+        this.levelContainer.style.fontWeight = 'bold'; // Match plot panel font weight
+        this.levelContainer.style.color = '#333'; // Match plot panel text color
+        this.levelContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)'; // Match plot panel shadow
         this.levelContainer.style.zIndex = '2001';
-        this.levelContainer.style.display = 'block'; // Always visible
-        this.levelContainer.style.textShadow = '1px 1px 2px rgba(255,255,255,0.8)';
+        this.levelContainer.style.display = 'block';
         document.body.appendChild(this.levelContainer);
         
         // Initialize level data
@@ -33,6 +37,20 @@ class PersistentLevelPanel {
                     this.updateLevelDisplay(data);
                 } else if (data.type === 'levelUp') {
                     this.showLevelUpCelebration(data);
+                } else if (data.type === 'displayBuildTutorial') {
+                    // Hide level UI when tutorial is shown
+                    this.hide();
+                } else if (data.type === 'playerStateChanged') {
+                    // Show level UI when returning to lobby, hide in building mode
+                    if (data.state === 'LOBBY') {
+                        this.show();
+                    } else if (data.state === 'BUILDING') {
+                        // Level UI is hidden in building mode (mechanical config hides it)
+                        // but we should ensure it's shown when not in mechanical config
+                        this.show();
+                    } else if (data.state === 'PLAYING') {
+                        this.show();
+                    }
                 }
             });
         }
@@ -49,14 +67,13 @@ class PersistentLevelPanel {
         
         const progressPercentage = this.nextLevelXP > 0 ? Math.min((this.currentXP / this.nextLevelXP) * 100, 100) : 100;
         
-        // Create level display with XP progress bar
+        // Create level display matching plot panel style but smaller
         this.levelContainer.innerHTML = `
-            <div style="background: rgba(255, 255, 255, 0.9); border: 2px solid #4CAF50; border-radius: 8px; padding: 6px 10px; display: inline-block;">
-                <div style="font-size: 12px; margin-bottom: 2px;">Level ${this.currentLevel}</div>
-                <div style="width: 120px; height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span>Lv.${this.currentLevel}</span>
+                <div style="width: 60px; height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; border: 1px solid #ccc;">
                     <div style="width: ${progressPercentage}%; height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); transition: width 0.3s ease;"></div>
                 </div>
-                <div style="font-size: 10px; color: #666; margin-top: 2px;">${this.currentXP}/${this.nextLevelXP} XP</div>
             </div>
         `;
         
@@ -86,16 +103,19 @@ class PersistentLevelPanel {
     }
     
     static hide() {
-        // Never hide - this panel persists across all game states
-        // This method exists for consistency but does nothing
-        console.log('[PersistentLevelPanel] Hide called but level display persists across all states');
+        // Hide level UI (e.g. when tutorial is shown)
+        if (this.levelContainer) {
+            this.levelContainer.style.display = 'none';
+        }
+        console.log('[PersistentLevelPanel] Level display hidden');
     }
     
     static show() {
-        // Always visible - this method exists for consistency
+        // Show level UI
         if (this.levelContainer) {
             this.levelContainer.style.display = 'block';
         }
+        console.log('[PersistentLevelPanel] Level display shown');
     }
 }
 

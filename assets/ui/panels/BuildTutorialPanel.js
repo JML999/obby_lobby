@@ -70,7 +70,7 @@ class BuildTutorialPanel {
                         <button class="tutorial-close mobile-close" id="tutorial-close">×</button>
                     </div>
                     
-                    <div class="tutorial-content mobile-content">
+                    <div class="tutorial-content mobile-content" id="tutorial-content">
                         <!-- Mobile-optimized condensed content -->
                         <div class="tutorial-section mobile-section">
                             <h3>📋 Create a Course</h3>
@@ -125,6 +125,15 @@ class BuildTutorialPanel {
                                 <div class="tip-item">• Have fun! There is no right or wrong way to build.</div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Mobile scroll controls - fixed position on right -->
+                    <div class="mobile-scroll-controls">
+                        <button class="scroll-arrow scroll-up" id="scroll-up">▲</button>
+                        <div class="scroll-track">
+                            <div class="scroll-thumb" id="scroll-thumb"></div>
+                        </div>
+                        <button class="scroll-arrow scroll-down" id="scroll-down">▼</button>
                     </div>
                     
                     <div class="tutorial-footer mobile-footer">
@@ -559,16 +568,19 @@ class BuildTutorialPanel {
             }
 
             .mobile-modal {
-                width: 95vw;
-                max-width: 320px; /* Slightly wider for better content fit */
-                max-height: 55vh; /* Slightly taller for better content visibility */
-                margin: auto; /* Ensure perfect centering */
+                width: 90%;
+                max-width: 400px;
+                height: 80vh;
+                max-height: 600px;
+                margin: auto;
                 background: rgba(20, 20, 25, 0.95);
                 border: 2px solid rgba(255, 255, 255, 0.2);
                 border-radius: 12px;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
+                overflow: hidden;
                 box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                position: relative;
             }
 
             .mobile-header {
@@ -595,8 +607,82 @@ class BuildTutorialPanel {
             }
 
             .mobile-content {
-                padding: 12px;
+                padding: 16px;
+                padding-right: 35px; /* Space for scroll bar */
                 color: white;
+                overflow-y: scroll;
+                flex: 1;
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+            }
+
+            .mobile-content::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+            }
+
+            /* Custom Mobile Scroll Bar - fixed position, shorter */
+            .mobile-scroll-controls {
+                position: absolute;
+                right: 8px;
+                top: 75px; /* Move down a tad more */
+                bottom: 70px; /* More space above footer */
+                width: 16px;
+                display: flex;
+                flex-direction: column;
+                background: rgba(0, 0, 0, 0.4);
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }
+
+            .scroll-arrow {
+                width: 16px;
+                height: 16px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: white;
+                font-size: 10px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                user-select: none;
+                touch-action: manipulation;
+            }
+
+            .scroll-arrow:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .scroll-arrow:active {
+                background: rgba(76, 175, 80, 0.3);
+                transform: scale(0.95);
+            }
+
+            .scroll-up {
+                border-radius: 8px 8px 0 0;
+            }
+
+            .scroll-down {
+                border-radius: 0 0 8px 8px;
+            }
+
+            .scroll-track {
+                flex: 1;
+                background: rgba(0, 0, 0, 0.2);
+                position: relative;
+                margin: 2px 0;
+            }
+
+            .scroll-thumb {
+                position: absolute;
+                width: 100%;
+                height: 30%;
+                background: rgba(76, 175, 80, 0.6);
+                border-radius: 10px;
+                border: 1px solid rgba(76, 175, 80, 0.8);
+                transition: top 0.1s ease;
+                top: 0%;
             }
 
             .mobile-section {
@@ -996,6 +1082,76 @@ class BuildTutorialPanel {
                 this.hide();
             }
         });
+
+        // Setup mobile scroll controls
+        this.setupMobileScrollControls();
+    }
+
+    setupMobileScrollControls() {
+        const scrollUpBtn = this.container.querySelector('#scroll-up');
+        const scrollDownBtn = this.container.querySelector('#scroll-down');
+        const content = this.container.querySelector('#tutorial-content');
+        const scrollThumb = this.container.querySelector('#scroll-thumb');
+
+        if (!scrollUpBtn || !scrollDownBtn || !content || !scrollThumb) return;
+
+        let scrollPosition = 0;
+        const scrollStep = 30; // pixels per click
+
+        const updateScrollThumb = () => {
+            const maxScroll = content.scrollHeight - content.clientHeight;
+            if (maxScroll <= 0) {
+                scrollThumb.style.display = 'none';
+                return;
+            }
+            
+            scrollThumb.style.display = 'block';
+            const thumbPosition = (scrollPosition / maxScroll) * 70; // 70% of track height
+            scrollThumb.style.top = `${Math.min(Math.max(thumbPosition, 0), 70)}%`;
+        };
+
+        const scrollUp = () => {
+            scrollPosition = Math.max(0, scrollPosition - scrollStep);
+            content.scrollTop = scrollPosition;
+            updateScrollThumb();
+        };
+
+        const scrollDown = () => {
+            const maxScroll = content.scrollHeight - content.clientHeight;
+            scrollPosition = Math.min(maxScroll, scrollPosition + scrollStep);
+            content.scrollTop = scrollPosition;
+            updateScrollThumb();
+        };
+
+        // Touch/click events for scroll arrows
+        scrollUpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            scrollUpBtn.classList.add('active');
+            scrollUp();
+        });
+
+        scrollUpBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            scrollUpBtn.classList.remove('active');
+        });
+
+        scrollDownBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            scrollDownBtn.classList.add('active');
+            scrollDown();
+        });
+
+        scrollDownBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            scrollDownBtn.classList.remove('active');
+        });
+
+        // Mouse events as fallback
+        scrollUpBtn.addEventListener('click', scrollUp);
+        scrollDownBtn.addEventListener('click', scrollDown);
+
+        // Update scroll thumb on content change
+        updateScrollThumb();
     }
 
     checkAndShowTutorial() {
@@ -1032,6 +1188,11 @@ class BuildTutorialPanel {
                 window.hytopia.sendData({
                     type: 'enablePlayerInput'
                 });
+            }
+            
+            // Show level UI again when tutorial is hidden
+            if (window.PersistentLevelPanel) {
+                window.PersistentLevelPanel.show();
             }
             
             console.log('[BuildTutorialPanel] hide called, panel should be hidden.');

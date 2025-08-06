@@ -426,30 +426,6 @@
           },
           {
             "relativePos": {
-              "x": -12.5,
-              "y": 12,
-              "z": 2.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": -12.5,
-              "y": 13,
-              "z": 2.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": -13.5,
-              "y": 12,
-              "z": 2.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
               "x": 18.5,
               "y": 19,
               "z": -6.5
@@ -479,114 +455,41 @@
               "z": -0.5
             },
             "blockTypeId": 9
-          }
-        ],
-        "obstacles": [
-          {
-            "id": "-13,4,-99",
-            "type": "mechanical",
-            "size": "custom",
-            "relativePos": {
-              "x": 26.5,
-              "y": 3,
-              "z": -2.5
-            },
-            "config": {
-              "entityType": "front-to-back",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 4,
-              "distance": 3,
-              "cost": 2
-            }
           },
           {
-            "id": "-21,2,-100",
-            "type": "mechanical",
-            "size": "custom",
             "relativePos": {
-              "x": 18.5,
+              "x": 5.5,
+              "y": 14,
+              "z": 0.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 16.5,
               "y": 1,
-              "z": -3.5
+              "z": -0.5
             },
-            "config": {
-              "entityType": "static",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 2,
-              "distance": 2,
-              "cost": 2
-            }
+            "blockTypeId": 109
           },
           {
-            "id": "-22,2,-97",
-            "type": "mechanical",
-            "size": "custom",
             "relativePos": {
               "x": 17.5,
               "y": 1,
               "z": -0.5
             },
-            "config": {
-              "entityType": "side-to-side",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 4,
-              "distance": 3,
-              "cost": 2
-            }
+            "blockTypeId": 109
           },
           {
-            "id": "-26,2,-97",
-            "type": "mechanical",
-            "size": "custom",
             "relativePos": {
-              "x": 13.5,
+              "x": 18.5,
               "y": 1,
               "z": -0.5
             },
-            "config": {
-              "entityType": "static",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 2,
-              "distance": 2,
-              "cost": 2
-            }
-          },
-          {
-            "id": "-26,1,-98",
-            "type": "mechanical",
-            "size": "custom",
-            "relativePos": {
-              "x": 13.5,
-              "y": 0,
-              "z": -1.5
-            },
-            "config": {
-              "entityType": "static",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 2,
-              "distance": 2,
-              "cost": 2
-            }
-          },
+            "blockTypeId": 109
+          }
+        ],
+        "obstacles": [
           {
             "id": "-30,3,-96",
             "type": "mechanical",
@@ -715,27 +618,6 @@
             }
           },
           {
-            "id": "-27,15,-102",
-            "type": "mechanical",
-            "size": "custom",
-            "relativePos": {
-              "x": 12.5,
-              "y": 14,
-              "z": -5.5
-            },
-            "config": {
-              "entityType": "static",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 2,
-              "distance": 2,
-              "cost": 2
-            }
-          },
-          {
             "id": "-32,14,-102",
             "type": "mechanical",
             "size": "custom",
@@ -753,27 +635,6 @@
               },
               "speed": 3.200000047683716,
               "distance": 8,
-              "cost": 2
-            }
-          },
-          {
-            "id": "-20,17,-105",
-            "type": "mechanical",
-            "size": "custom",
-            "relativePos": {
-              "x": 19.5,
-              "y": 16,
-              "z": -8.5
-            },
-            "config": {
-              "entityType": "static",
-              "dimensions": {
-                "x": 1,
-                "y": 1,
-                "z": 1
-              },
-              "speed": 2,
-              "distance": 2,
               "cost": 2
             }
           },
@@ -799,14 +660,14 @@
             }
           }
         ],
-        "lastModified": 1754366138521,
+        "lastModified": 1754511233452,
         "creatorName": "player-1",
         "creatorId": "player-1",
         "scoreboard": []
       },
-      "cash": 9883
+      "cash": 9903
     },
-    "lastUpdated": 1754366138536,
+    "lastUpdated": 1754511233474,
     "displayName": "player-1",
     "worldSnapshots": {
       "Obby Region 1": 1752969137436,
@@ -8351,14 +8212,6 @@
           {
             "relativePos": {
               "x": 11.5,
-              "y": 9,
-              "z": 20.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 10.5,
               "y": 9,
               "z": 20.5
             },
@@ -41075,9 +40928,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": -5,
-              "y": 14.5,
-              "z": -11
+              "x": -5.5,
+              "y": 14,
+              "z": -11.5
             },
             "config": {
               "entityType": "carousel",
@@ -41097,9 +40950,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": -5,
-              "y": 14.5,
-              "z": -11
+              "x": -5.5,
+              "y": 14,
+              "z": -11.5
             },
             "config": {
               "entityType": "carousel",
@@ -41119,9 +40972,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": 0,
-              "y": 14.5,
-              "z": -18
+              "x": -0.5,
+              "y": 14,
+              "z": -18.5
             },
             "config": {
               "entityType": "front-to-back",
@@ -41140,9 +40993,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": 6,
-              "y": 16.5,
-              "z": 20
+              "x": 5.5,
+              "y": 16,
+              "z": 19.5
             },
             "config": {
               "entityType": "elevator",
@@ -41161,9 +41014,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": 9,
-              "y": 31.5,
-              "z": 7
+              "x": 8.5,
+              "y": 31,
+              "z": 6.5
             },
             "config": {
               "entityType": "front-to-back",
@@ -41178,24 +41031,13 @@
             }
           },
           {
-            "id": "bounce_pad_small",
-            "type": "bounce_pad",
-            "size": "small",
-            "relativePos": {
-              "x": 11.5,
-              "y": 34,
-              "z": -1.5
-            },
-            "config": {}
-          },
-          {
             "id": "-34,31,-29",
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": 6,
-              "y": 30.5,
-              "z": 4
+              "x": 5.5,
+              "y": 30,
+              "z": 3.5
             },
             "config": {
               "entityType": "elevator",
@@ -41214,9 +41056,9 @@
             "type": "mechanical",
             "size": "custom",
             "relativePos": {
-              "x": -7,
-              "y": 12.5,
-              "z": -1
+              "x": -7.5,
+              "y": 12,
+              "z": -1.5
             },
             "config": {
               "entityType": "front-to-back",
@@ -41229,16 +41071,27 @@
               "distance": 5,
               "cost": 10
             }
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 11.5,
+              "y": 34,
+              "z": -1.5
+            },
+            "config": {}
           }
         ],
-        "lastModified": 1754354291741,
+        "lastModified": 1754494344778,
         "creatorName": "player-2",
         "creatorId": "player-2",
         "scoreboard": []
       },
       "cash": 4979
     },
-    "lastUpdated": 1754354291781,
+    "lastUpdated": 1754494344800,
     "displayName": "player-2",
     "worldSnapshots": {
       "Obby Region 1": 1752970556756

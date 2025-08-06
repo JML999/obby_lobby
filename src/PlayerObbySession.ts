@@ -1,8 +1,9 @@
-import { Player, World, PlayerCameraMode } from 'hytopia';
+import { Player, World, PlayerCameraMode, PlayerUIEvent } from 'hytopia';
 import type { Vector3Like } from 'hytopia';
 import { ObbyPlayerEntity } from './ObbyPlayerEntity';
 import { ObbyLevelController } from './ObbyLevelController';
 import { SimpleLevelingSystem } from './SimpleLevelingSystem';
+import { MobileDetectionManager } from './MobileDetectionManager';
 
 export type ObbyGameState = 'Lobby' | 'Starting' | 'Playing' | 'Results' | 'Failed';
 
@@ -76,6 +77,9 @@ export class PlayerObbySession implements IObbyPlayManager {
         // Show course entry message
         await this.showCourseStartMessage();
         
+        // Set up exit controls based on platform
+        this.setupExitControls();
+        
         // Start countdown after a brief delay
         setTimeout(() => {
             this.startCountdown();
@@ -90,6 +94,44 @@ export class PlayerObbySession implements IObbyPlayManager {
         'Obby Lobby Staff'
         // Add more creator names here as needed
     ];
+
+    /**
+     * Set up exit controls based on platform (desktop vs mobile)
+     */
+    private setupExitControls(): void {
+        // Check if player is on mobile using MobileDetectionManager
+        const isMobile = MobileDetectionManager.getInstance().isPlayerMobile(this.playerId);
+        
+        console.log(`[PlayerObbySession] Setting up exit controls for player ${this.playerId}, isMobile: ${isMobile}`);
+        
+        if (isMobile) {
+            // Show exit button UI for mobile
+            console.log(`[PlayerObbySession] Sending showPlayModeExitButton to UI for mobile player ${this.playerId}`);
+            this.player.ui.sendData({
+                type: 'showPlayModeExitButton',
+                visible: true,
+                isMobile: true
+            });
+            
+            // Listen for UI exit button click (UI sends data back via hytopia.sendData)
+            this.player.ui.on(PlayerUIEvent.DATA, ({ playerUI, data }) => {
+                if (data.type === 'exitPlayMode') {
+                    console.log(`[PlayerObbySession] Mobile exit button clicked by player ${this.playerId}`);
+                    this.forceQuit();
+                }
+            });
+        } else {
+            // Desktop - show UI hint (keyboard handling is done in ObbyPlayerEntity)
+            console.log(`[PlayerObbySession] Setting up desktop UI for player ${this.playerId}`);
+            
+            // Show desktop UI hint
+            this.player.ui.sendData({
+                type: 'showPlayModeExitButton',
+                visible: true,
+                isMobile: false
+            });
+        }
+    }
 
     /**
      * Show the course starting message with creator info
@@ -404,14 +446,22 @@ export class PlayerObbySession implements IObbyPlayManager {
      * Force quit the session
      */
     public forceQuit(): void {
-        console.log(`[PlayerObbySession] Force quitting session for player ${this.playerId}`);
+        console.log(`[PlayerObbySession] ⚠️ FORCE QUIT CALLED for player ${this.playerId}`);
+        console.log(`[PlayerObbySession] Current game state: ${this.gameState}`);
+        console.log(`[PlayerObbySession] Session exists: ${!!this}`);
         
-        this.world.chatManager.sendPlayerMessage(
-            this.player,
-            '🚪 Exited course',
-            'FFAA00'
-        );
+        try {
+            this.world.chatManager.sendPlayerMessage(
+                this.player,
+                '🚪 Exited course',
+                'FFAA00'
+            );
+            console.log(`[PlayerObbySession] ✅ Sent exit message to player ${this.playerId}`);
+        } catch (error) {
+            console.error(`[PlayerObbySession] ❌ Error sending exit message:`, error);
+        }
         
+        console.log(`[PlayerObbySession] Calling returnToLobby() for player ${this.playerId}`);
         this.returnToLobby();
     }
 
@@ -436,6 +486,17 @@ export class PlayerObbySession implements IObbyPlayManager {
             this.levelController.cleanup();
             this.levelController = null;
         }
+        
+        // Clean up exit controls (keyboard handling is done in ObbyPlayerEntity, no cleanup needed)
+        
+        // Hide mobile exit button
+        this.player.ui.sendData({
+            type: 'showPlayModeExitButton',
+            visible: false
+        });
+        
+        // Clean up UI listeners
+        this.player.ui.off('data');
         
         // Reset game state
         this.gameState = 'Lobby';

@@ -117,6 +117,21 @@ export class ObstacleCollisionManager {
   }
 
   /**
+   * Convert entity spawn position to chunk lattice position (remove 0.5 offset)
+   * Entity spawn: (-33.5, 18.5, -12.5) -> Chunk lattice: (-34, 18, -13)
+   * FIXED: Store entity positions as-is to prevent coordinate drift
+   */
+  private toChunkLatticePosition(position: Vector3Like): Vector3 {
+    // IMPORTANT: For mechanical entities, we now store entity spawn coordinates
+    // to prevent coordinate drift during save/load cycles
+    return new Vector3(
+      position.x,
+      position.y, 
+      position.z
+    );
+  }
+
+  /**
    * Get the bounding box size for an obstacle type and size
    */
   public getObstacleBounds(obstacleType: string, obstacleSize: string): ObstacleBounds | null {

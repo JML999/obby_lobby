@@ -30,6 +30,9 @@ export class BlockPlacementManager {
     { id: 100, name: 'start', description: 'Start block - spawn point', category: 'special' },
     { id: 101, name: 'goal', description: 'Goal block - finish point', category: 'special' },
     
+    // Checkpoint block (5 points)
+    { id: 102, name: 'checkpoint', description: 'Checkpoint - respawn point', category: 'special' },
+    
     // Basic movement blocks (1 point each) - names match world map
     { id: 1, name: 'platform', description: 'Basic platform block', category: 'basic' },
     { id: 19, name: 'stone', description: 'Stone platform block', category: 'basic' },
@@ -159,9 +162,9 @@ export class BlockPlacementManager {
       return false;
     }
     
-    // Check if a start or goal block already exists in the plot
-    if (plotId && (blockId === 100 || blockId === 101) && this.hasStartOrGoalBlock(plotId, blockId, world)) {
-      const blockName = blockId === 100 ? 'start' : 'goal';
+    // Check if a start, goal, or checkpoint block already exists in the plot
+    if (plotId && (blockId === 100 || blockId === 101 || blockId === 102) && this.hasSpecialBlock(plotId, blockId, world)) {
+      const blockName = blockId === 100 ? 'start' : blockId === 101 ? 'goal' : 'checkpoint';
       world.chatManager.sendPlayerMessage(player, `❌ Only one ${blockName} block allowed per plot!`, 'FF0000');
       return false;
     }
@@ -484,8 +487,8 @@ export class BlockPlacementManager {
     return true;
   }
 
-  // Check if a start or goal block already exists in the plot
-  private hasStartOrGoalBlock(plotId: string, blockId: number, world: World): boolean {
+  // Check if a special block (start, goal, or checkpoint) already exists in the plot
+  private hasSpecialBlock(plotId: string, blockId: number, world: World): boolean {
     if (!plotId) return false;
     
     // Get all blocks in the plot from PlotSaveManager

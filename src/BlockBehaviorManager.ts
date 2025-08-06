@@ -117,19 +117,29 @@ export class BlockBehaviorManager {
             
             if (block.isCheckpoint) {
                 behavior.onStandingOn = (player, world, blockPos) => {
-                    // Set checkpoint for this player
-                    (player as any).checkpoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
+                    // Check if player is in play mode
+                    const playerStateManager = require('./PlayerGameState').PlayerStateManager.getInstance();
+                    const currentState = playerStateManager.getCurrentState(player.player.id);
                     
-                    // Also set it on the controller for proper respawn handling
-                    const controller = (player as any).controller;
-                    if (controller && typeof controller.setCheckpoint === 'function') {
-                        controller.setCheckpoint({ x: blockPos.x, y: blockPos.y + 1, z: blockPos.z });
+                    if (currentState === require('./PlayerGameState').PlayerGameState.PLAYING) {
+                        // Player is in play mode - set checkpoint
+                        (player as any).checkpoint = { x: blockPos.x, y: blockPos.y + 1, z: blockPos.z };
+                        
+                        // Also set it on the controller for proper respawn handling
+                        const controller = (player as any).controller;
+                        if (controller && typeof controller.setCheckpoint === 'function') {
+                            controller.setCheckpoint({ x: blockPos.x, y: blockPos.y + 1, z: blockPos.z });
+                        }
+                        
+                        // Show animated checkpoint text
+                        player.showSuccess('CHECKPOINT!', 'Progress saved', 2000);
+                        
+                        console.log(`[BlockBehaviorManager] Checkpoint set at: ${blockPos.x}, ${blockPos.y}, ${blockPos.z} for player in play mode`);
+                    } else {
+                        // Player not in play mode - show message
+                        world.chatManager.sendPlayerMessage(player.player, '⚠️ Enter play mode to activate checkpoints', 'FFA500');
+                        console.log(`[BlockBehaviorManager] Checkpoint ignored - player not in play mode`);
                     }
-                    
-                    // Show animated checkpoint text
-                    player.showSuccess('CHECKPOINT!', 'Progress saved', 2000);
-                    
-                    console.log(`[BlockBehaviorManager] Checkpoint set at: ${blockPos.x}, ${blockPos.y}, ${blockPos.z}`);
                 };
             }
             
@@ -517,5 +527,21 @@ export class BlockBehaviorManager {
     // Clean up player data when they leave
     public cleanupPlayer(playerId: string): void {
         this.playerLastStandingBlock.delete(playerId);
+    }
+    
+    // Clear checkpoint for a specific player
+    public clearPlayerCheckpoint(player: ObbyPlayerEntity): void {
+        if (player) {
+            // Clear checkpoint on player object
+            (player as any).checkpoint = null;
+            
+            // Clear checkpoint on controller
+            const controller = (player as any).controller;
+            if (controller && typeof controller.setCheckpoint === 'function') {
+                controller.setCheckpoint(null);
+            }
+            
+            console.log(`[BlockBehaviorManager] Cleared checkpoint for player ${player.player.id}`);
+        }
     }
 } 

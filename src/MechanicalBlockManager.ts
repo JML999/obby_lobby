@@ -104,21 +104,17 @@ export class MechanicalBlockManager {
      * Clear all mechanical entities in a plot - delegate to ObstacleCollisionManager
      */
     public clearPlotMechanicalEntities(plotId: string): void {
-        // Clear from local tracking first
-        for (const [key, entity] of this.configurableEntities.entries()) {
-            // Check if this entity belongs to the plot
-            if (entity) {
-                entity.despawn();
-                this.configurableEntities.delete(key);
-            }
-        }
+        console.log(`[MechanicalBlockManager] 🧹 CLEARING ALL MECHANICAL ENTITIES FOR PLOT ${plotId}`);
+        console.log(`[MechanicalBlockManager] 🧹 Before clear - Local tracking size: ${this.configurableEntities.size}`);
         
-        // Delegate to ObstacleCollisionManager for main tracking
+        // DON'T CLEAR LOCAL TRACKING - that's shared across all plots!
+        // Only delegate to ObstacleCollisionManager which handles plot-specific clearing
         const { ObstacleCollisionManager } = require('./ObstacleCollisionManager');
         const obstacleManager = ObstacleCollisionManager.getInstance();
         obstacleManager.clearPlotMechanicalEntities(plotId);
         
-        console.log(`[MechanicalBlockManager] Cleared all mechanical entities for plot ${plotId} via ObstacleCollisionManager`);
+        console.log(`[MechanicalBlockManager] 🧹 CLEARED mechanical entities for plot ${plotId} via ObstacleCollisionManager (local tracking preserved for other plots)`);
+        console.log(`[MechanicalBlockManager] 🧹 After clear - Local tracking size: ${this.configurableEntities.size}`);
     }
     
     /**
@@ -1001,11 +997,11 @@ export class MechanicalBlockManager {
         try {
             const positionKey = this.getPositionKey(position);
             
-            // Add +0.5 offset to center entities properly (saved position is chunk lattice corner)
+            // Position already includes entity centering offset from JSON data - use as-is
             const entitySpawnPosition = {
-                x: position.x + 0.5,
-                y: position.y + 0.5,
-                z: position.z + 0.5
+                x: position.x,
+                y: position.y,
+                z: position.z
             };
             
             console.log(`[MechanicalBlockManager] Loading single mechanical entity ${config.entityType} at ${positionKey}`);
@@ -1028,6 +1024,10 @@ export class MechanicalBlockManager {
 
             // Spawn the entity
             entity.spawn(world, entitySpawnPosition);
+            
+            // DEBUG: Print exact spawn coordinates for player to find in-game
+            console.log(`[MechanicalBlockManager] 🎯 ENTITY SPAWNED - Type: ${config.entityType}, World Position: [${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}]`);
+            console.log(`[MechanicalBlockManager] 🎯 GO TO COORDINATES: X=${entitySpawnPosition.x.toFixed(1)}, Y=${entitySpawnPosition.y.toFixed(1)}, Z=${entitySpawnPosition.z.toFixed(1)}`);
             
             // Always activate loaded entities (except static ones)
             if (config.entityType !== 'static') {
@@ -1063,17 +1063,30 @@ export class MechanicalBlockManager {
         }
 
         console.log(`[MechanicalBlockManager] Loading ${mechanicalEntities.length} mechanical entities for plot ${plotId}`);
+        
+        // DEBUG: Track position keys to detect duplicates
+        const positionKeyCount = new Map<string, number>();
 
         for (const entityData of mechanicalEntities) {
             try {
                 const { position, config } = entityData;
                 const positionKey = this.getPositionKey(position);
                 
-                // Add +0.5 offset to all axes to center entities properly
+                // DEBUG: Track duplicate position keys
+                const currentCount = positionKeyCount.get(positionKey) || 0;
+                positionKeyCount.set(positionKey, currentCount + 1);
+                
+                if (currentCount > 0) {
+                    console.log(`[MechanicalBlockManager] ⚠️ DUPLICATE POSITION KEY DETECTED: ${positionKey} (occurrence #${currentCount + 1})`);
+                    console.log(`[MechanicalBlockManager]    - Entity type: ${config.entityType}`);
+                    console.log(`[MechanicalBlockManager]    - Raw position: [${position.x}, ${position.y}, ${position.z}]`);
+                }
+                
+                // Position already includes entity centering offset from JSON data - use as-is
                 const entitySpawnPosition = {
-                    x: position.x + 0.5,
-                    y: position.y + 0.5,  // Add back the Y offset
-                    z: position.z + 0.5
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
                 };
                 
                 console.log(`[MechanicalBlockManager] 📂 RESTORE DEBUG - Saved position: ${position.x}, ${position.y}, ${position.z}`);
@@ -1096,14 +1109,27 @@ export class MechanicalBlockManager {
                 // Spawn the entity
                 entity.spawn(world, entitySpawnPosition);
                 
+                // DEBUG: Print exact spawn coordinates for player to find in-game
+                console.log(`[MechanicalBlockManager] 🎯 ENTITY SPAWNED - Type: ${config.entityType}, World Position: [${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}]`);
+                console.log(`[MechanicalBlockManager] 🎯 GO TO COORDINATES: X=${entitySpawnPosition.x.toFixed(1)}, Y=${entitySpawnPosition.y.toFixed(1)}, Z=${entitySpawnPosition.z.toFixed(1)}`);
+                
                 // Always activate loaded entities (except static ones)
                 if (config.entityType !== 'static') {
                     entity.activate();
                     console.log(`[MechanicalBlockManager] 🔄 Activated loaded ${config.entityType} entity`);
                 }
                 
+                // Check if we're overwriting an existing entity
+                const existingEntity = this.configurableEntities.get(positionKey);
+                if (existingEntity) {
+                    console.log(`[MechanicalBlockManager] ⚠️ OVERWRITING EXISTING ENTITY at ${positionKey}`);
+                    console.log(`[MechanicalBlockManager]    - Existing type: ${(existingEntity as any).entityType || 'unknown'}`);
+                    console.log(`[MechanicalBlockManager]    - New type: ${config.entityType}`);
+                }
+                
                 // Store the entity
                 this.configurableEntities.set(positionKey, entity);
+                console.log(`[MechanicalBlockManager] Stored entity in Map with key: ${positionKey} (Map size now: ${this.configurableEntities.size})`);
                 
                 // Register with ObstacleCollisionManager for proper persistence (like jump pads)
                 // Use original chunk lattice position for consistency with entity creation
@@ -1119,6 +1145,118 @@ export class MechanicalBlockManager {
         }
         
         console.log(`[MechanicalBlockManager] Completed loading mechanical entities. Total entities: ${this.configurableEntities.size}`);
+        
+        // DEBUG: Show duplicate position key summary
+        console.log(`[MechanicalBlockManager] === DUPLICATE POSITION KEY SUMMARY ===`);
+        let duplicatesFound = false;
+        positionKeyCount.forEach((count, key) => {
+            if (count > 1) {
+                duplicatesFound = true;
+                console.log(`[MechanicalBlockManager]   - Position key "${key}" had ${count} entities`);
+            }
+        });
+        if (!duplicatesFound) {
+            console.log(`[MechanicalBlockManager]   - No duplicate position keys found`);
+        }
+        console.log(`[MechanicalBlockManager] === END DUPLICATE SUMMARY ===`);
+        
+        // DEBUG: Use EntityManager to see what actually got spawned
+        console.log(`[MechanicalBlockManager] === ENTITY MANAGER DEBUG ===`);
+        const allEntities = world.entityManager.getAllEntities();
+        console.log(`[MechanicalBlockManager] Total entities in world: ${allEntities.length}`);
+        
+        // Count mechanical entities by checking if they're ConfigurableMechanicalEntity instances
+        let mechanicalCount = 0;
+        const mechanicalEntityInfo: string[] = [];
+        
+        for (const entity of allEntities) {
+            // Check if this is one of our mechanical entities
+            if (entity.constructor.name === 'ConfigurableMechanicalEntity') {
+                mechanicalCount++;
+                const pos = entity.position;
+                mechanicalEntityInfo.push(`  - ${entity.constructor.name} at [${pos?.x}, ${pos?.y}, ${pos?.z}]`);
+            }
+        }
+        
+        console.log(`[MechanicalBlockManager] Mechanical entities found via EntityManager: ${mechanicalCount}`);
+        if (mechanicalEntityInfo.length > 0) {
+            console.log(`[MechanicalBlockManager] Mechanical entity positions:`);
+            mechanicalEntityInfo.forEach(info => console.log(info));
+        }
+        
+        // Also check our local tracking
+        console.log(`[MechanicalBlockManager] Local configurableEntities Map size: ${this.configurableEntities.size}`);
+        console.log(`[MechanicalBlockManager] === END ENTITY MANAGER DEBUG ===`);
+        
+        // DELAYED CHECK: See if entities are still there after 5 seconds
+        setTimeout(() => {
+            console.log(`[MechanicalBlockManager] === 5-SECOND DELAYED CHECK FOR ${plotId} ===`);
+            const allEntitiesDelayed = world.entityManager.getAllEntities();
+            let mechanicalCountDelayed = 0;
+            const mechanicalEntityInfoDelayed: string[] = [];
+            
+            for (const entity of allEntitiesDelayed) {
+                if (entity.constructor.name === 'ConfigurableMechanicalEntity') {
+                    mechanicalCountDelayed++;
+                    const pos = entity.position;
+                    mechanicalEntityInfoDelayed.push(`  - ${entity.constructor.name} at [${pos?.x}, ${pos?.y}, ${pos?.z}]`);
+                }
+            }
+            
+            console.log(`[MechanicalBlockManager] DELAYED: Total entities in world: ${allEntitiesDelayed.length}`);
+            console.log(`[MechanicalBlockManager] DELAYED: Mechanical entities found: ${mechanicalCountDelayed}`);
+            console.log(`[MechanicalBlockManager] DELAYED: Local Map size: ${this.configurableEntities.size}`);
+            
+            if (mechanicalCountDelayed !== mechanicalCount) {
+                console.log(`[MechanicalBlockManager] ⚠️ ENTITIES WERE CLEARED! Before: ${mechanicalCount}, After: ${mechanicalCountDelayed}`);
+            } else {
+                console.log(`[MechanicalBlockManager] ✅ Entities still present after 5 seconds`);
+            }
+            
+            if (mechanicalEntityInfoDelayed.length > 0) {
+                console.log(`[MechanicalBlockManager] DELAYED: Current positions:`);
+                mechanicalEntityInfoDelayed.forEach(info => console.log(info));
+            }
+            console.log(`[MechanicalBlockManager] === END DELAYED CHECK ===`);
+        }, 5000);
+    }
+    
+    /**
+     * Debug method to check mechanical entities in a world
+     */
+    public debugMechanicalEntities(world: World): void {
+        console.log(`[MechanicalBlockManager] === DEBUG MECHANICAL ENTITIES ===`);
+        
+        // Check EntityManager
+        const allEntities = world.entityManager.getAllEntities();
+        console.log(`[MechanicalBlockManager] Total entities in world: ${allEntities.length}`);
+        
+        let mechanicalCount = 0;
+        const mechanicalByType: { [key: string]: number } = {};
+        
+        for (const entity of allEntities) {
+            if (entity.constructor.name === 'ConfigurableMechanicalEntity') {
+                mechanicalCount++;
+                const pos = entity.position;
+                // Try to get entity type from the entity if possible
+                const entityType = (entity as any).entityType || 'unknown';
+                mechanicalByType[entityType] = (mechanicalByType[entityType] || 0) + 1;
+                console.log(`[MechanicalBlockManager]   - ${entityType} at [${pos?.x?.toFixed(1)}, ${pos?.y?.toFixed(1)}, ${pos?.z?.toFixed(1)}]`);
+            }
+        }
+        
+        console.log(`[MechanicalBlockManager] Summary: ${mechanicalCount} mechanical entities found`);
+        Object.entries(mechanicalByType).forEach(([type, count]) => {
+            console.log(`[MechanicalBlockManager]   - ${type}: ${count}`);
+        });
+        
+        // Check local tracking
+        console.log(`[MechanicalBlockManager] Local tracking: ${this.configurableEntities.size} entities in Map`);
+        this.configurableEntities.forEach((entity, key) => {
+            console.log(`[MechanicalBlockManager]   - Key: ${key}, Type: ${(entity as any).entityType || 'unknown'}`);
+        });
+        
+        console.log(`[MechanicalBlockManager] === END DEBUG ===`);
     }
     
     /**

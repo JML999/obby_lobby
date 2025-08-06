@@ -69,6 +69,9 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
     private climbingJumpCooldown: number = 0;
     private readonly CLIMBING_JUMP_COOLDOWN_TIME = 500; // 500ms cooldown for climbing jumps
     
+    // Mobile fly button tracking
+    private mobileFlyDownActive: Map<string, boolean> = new Map(); // Track mobile fly down button per player
+    
 
 
     constructor(world: World) {
@@ -103,6 +106,41 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         } catch (error) {
             console.error(`[ObbyPlayerController] Error updating cash UI for player ${player.id}:`, error);
         }
+    }
+
+    /**
+     * Check if mobile fly down button is currently being pressed for a player
+     */
+    private isMobileFlyDownActive(playerId: string): boolean {
+        return this.mobileFlyDownActive.get(playerId) === true;
+    }
+
+    /**
+     * Set mobile fly down button state for a player
+     */
+    public setMobileFlyDownActive(playerId: string, active: boolean): void {
+        this.mobileFlyDownActive.set(playerId, active);
+    }
+
+    /**
+     * Handle mobile fly down message from UI
+     */
+    public handleMobileFlyDown(playerEntity: ObbyPlayerEntity, active: boolean): void {
+        if (this.currentFlyEntity && playerEntity.isFlying) {
+            this.currentFlyEntity.controller.setMobileFlyDownActive(active);
+        }
+    }
+
+    /**
+     * Set up UI message handlers for a player
+     */
+    public setupUIHandlers(player: any): void {
+        player.ui.onData((data: any) => {
+            if (data.type === 'mobileFlyDown') {
+                const playerEntity = player.entity as ObbyPlayerEntity;
+                this.handleMobileFlyDown(playerEntity, data.active);
+            }
+        });
     }
 
     public override tickWithPlayerInput(entity: DefaultPlayerEntity, input: PlayerInput, cameraOrientation: PlayerCameraOrientation, deltaTimeMs: number) {
@@ -148,16 +186,15 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
         
         // If in fly mode, forward input to the FlyEntity instead of processing normally
         if (this.currentFlyEntity && playerEntity.isFlying) {
-            // In building mode, prevent shift (sprint) and space (jump) from interfering with building
-            if (isBuilding && playerEntity.isFlying && m) {
-                input.sh = false; // Disable sprint
-                input.sp = false; // Disable jump
+            // For mobile users: completely block shift from joystick, period
+            if (m) {
+                originalInput.sh = false;
             }
             
             // Forward input to the FlyEntityController
             this.currentFlyEntity.controller.processFlyMovement(
                 this.currentFlyEntity,
-                originalInput,
+                originalInput, // Use originalInput which we modified above
                 cameraOrientation,
                 deltaTimeMs
             );
@@ -168,6 +205,11 @@ export class ObbyPlayerController extends DefaultPlayerEntityController {
             // Update mouse state even in fly mode
             this.lastMouseState = { ml: originalInput.ml, mr: originalInput.mr };
             return;
+        }
+        
+        // For mobile users in building mode but NOT flying, disable shift to prevent sprint conflicts
+        if (isBuilding && m && !playerEntity.isFlying) {
+            input.sh = false; // Disable sprint when building on mobile (but not when flying)
         }
         
         // Check if player is on ice, sand, conveyor, wheel, or climbing using the block behavior system

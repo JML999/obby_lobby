@@ -22,6 +22,7 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
     public currentFlyEntity: any = null; // FlyEntity reference
     
     private hasShownBuildTutorialThisSession: boolean = false; // Track tutorial shown this session
+    private lastExitKeyState: boolean = false; // Track exit key state to prevent key repeat
     
     constructor(player: Player, world: World, controller: ObbyPlayerController) {
         super({
@@ -197,8 +198,20 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
                 if (hotbarSlot >= 1 && hotbarSlot <= 9) {
                 }
                 break;
+            case 'mobileFlyDown':
+                this.handleMobileFlyDown(player, data);
+                break;
             default:
                 console.warn(`[ObbyPlayerEntity] Unknown UI event type: ${data.type}`);
+        }
+    }
+
+    private handleMobileFlyDown(player: Player, data: any): void {
+        console.log(`[ObbyPlayerEntity] Mobile fly down:`, data.active);
+        // Get the player controller and forward the message
+        const controller = this.controller as ObbyPlayerController;
+        if (controller && controller.handleMobileFlyDown) {
+            controller.handleMobileFlyDown(this, data.active);
         }
     }
 
@@ -671,7 +684,20 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
         // This tick handler can be used for other entity-specific logic if needed
         if (!this.world || !this.player?.input) return;
         
-        // Any additional entity-specific input handling can go here
+        // Check for play mode exit keys (Q or Escape)
+        const input = this.player.input;
+        if ((input.q || input.escape) && !this.lastExitKeyState) {
+            // Check if player is currently in a play session
+            const { ObbyPlayManager } = require('./ObbyPlayManager');
+            const playManager = ObbyPlayManager.getInstance();
+            if (playManager.isPlayerPlaying(this.player.id)) {
+                console.log(`[ObbyPlayerEntity] Exit key pressed by playing player ${this.player.id}`);
+                playManager.forceQuitPlayer(this.player.id);
+            }
+        }
+        
+        // Track key state to prevent key repeat
+        this.lastExitKeyState = input.q || input.escape;
     }
 
     // Public methods for external access

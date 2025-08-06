@@ -21,6 +21,11 @@ export class ObbyLevelController {
     private playerEntity: ObbyPlayerEntity | null = null;
     private lastValidPosition: Vector3Like | null = null;
     
+    // Checkpoint anti-spam protection
+    private lastCheckpointPosition: Vector3Like | null = null;
+    private lastCheckpointTime: number = 0;
+    private checkpointCooldown: number = 2000; // 2 seconds between checkpoint saves
+    
     constructor(world: World, plotId: string, playManager: IObbyPlayManager) {
         this.world = world;
         this.plotId = plotId;
@@ -155,6 +160,9 @@ export class ObbyLevelController {
     private continueStartPlaying(): void {
         if (!this.playerEntity || !this.currentPlayer) return;
         
+        // Reset checkpoints to ensure clean state
+        this.resetCheckpoints();
+        
         // Set initial checkpoint at start position
         if (this.startPosition) {
             this.lastValidPosition = { ...this.startPosition };
@@ -256,8 +264,25 @@ export class ObbyLevelController {
             }
             // Check if player hit a start block (respawn checkpoint)
             else if (blockId === 100) {
-                this.setPlayerCheckpoint({ x: checkPos.x + 0.5, y: checkPos.y + 1.8, z: checkPos.z + 0.5 });
-                console.log(`[ObbyLevelController] Checkpoint updated at start block (centered)`);
+                const checkpointPos = { x: checkPos.x + 0.5, y: checkPos.y + 1.8, z: checkPos.z + 0.5 };
+                if (this.shouldSetCheckpoint(checkpointPos)) {
+                    this.setPlayerCheckpoint(checkpointPos);
+                    console.log(`[ObbyLevelController] Checkpoint updated at start block (centered)`);
+                }
+                return;
+            }
+            // Check if player hit a checkpoint block
+            else if (blockId === 102) {
+                const checkpointPos = { x: checkPos.x + 0.5, y: checkPos.y + 1.8, z: checkPos.z + 0.5 };
+                if (this.shouldSetCheckpoint(checkpointPos)) {
+                    this.setPlayerCheckpoint(checkpointPos);
+                    this.world.chatManager.sendPlayerMessage(
+                        this.currentPlayer!,
+                        '🚩 Checkpoint saved!',
+                        '00FF00'
+                    );
+                    console.log(`[ObbyLevelController] Checkpoint updated at checkpoint block (centered)`);
+                }
                 return;
             }
             // Check if player hit a dangerous block (lava, etc.)
@@ -315,6 +340,30 @@ export class ObbyLevelController {
     }
 
     /**
+     * Check if we should set a checkpoint (anti-spam protection)
+     */
+    private shouldSetCheckpoint(position: Vector3Like): boolean {
+        const currentTime = Date.now();
+        
+        // Check if we're on cooldown
+        if (currentTime - this.lastCheckpointTime < this.checkpointCooldown) {
+            console.log(`[ObbyLevelController] Checkpoint on cooldown, ${this.checkpointCooldown - (currentTime - this.lastCheckpointTime)}ms remaining`);
+            return false;
+        }
+        
+        // Check if this is the same position as the last checkpoint
+        if (this.lastCheckpointPosition && 
+            Math.abs(this.lastCheckpointPosition.x - position.x) < 0.1 &&
+            Math.abs(this.lastCheckpointPosition.y - position.y) < 0.1 &&
+            Math.abs(this.lastCheckpointPosition.z - position.z) < 0.1) {
+            console.log(`[ObbyLevelController] Checkpoint position unchanged, skipping`);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
      * Set a checkpoint position for the player
      */
     private setPlayerCheckpoint(position: Vector3Like): void {
@@ -325,8 +374,10 @@ export class ObbyLevelController {
             (controller as any).setCheckpoint(position);
         }
 
-        // Update our internal checkpoint
+        // Update our internal checkpoint and anti-spam tracking
         this.lastValidPosition = { ...position };
+        this.lastCheckpointPosition = { ...position };
+        this.lastCheckpointTime = Date.now();
     }
 
     /**
@@ -380,12 +431,45 @@ export class ObbyLevelController {
     }
 
     /**
+     * Reset all checkpoints to initial state
+     */
+    public resetCheckpoints(): void {
+        console.log(`[ObbyLevelController] Resetting checkpoints for plot ${this.plotId}`);
+        
+        // Reset to start position if available
+        if (this.startPosition) {
+            this.lastValidPosition = { ...this.startPosition };
+        } else {
+            this.lastValidPosition = null;
+        }
+        
+        // Clear anti-spam tracking
+        this.lastCheckpointPosition = null;
+        this.lastCheckpointTime = 0;
+        
+        // Clear checkpoint in player controller
+        if (this.playerEntity) {
+            const controller = this.playerEntity.controller;
+            if (controller && 'clearCheckpoint' in controller) {
+                (controller as any).clearCheckpoint();
+            }
+            // Also set start position as new checkpoint if available
+            if (this.startPosition && controller && 'setCheckpoint' in controller) {
+                (controller as any).setCheckpoint(this.startPosition);
+            }
+        }
+    }
+
+    /**
      * Cleanup the level controller
      */
     public cleanup(): void {
         console.log(`[ObbyLevelController] Cleaning up level for plot ${this.plotId}`);
         
         this.isActive = false;
+        
+        // Reset checkpoints on cleanup
+        this.resetCheckpoints();
         
         // Remove event listeners only if player entity still exists
         if (this.playerEntity && this.playerEntity.isSpawned) {

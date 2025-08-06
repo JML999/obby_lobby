@@ -50,6 +50,14 @@ export class PlotSaveManager {
   private obstacleCollisionManager: ObstacleCollisionManager;
   private obstaclePlacementManager: ObstaclePlacementManager;
   
+  // Directional block mapping for 180° rotation (plot side transformation)
+  private static readonly DIRECTIONAL_BLOCK_FLIP_MAP: { [key: number]: number } = {
+    104: 105, // conveyor-z- → conveyor-z+ (South → North)
+    105: 104, // conveyor-z+ → conveyor-z- (North → South)  
+    109: 110, // conveyor-x- → conveyor-x+ (West → East)
+    110: 109  // conveyor-x+ → conveyor-x- (East → West)
+  };
+  
   // In-memory cache of obby data per player (world-aware)
   private playerObbyCache = new Map<string, PlayerObbyData>();
   
@@ -94,6 +102,19 @@ export class PlotSaveManager {
     const plotIndexStr = plotId.split('_')[1] ?? '0';
     const plotIndex = parseInt(plotIndexStr);
     return isNaN(plotIndex) ? 0 : plotIndex;
+  }
+
+  /**
+   * Transform directional block IDs when loading from one side to the other
+   * This flips directional blocks (conveyor belts) to maintain proper orientation after 180° rotation
+   */
+  private transformDirectionalBlockId(blockTypeId: number): number {
+    const flippedId = PlotSaveManager.DIRECTIONAL_BLOCK_FLIP_MAP[blockTypeId];
+    if (flippedId !== undefined) {
+      console.log(`[PlotSaveManager] 🔄 Transforming directional block: ${blockTypeId} → ${flippedId}`);
+      return flippedId;
+    }
+    return blockTypeId; // Not a directional block, return unchanged
   }
 
   /**
@@ -168,6 +189,19 @@ export class PlotSaveManager {
     const testPos = { x: 5, y: 2, z: 3 };
     const transformed = this.transformCoordinatesForDifferentSide(testPos, testCenter);
     console.log(`[PlotSaveManager] Test transformation: [${testPos.x}, ${testPos.y}, ${testPos.z}] → [${transformed.x}, ${transformed.y}, ${transformed.z}]`);
+    
+    // Test directional block transformation
+    const directionalBlocks = [104, 105, 109, 110];
+    console.log('[PlotSaveManager] Testing directional block transformations:');
+    for (const blockId of directionalBlocks) {
+      const transformedId = this.transformDirectionalBlockId(blockId);
+      console.log(`[PlotSaveManager] Block ${blockId} → ${transformedId}`);
+    }
+    
+    // Test non-directional block (should remain unchanged)
+    const normalBlock = 1;
+    const unchangedId = this.transformDirectionalBlockId(normalBlock);
+    console.log(`[PlotSaveManager] Normal block ${normalBlock} → ${unchangedId} (should be unchanged)`);
     
     // Test backward compatibility
     const leftCenter = { x: -50, y: 1, z: 0 };
@@ -633,10 +667,15 @@ export class PlotSaveManager {
           console.log(`[PlotSaveManager] Skipping mechanical block ID ${savedBlock.blockTypeId} at [${savedBlock.relativePos.x}, ${savedBlock.relativePos.y}, ${savedBlock.relativePos.z}] - handled as entity instead`);
           continue;
         }
-        // Apply transformation if needed
+        // Apply coordinate transformation if needed
         const transformedRelativePos = needsTransformation 
           ? this.transformCoordinatesForDifferentSide(savedBlock.relativePos, newPlotCenter, plotId)
           : savedBlock.relativePos;
+        
+        // Apply directional block transformation if needed
+        const transformedBlockTypeId = needsTransformation 
+          ? this.transformDirectionalBlockId(savedBlock.blockTypeId)
+          : savedBlock.blockTypeId;
         
         const worldPos = {
           x: newPlotCenter.x + transformedRelativePos.x,
@@ -651,40 +690,37 @@ export class PlotSaveManager {
           continue;
         }
         
-        // Simulate manual block placement - place block directly in world
+        // Simulate manual block placement - place transformed block directly in world
         const coordinate = {
           x: Math.floor(worldPos.x),
           y: Math.floor(worldPos.y),
           z: Math.floor(worldPos.z)
         };
         
-        playerWorld.chunkLattice.setBlock(coordinate, savedBlock.blockTypeId);
+        playerWorld.chunkLattice.setBlock(coordinate, transformedBlockTypeId);
         
-        // Track the loaded block in BOTH systems - for clearing AND for saving
-        this.trackUserPlacedBlock(playerWorld, coordinate, savedBlock.blockTypeId, player.id, plotId);
-        this.trackBlockPlacement(plotId, coordinate, savedBlock.blockTypeId, playerWorld);
+        // Track the loaded block in BOTH systems - for clearing AND for saving (use transformed ID)
+        this.trackUserPlacedBlock(playerWorld, coordinate, transformedBlockTypeId, player.id, plotId);
+        this.trackBlockPlacement(plotId, coordinate, transformedBlockTypeId, playerWorld);
         
         // Verify the block was placed
         const placedBlockId = playerWorld.chunkLattice.getBlockId(coordinate);
-        if (placedBlockId === savedBlock.blockTypeId) {
+        if (placedBlockId === transformedBlockTypeId) {
+          // Log successful directional block transformation if it occurred
+          if (transformedBlockTypeId !== savedBlock.blockTypeId) {
+            console.log(`[PlotSaveManager] ✅ Successfully placed directional block: ${savedBlock.blockTypeId} → ${transformedBlockTypeId} at [${coordinate.x}, ${coordinate.y}, ${coordinate.z}]`);
+          }
         } else {
-          console.warn(`[PlotSaveManager] ⚠️ Block verification failed - expected: ${savedBlock.blockTypeId}, actual: ${placedBlockId}`);
+          console.warn(`[PlotSaveManager] ⚠️ Block verification failed - expected: ${transformedBlockTypeId}, actual: ${placedBlockId}`);
         }
       }
 
-      // Load obstacles using relative positions (including mechanical entities)
+      // PHASE 1: Extract and batch load mechanical entities (same approach as pool maps)
+      const mechanicalEntities: any[] = [];
+      const regularObstacles: any[] = [];
+      
+      // Separate mechanical entities from regular obstacles
       for (const savedObstacle of plotData.obstacles) {
-        // Apply transformation if needed
-        const transformedRelativePos = needsTransformation 
-          ? this.transformCoordinatesForDifferentSide(savedObstacle.relativePos, newPlotCenter, plotId)
-          : savedObstacle.relativePos;
-        
-        const worldPos = {
-          x: newPlotCenter.x + transformedRelativePos.x,
-          y: newPlotCenter.y + transformedRelativePos.y,
-          z: newPlotCenter.z + transformedRelativePos.z
-        };
-        
         // Check if this is a mechanical entity (handle both old and new formats)
         const isMechanicalEntity = (
           (savedObstacle.type === 'mechanical' && savedObstacle.size === 'custom' && savedObstacle.config) ||
@@ -693,6 +729,17 @@ export class PlotSaveManager {
         );
         
         if (isMechanicalEntity) {
+          // Apply transformation if needed
+          const transformedRelativePos = needsTransformation 
+            ? this.transformCoordinatesForDifferentSide(savedObstacle.relativePos, newPlotCenter, plotId)
+            : savedObstacle.relativePos;
+          
+          const worldPos = {
+            x: newPlotCenter.x + transformedRelativePos.x,
+            y: newPlotCenter.y + transformedRelativePos.y,
+            z: newPlotCenter.z + transformedRelativePos.z
+          };
+          
           // Normalize config for backward compatibility
           let normalizedConfig = savedObstacle.config || {};
           
@@ -706,34 +753,69 @@ export class PlotSaveManager {
             normalizedConfig.cost = normalizedConfig.cost || 2;
           }
           
-          // Create mechanical entity AND register with ObstacleCollisionManager in one step
-          const success = this.createAndRegisterMechanicalEntity(
-            plotId,
-            savedObstacle.id,
-            worldPos,
-            normalizedConfig,
-            player.world || this.world!
-          );
+          // MIGRATION: Check if this is an old save with integer positions (needs 0.5 offset)
+          let migratedWorldPos = worldPos;
+          if (worldPos.x % 1 === 0 && worldPos.y % 1 === 0 && worldPos.z % 1 === 0) {
+            // Old save with chunk lattice coordinates - add 0.5 offset to restore proper entity positioning
+            migratedWorldPos = {
+              x: worldPos.x + 0.5,
+              y: worldPos.y + 0.5,
+              z: worldPos.z + 0.5
+            };
+            console.log(`[PlotSaveManager] 🔧 Migrated old save position: (${worldPos.x}, ${worldPos.y}, ${worldPos.z}) → (${migratedWorldPos.x}, ${migratedWorldPos.y}, ${migratedWorldPos.z})`);
+          }
+
+          // Prepare mechanical entity data for batch loading (same format as pool maps)
+          mechanicalEntities.push({
+            id: savedObstacle.id || `${normalizedConfig.entityType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            position: migratedWorldPos,  // Use migrated position
+            type: 'mechanical',
+            size: 'custom',
+            config: normalizedConfig,
+            cost: normalizedConfig.cost || 2
+          });
           
-          if (success) {
-            console.log(`[PlotSaveManager] Loaded and registered mechanical entity ${normalizedConfig.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
-          } else {
-            console.warn(`[PlotSaveManager] Failed to load mechanical entity ${normalizedConfig.entityType} at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
-          }
+          console.log(`[PlotSaveManager] Prepared mechanical entity ${normalizedConfig.entityType} for batch loading at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
         } else {
-          // Handle regular obstacles
-          const obstacleId = `${savedObstacle.type}_${savedObstacle.size}`;
-          const success = this.obstaclePlacementManager.placeObstacle(
-            player,
-            obstacleId,
-            worldPos,
-            plotId
-          );
-          if (!success) {
-            console.warn(`[PlotSaveManager] Failed to load obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
-          } else {
-            console.log(`[PlotSaveManager] Loaded obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}] (relative [${savedObstacle.relativePos.x}, ${savedObstacle.relativePos.y}, ${savedObstacle.relativePos.z}])`);
-          }
+          // Store regular obstacles for later processing
+          regularObstacles.push(savedObstacle);
+        }
+      }
+      
+      // Batch load mechanical entities using MechanicalBlockManager (same as pool maps)
+      if (mechanicalEntities.length > 0) {
+        const { MechanicalBlockManager } = await import('./MechanicalBlockManager');
+        const mechanicalManager = MechanicalBlockManager.getInstance();
+        mechanicalManager.initializeWorld(player.world || this.world!);
+        mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, player.world || this.world!);
+        console.log(`[PlotSaveManager] Batch loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} using MechanicalBlockManager`);
+      }
+
+      // PHASE 2: Load regular obstacles using relative positions
+      for (const savedObstacle of regularObstacles) {
+        // Apply transformation if needed
+        const transformedRelativePos = needsTransformation 
+          ? this.transformCoordinatesForDifferentSide(savedObstacle.relativePos, newPlotCenter, plotId)
+          : savedObstacle.relativePos;
+        
+        const worldPos = {
+          x: newPlotCenter.x + transformedRelativePos.x,
+          y: newPlotCenter.y + transformedRelativePos.y,
+          z: newPlotCenter.z + transformedRelativePos.z
+        };
+        
+        // Handle regular obstacles
+        const obstacleId = `${savedObstacle.type}_${savedObstacle.size}`;
+        const success = this.obstaclePlacementManager.placeObstacle(
+          player,
+          obstacleId,
+          worldPos,
+          plotId
+        );
+        if (!success) {
+          console.warn(`[PlotSaveManager] Failed to load obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}]`);
+        } else {
+          console.log(`[PlotSaveManager] Loaded obstacle ${savedObstacle.type} (${savedObstacle.size}) at world pos [${worldPos.x}, ${worldPos.y}, ${worldPos.z}] (relative [${savedObstacle.relativePos.x}, ${savedObstacle.relativePos.y}, ${savedObstacle.relativePos.z}])`);
         }
       }
 
@@ -748,11 +830,12 @@ export class PlotSaveManager {
       }
 
       // Count mechanical entities for the message
-      const mechanicalCount = plotData.obstacles.filter(obs => obs.type === 'mechanical').length;
+      const mechanicalCount = mechanicalEntities.length;
+      const regularObstacleCount = regularObstacles.length;
       
       this.world.chatManager.sendPlayerMessage(
         player,
-        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (including ${mechanicalCount} mechanical entities)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
+        `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (${mechanicalCount} mechanical entities, ${regularObstacleCount} regular obstacles)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
         '00FF00'
       );
 

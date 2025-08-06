@@ -34,7 +34,7 @@ export class DefaultMapLoader {
     private readonly POOL_MAPS_PATH = 'assets/default-maps/pool';
     private readonly FEATURED_MAPS_PATH = 'assets/default-maps/featured';
     private readonly STARTER_MAPS_PATH = 'assets/default-maps/starter';
-    private readonly MAX_POOL_MAPS = 10; // You have pool-1.json to pool-10.json
+    private readonly MAX_POOL_MAPS = 15; // You have pool-1.json to pool-15.json
 
     private constructor() {}
 

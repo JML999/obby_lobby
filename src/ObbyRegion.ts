@@ -131,23 +131,23 @@ export default class ObbyRegion extends GameRegion {
 
   protected handlePlayerJoin(player: Player): void {
     console.log(`[ObbyRegion] Player ${player.id} joined region ${this.id}`);
-    
+
     // Variable to store login result for later use
     let loginResult: { xpGained: number; message: string; isNewDay: boolean } | null = null;
-    
+
     // Load player's saved level data asynchronously without blocking spawn
     console.log(`[ObbyRegion] 🔄 Starting loadPlayerData for ${player.id}`);
     this.simpleLevelingSystem.loadPlayerData(player).then(() => {
       console.log(`[ObbyRegion] ✅ loadPlayerData completed for ${player.id}`);
-      
+
       // Grant daily login XP bonus and get welcome message data
       loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
       console.log(`[ObbyRegion] Processed login bonus for player ${player.id}:`, loginResult);
-      
+
       // Send XP UI update with loaded data
       this.simpleLevelingSystem.sendLevelUIUpdate(player);
       console.log(`[ObbyRegion] Sent XP UI update with loaded data to player ${player.id}`);
-      
+
       // Show daily login bonus if applicable (moved here to ensure loginResult is available)
       if (loginResult.xpGained > 0) {
         setTimeout(() => {
@@ -170,43 +170,43 @@ export default class ObbyRegion extends GameRegion {
       }
     }).catch(error => {
       console.error(`[ObbyRegion] ❌ Error loading player data for ${player.id}:`, error);
-      
+
       // Fallback: still process login and send UI update with defaults
       loginResult = this.simpleLevelingSystem.onPlayerLogin(player.id, player);
       this.simpleLevelingSystem.sendLevelUIUpdate(player);
     });
-    
+
     // Send welcome toast messages
     setTimeout(() => {
       try {
         player.ui.sendData({
           type: 'achievementPopup',
           title: '🏠 Welcome to OBBY LOBBY!',
-          bonus: 'Walk into your plot entrance to build, or explore other plots to play!',
-          duration: 3000
+          bonus: 'Walk into your plot to build, or explore others to play!',
+          duration: 5000
         });
         console.log(`[ObbyRegion] Sent welcome message to player ${player.id}`);
       } catch (error) {
         console.error(`[ObbyRegion] Failed to send welcome message to player ${player.id}:`, error);
       }
     }, 1000); // 1 second after spawn
-    
+
     // Start traffic system if this is the first player
     if (this.getPlayerCount() === 1) {
       // this.trafficManager?.start(); // Disabled for production
       console.log(`[ObbyRegion] Traffic system restarted for region ${this.id}`);
     }
-    
+
     // Get player's assigned plot (should already be assigned by GameManager)
     const playerPlot = this.plotManager.getPlayerPlot(player.id);
     if (!playerPlot) {
       console.error(`[ObbyRegion] Player ${player.id} joined region but has no assigned plot!`);
       return;
     }
-    
+
     const displayNumber = this.getDisplayNumber(playerPlot.plotIndex);
     console.log(`[ObbyRegion] Player ${player.id} has plot ${displayNumber} in this region`);
-    
+
     // Choose a random spawn position in the parking lot
     const parkingLotSpawns = [
         { x: 0, y: 30, z: 158 },
@@ -227,7 +227,7 @@ export default class ObbyRegion extends GameRegion {
     const playerEntity = new ObbyPlayerEntity(player, this.world, controller);
     playerEntity.spawn(this.world, spawnPos);
     console.log(`[ObbyRegion] Player entity spawned for ${player.id} in region ${this.id}`);
-    
+
     // Debug: Check if player entity is registered immediately after spawn
     setTimeout(() => {
       const allPlayerEntities = this.world.entityManager.getAllPlayerEntities();
@@ -240,7 +240,7 @@ export default class ObbyRegion extends GameRegion {
     // Auto-load player's saved obby if they have one (with delay to ensure world is fully initialized)
     setTimeout(() => {
       this.autoLoadPlayerObby(player, playerPlot.plotIndex);
-    }, 10000); // 2 seconds should be sufficient
+    }, 10000); // 10 seconds should be sufficient
 
     // Send detailed chat messages after a delay (welcome message is now handled in ObbyPlayerEntity.onUIReady)
     setTimeout(() => {
@@ -393,7 +393,7 @@ export default class ObbyRegion extends GameRegion {
       
       // Clear physical blocks AND metadata when new player claims the plot
       await this.plotSaveManager.clearPlotPhysicalContent(plotId, player.world);
-      
+
       // COMPREHENSIVE CLEANUP: Clear ALL entities within plot boundaries from the actual world
       // This handles entities that exist in the scene but aren't properly tracked
       try {
@@ -402,46 +402,46 @@ export default class ObbyRegion extends GameRegion {
           const clearedCount = this.clearAllEntitiesInBoundaries(plotBoundaries);
           console.log(`[ObbyRegion] Cleared ${clearedCount} entities from world within plot boundaries`);
         }
-        
+
         // Also clear the registry as backup
         this.obstacleCollisionManager.clearPlotObstacles(plotId);
         console.log(`[ObbyRegion] Registry cleanup completed for ${plotId}`);
       } catch (error) {
         console.error(`[ObbyRegion] Error during comprehensive entity cleanup:`, error);
       }
-      
+
       // Also clear metadata tracking since this is a new player claiming the plot
       this.plotSaveManager.clearTrackedBlocks(plotId, player.world);
-      
+
       // Clear user-placed block tracking for this plot
       if (player.world) {
         const userPlacedBlocks = this.plotSaveManager.getUserPlacedBlocksInPlot(player.world, plotId);
         console.log(`[ObbyRegion] Found ${userPlacedBlocks.length} user-placed blocks to clear for plot ${plotId}`);
-        
+
         // Clear each user-placed block from tracking
         const userBlocks = this.plotSaveManager['getUserPlacedSet'](player.world);
         const metadata = this.plotSaveManager['getUserBlockMetadata'](player.world);
-      
-              for (const block of userPlacedBlocks) {
+
+        for (const block of userPlacedBlocks) {
           const key = `${block.position.x},${block.position.y},${block.position.z}`;
           userBlocks.delete(key);
           metadata.delete(key);
         }
-        
+
         console.log(`[ObbyRegion] Cleared ${userPlacedBlocks.length} user-placed blocks from tracking for plot ${plotId}`);
       }
       
       // Check if player has saved obby data
       const hasSavedObby = await this.plotSaveManager.hasPlayerObby(player);
-      
+
       const displayNumber = this.getDisplayNumber(plotIndex);
-      
+
       if (hasSavedObby) {
         console.log(`[ObbyRegion] Player ${player.id} has saved obby data, loading it...`);
-        
+
         // Load the player's saved obby onto their assigned plot
         await this.plotSaveManager.loadPlayerObby(player, plotId);
-        
+
         // Use toast for positive plot loading feedback
         try {
           player.ui.sendData({
@@ -456,17 +456,17 @@ export default class ObbyRegion extends GameRegion {
           this.world.chatManager.sendPlayerMessage(player, '🔄 Your saved obby has been loaded!', '00FF00');
           console.error(`[ObbyRegion] Failed to send plot loaded toast:`, error);
         }
-        
+
         // Ensure XP UI is shown after plot is loaded
         setTimeout(() => {
           this.simpleLevelingSystem.sendLevelUIUpdate(player);
           console.log(`[ObbyRegion] Sent XP UI update after plot loaded for player ${player.id}`);
         }, 500);
-        
+
         console.log(`[ObbyRegion] Successfully auto-loaded obby for player ${player.id} onto plot ${plotId}`);
       } else {
         console.log(`[ObbyRegion] Player ${player.id} has no saved obby data - plot is ready for building`);
-        
+
         // Use toast for positive plot ready feedback
         try {
           player.ui.sendData({
@@ -481,7 +481,7 @@ export default class ObbyRegion extends GameRegion {
           this.world.chatManager.sendPlayerMessage(player, '🏠 Your plot is ready for building!', '00FF00');
           console.error(`[ObbyRegion] Failed to send plot ready toast:`, error);
         }
-        
+
         // Ensure XP UI is shown after plot is ready
         setTimeout(() => {
           this.simpleLevelingSystem.sendLevelUIUpdate(player);
@@ -494,41 +494,49 @@ export default class ObbyRegion extends GameRegion {
     }
   }
 
+  private sendDetailedInstructions(player: Player, plotNumber: number): void {
+    this.world.chatManager.sendPlayerMessage(player, `Welcome! You have been assigned to plot ${plotNumber}.`, '00FF00');
+    this.world.chatManager.sendPlayerMessage(player, '🏠 You can build in your assigned plot!', 'FFD700');
+    this.world.chatManager.sendPlayerMessage(player, '🔨 Walk into your plot entrance to see build options', 'FFD700');
+    this.world.chatManager.sendPlayerMessage(player, 'Or walk to other plots to play!', 'FFD700');
+
+  }
+
   /**
    * Clear ALL entities (mechanical, obstacles, etc.) within plot boundaries from the world
    */
   private clearAllEntitiesInBoundaries(boundaries: any): number {
     let clearedCount = 0;
-    
+
     // Get all entities from the world
     const allEntities = this.world.entityManager.getAllEntities();
-    
+
     console.log(`[ObbyRegion] Scanning ${allEntities.length} world entities for cleanup`);
-    
+
     for (const entity of allEntities) {
       // Skip player entities
       if (entity.constructor.name.includes('Player')) {
         continue;
       }
-      
+
       // Check if entity has a position and is within plot boundaries
-      if (entity.position && 
+      if (entity.position &&
           entity.position.x >= boundaries.minX && entity.position.x <= boundaries.maxX &&
           entity.position.y >= boundaries.minY && entity.position.y <= boundaries.maxY &&
           entity.position.z >= boundaries.minZ && entity.position.z <= boundaries.maxZ) {
-        
+
         // Check if this looks like a mechanical entity or obstacle
         const entityName = entity.constructor.name;
-        if (entityName.includes('Mechanical') || 
+        if (entityName.includes('Mechanical') ||
             entityName.includes('Configurable') ||
             entityName.includes('Bounce') ||
             entityName.includes('Rotating') ||
             entityName.includes('Seesaw') ||
             entity.entityType === 'mechanical' ||
             (entity as any).isMechanicalEntity) {
-          
+
           console.log(`[ObbyRegion] Despawning ${entityName} entity at (${entity.position.x}, ${entity.position.y}, ${entity.position.z})`);
-          
+
           try {
             entity.despawn();
             clearedCount++;
@@ -538,15 +546,7 @@ export default class ObbyRegion extends GameRegion {
         }
       }
     }
-    
+
     return clearedCount;
-  }
-
-  private sendDetailedInstructions(player: Player, plotNumber: number): void {
-    this.world.chatManager.sendPlayerMessage(player, `Welcome! You have been assigned to plot ${plotNumber}.`, '00FF00');
-    this.world.chatManager.sendPlayerMessage(player, '🏠 You can build in your assigned plot!', 'FFD700');
-    this.world.chatManager.sendPlayerMessage(player, '🔨 Walk into your plot entrance to see build options', 'FFD700');
-    this.world.chatManager.sendPlayerMessage(player, 'Or walk to other plots to play!', 'FFD700');
-
   }
 } 

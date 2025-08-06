@@ -104,6 +104,9 @@ class BlockInventoryPanel {
             { id: 15, name: 'vines', textureUri: 'blocks/oak-planks-leafyerer.png', cost: 1, type: 'vines' },
             { id: 6, name: 'glass', textureUri: 'blocks/glass.png', cost: 3, type: 'glass' },
             
+            // Checkpoint block (5 points)
+            { id: 102, name: 'checkpoint', textureUri: 'blocks/emerald-block.png', cost: 5, type: 'checkpoint' },
+            
             // Mechanical blocks (5 points each)
             { id: 115, name: 'mechanical', textureUri: 'blocks/iron-ore.png', cost: 5, type: 'mechanical' }
         ];
@@ -899,12 +902,14 @@ class BlockInventoryPanel {
         const descriptions = {
             'start': 'The starting point for your obby course. Players spawn here when they begin or respawn.',
             'goal': 'The finish line! Players must reach this block to complete your obby course.',
+            'checkpoint': 'A checkpoint block. Players can respawn here if they fall after touching it.',
             'platform': 'A solid stone platform. The most basic building block for creating paths and structures.',
             'sand': 'A sandy platform with slightly different texture. Good for desert-themed sections.',
             'ice': 'A slippery ice block. Players will slide when walking on this surface, adding challenge.',
             'lava': 'A dangerous lava block. Players will be eliminated if they touch this hazard!',
             'vines': 'Climbable vines on wooden planks. Players can climb up these surfaces.',
-            'glass': 'Transparent glass blocks. Perfect for invisible platforms and advanced parkour tricks.'
+            'glass': 'Transparent glass blocks. Perfect for invisible platforms and advanced parkour tricks.',
+            'mechanical': 'Advanced mechanical block. Configure movement patterns and create dynamic obstacles.'
         };
         
         return descriptions[block.name] || 'A building block for your obby course.';
@@ -1564,7 +1569,7 @@ class BlockInventoryPanel {
             
             .mechanical-block-icon:hover {
                 transform: scale(1.05);
-            }"
+            }
 
             .block-symbol {
                 font-size: 14px;
@@ -1785,4 +1790,4 @@ class BlockInventoryPanel {
 }
 
 // Make it globally available as a singleton instance
-window.BlockInventoryPanel = new BlockInventoryPanel(); 
+window.BlockInventoryPanel = new BlockInventoryPanel();

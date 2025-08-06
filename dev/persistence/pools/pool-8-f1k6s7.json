@@ -3,7 +3,7 @@
   "displayName": "Pool 8-f1k6s7",
   "creator": "System",
   "version": "1.0",
-  "lastModified": 1754159458145,
+  "lastModified": 1754430825655,
   "scoreboard": [
     {
       "playerId": "player-1",
@@ -20,11 +20,11 @@
     {
       "playerId": "player-1",
       "playerName": "player-1",
-      "completionTime": 34253,
-      "timestamp": 1754159458142
+      "completionTime": 8883,
+      "timestamp": 1754159190847
     }
   ],
   "metadata": {
-    "playCount": 3
+    "playCount": 6
   }
 }

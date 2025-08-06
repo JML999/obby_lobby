@@ -43,6 +43,9 @@ class MechanicalConfigPanel {
         }
         this.stopPreview();
         
+        // Show all UI again
+        this.showAllOtherUI();
+        
         // Re-enable player input and lock cursor (like inventory does)
         if (window.hytopia && window.hytopia.sendData) {
             window.hytopia.sendData({
@@ -58,6 +61,9 @@ class MechanicalConfigPanel {
         }
         // DON'T call stopPreview() - keep the entity for confirmation
         
+        // Show all UI again
+        this.showAllOtherUI();
+        
         // Re-enable player input and lock cursor (like inventory does)
         if (window.hytopia && window.hytopia.sendData) {
             window.hytopia.sendData({
@@ -67,80 +73,101 @@ class MechanicalConfigPanel {
     }
 
     createPanel() {
-        // Create main panel
+        // Create main panel with side tabs design
         this.panel = document.createElement('div');
         this.panel.className = 'mechanical-config-panel';
         this.panel.innerHTML = `
-            <div class="config-header">
-                <h2>🔧 Configure Mechanical Block</h2>
-                <div class="position-info">Position: ${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z}</div>
-            </div>
-
-            <div class="config-content">
-                <div class="config-section">
-                    <h3>Type Selection</h3>
-                    <div class="type-buttons">
-                        <button class="type-btn ${this.currentConfig.type === 'elevator' ? 'active' : ''}" data-type="elevator">
-                            🔼 Elevator
-                        </button>
-                        <button class="type-btn ${this.currentConfig.type === 'side-to-side' ? 'active' : ''}" data-type="side-to-side">
-                            ↔️ Left-Right
-                        </button>
-                        <button class="type-btn ${this.currentConfig.type === 'carousel' ? 'active' : ''}" data-type="carousel">
-                            🎠 Carousel
-                        </button>
-                        <button class="type-btn ${this.currentConfig.type === 'front-to-back' ? 'active' : ''}" data-type="front-to-back">
-                            ↕️ Front-Back
-                        </button>
-                    </div>
-                    <div class="static-info">
-                        <small>💡 No selection = Static block</small>
-                    </div>
+            <!-- Side Tab Navigation -->
+            <div class="side-tabs">
+                <div class="side-tab active" data-tab="type">
+                    <div class="tab-icon">⚙️</div>
+                    <div class="tab-label">Type</div>
                 </div>
-
-                <div class="config-section">
-                    <h3>Size Configuration</h3>
-                    <div class="size-controls">
-                        <div class="size-input-group">
-                            <label>X (Width): <span class="size-value">${this.currentConfig.sizeX}</span></label>
-                            <input type="range" class="size-slider" data-axis="sizeX" min="1" max="5" value="${this.currentConfig.sizeX}">
-                        </div>
-                        <div class="size-input-group">
-                            <label>Y (Height): <span class="size-value">${this.currentConfig.sizeY}</span></label>
-                            <input type="range" class="size-slider" data-axis="sizeY" min="1" max="5" value="${this.currentConfig.sizeY}">
-                        </div>
-                        <div class="size-input-group">
-                            <label>Z (Depth): <span class="size-value">${this.currentConfig.sizeZ}</span></label>
-                            <input type="range" class="size-slider" data-axis="sizeZ" min="1" max="5" value="${this.currentConfig.sizeZ}">
-                        </div>
-                    </div>
+                <div class="side-tab" data-tab="size">
+                    <div class="tab-icon">📐</div>
+                    <div class="tab-label">Size</div>
                 </div>
-
-                <div class="config-section">
-                    <h3>Movement Configuration</h3>
-                    <div class="movement-controls">
-                        <div class="movement-input-group">
-                            <label>Speed: <span class="movement-value">${this.currentConfig.speed.toFixed(1)}</span></label>
-                            <input type="range" class="movement-slider" data-param="speed" min="0.2" max="4.0" step="0.1" value="${this.currentConfig.speed}">
-                        </div>
-                        <div class="movement-input-group distance-control ${this.currentConfig.type === 'static' || this.currentConfig.type === 'carousel' ? 'hidden' : ''}">
-                            <label>Distance: <span class="movement-value">${this.currentConfig.distance}</span></label>
-                            <input type="range" class="movement-slider" data-param="distance" min="1" max="8" value="${this.currentConfig.distance}">
-                        </div>
-                    </div>
+                <div class="side-tab" data-tab="movement">
+                    <div class="tab-icon">🏃</div>
+                    <div class="tab-label">Move</div>
                 </div>
-
-                <div class="config-section">
-                    <div class="preview-info">
-                        <h3>🔄 Live Preview Active</h3>
-                        <p>Changes are applied in real-time</p>
-                    </div>
+                <div class="side-tab" data-tab="accept">
+                    <div class="tab-icon">✓</div>
+                    <div class="tab-label">OK</div>
+                </div>
+                <div class="side-tab" data-tab="cancel">
+                    <div class="tab-icon">✗</div>
+                    <div class="tab-label">Cancel</div>
                 </div>
             </div>
 
-            <div class="config-actions">
-                <button class="btn btn-success" id="confirmBtn">✅ Done</button>
-                <button class="btn btn-cancel" id="cancelBtn">❌ Cancel</button>
+            <!-- Tab Content Area -->
+            <div class="tab-content-area">
+                <!-- Type Tab -->
+                <div class="tab-content active" id="type-content">
+                    <div class="type-cycling">
+                        <div class="current-type-display">
+                            <div class="type-icon">${this.getTypeInfo(this.currentConfig.type).icon}</div>
+                            <div class="type-name">${this.getTypeInfo(this.currentConfig.type).name}</div>
+                        </div>
+                        <div class="type-controls">
+                            <button class="type-nav-btn" id="prev-type">◀</button>
+                            <button class="type-nav-btn" id="next-type">▶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Size Tab -->
+                <div class="tab-content" id="size-content">
+                    <div class="plus-minus-control">
+                        <div class="control-row">
+                            <span class="control-label">Width</span>
+                            <div class="pm-controls">
+                                <button class="pm-btn" data-axis="sizeX" data-action="minus">-</button>
+                                <span class="pm-value" id="sizeX-value">${this.currentConfig.sizeX}</span>
+                                <button class="pm-btn" data-axis="sizeX" data-action="plus">+</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span class="control-label">Height</span>
+                            <div class="pm-controls">
+                                <button class="pm-btn" data-axis="sizeY" data-action="minus">-</button>
+                                <span class="pm-value" id="sizeY-value">${this.currentConfig.sizeY}</span>
+                                <button class="pm-btn" data-axis="sizeY" data-action="plus">+</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span class="control-label">Depth</span>
+                            <div class="pm-controls">
+                                <button class="pm-btn" data-axis="sizeZ" data-action="minus">-</button>
+                                <span class="pm-value" id="sizeZ-value">${this.currentConfig.sizeZ}</span>
+                                <button class="pm-btn" data-axis="sizeZ" data-action="plus">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Movement Tab -->
+                <div class="tab-content" id="movement-content">
+                    <div class="plus-minus-control">
+                        <div class="control-row">
+                            <span class="control-label">Speed</span>
+                            <div class="pm-controls">
+                                <button class="pm-btn" data-param="speed" data-action="minus">-</button>
+                                <span class="pm-value" id="speed-value">${this.currentConfig.speed.toFixed(1)}</span>
+                                <button class="pm-btn" data-param="speed" data-action="plus">+</button>
+                            </div>
+                        </div>
+                        <div class="control-row distance-control ${this.currentConfig.type === 'static' || this.currentConfig.type === 'carousel' ? 'hidden' : ''}">
+                            <span class="control-label">Distance</span>
+                            <div class="pm-controls">
+                                <button class="pm-btn" data-param="distance" data-action="minus">-</button>
+                                <span class="pm-value" id="distance-value">${this.currentConfig.distance}</span>
+                                <button class="pm-btn" data-param="distance" data-action="plus">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -149,22 +176,241 @@ class MechanicalConfigPanel {
         style.textContent = `
             .mechanical-config-panel {
                 position: fixed;
-                left: 2.5%;
+                right: 0;
                 top: 25%;
-                width: 22.5%;
-                height: 50%;
-                background: rgba(18, 18, 27, 0.98);
-                border: 2px solid rgba(255, 255, 255, 0.2);
-                border-radius: 12px;
-                padding: 16px;
+                width: 300px;
+                height: 400px;
                 z-index: 10000;
                 color: white;
                 font-family: 'Inter', Arial, sans-serif;
-                backdrop-filter: blur(20px);
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
-                overflow-y: auto;
+                display: flex;
+                flex-direction: row-reverse;
+            }
+
+            /* Side Tabs - Small and constrained to right edge */
+            .side-tabs {
+                width: 50px;
+                background: none;
+                border: none;
                 display: flex;
                 flex-direction: column;
+                padding: 5px 0;
+                gap: 5px;
+            }
+
+            .side-tab {
+                width: 40px;
+                height: 40px;
+                background: rgba(60, 60, 60, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                color: rgba(255, 255, 255, 0.8);
+                border-radius: 6px;
+                touch-action: manipulation;
+            }
+
+            .side-tab:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+            }
+
+            .side-tab.active {
+                background: rgba(33, 150, 243, 0.8);
+                color: white;
+                border: 1px solid rgba(33, 150, 243, 1);
+            }
+
+            /* Special colors for accept/cancel tabs */
+            .side-tab[data-tab="accept"] {
+                background: rgba(34, 197, 94, 0.8);
+                border: 1px solid rgba(34, 197, 94, 1);
+                color: white;
+            }
+
+            .side-tab[data-tab="accept"]:hover {
+                background: rgba(34, 197, 94, 0.9);
+            }
+
+            .side-tab[data-tab="cancel"] {
+                background: rgba(239, 68, 68, 0.8);
+                border: 1px solid rgba(239, 68, 68, 1);
+                color: white;
+            }
+
+            .side-tab[data-tab="cancel"]:hover {
+                background: rgba(239, 68, 68, 0.9);
+            }
+
+            .tab-icon {
+                font-size: 16px;
+                margin-bottom: 2px;
+            }
+
+            .tab-label {
+                font-size: 8px;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            /* Tab Content Area */
+            .tab-content-area {
+                flex: 1;
+                background: none;
+                border-radius: 12px 0 0 12px;
+                padding: 20px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                transform: translateY(-100px); /* Move content up relative to tabs */
+            }
+
+            .tab-content {
+                display: none;
+                width: 100%;
+                height: 100%;
+            }
+
+            .tab-content.active {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Type Tab */
+            .type-cycling {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .current-type-display {
+                text-align: center;
+                padding: 15px;
+                background: none;
+                border-radius: 8px;
+                min-width: 120px;
+            }
+
+            .type-icon {
+                font-size: 48px;
+                margin-bottom: 8px;
+            }
+
+            .type-name {
+                font-size: 14px;
+                font-weight: bold;
+                color: rgba(255, 255, 255, 0.9);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .type-controls {
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+
+            .type-nav-btn {
+                width: 40px;
+                height: 40px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
+            }
+
+            .type-nav-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: scale(1.05);
+            }
+
+            /* Plus/Minus Controls */
+            .plus-minus-control {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .control-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 8px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                gap: 8px;
+            }
+
+            .control-row:last-child {
+                border-bottom: none;
+            }
+
+            .control-row.hidden {
+                display: none;
+            }
+
+            .control-label {
+                font-size: 12px;
+                font-weight: bold;
+                color: rgba(255, 255, 255, 0.9);
+                flex: 0 0 auto;
+                margin-right: 8px;
+            }
+
+            .pm-controls {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+            }
+
+            .pm-btn {
+                width: 28px;
+                height: 28px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
+            }
+
+            .pm-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: scale(1.05);
+            }
+
+            .pm-value {
+                min-width: 30px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: bold;
+                color: #4CAF50;
+                background: none;
+                border-radius: 4px;
+                padding: 2px 4px;
             }
 
             /* Mobile responsive */
@@ -480,44 +726,212 @@ class MechanicalConfigPanel {
         document.head.appendChild(style);
         document.body.appendChild(this.panel);
 
+        // Hide all other UI when config panel is shown
+        this.hideAllOtherUI();
+
         this.attachEventListeners();
     }
 
+    hidePlaceBreakButtons() {
+        const buildContainer = document.getElementById('mobile-build-container');
+        if (buildContainer) {
+            buildContainer.style.display = 'none';
+        }
+    }
+
+    showPlaceBreakButtons() {
+        const buildContainer = document.getElementById('mobile-build-container');
+        if (buildContainer) {
+            buildContainer.style.display = 'flex';
+        }
+    }
+
+    hideAllOtherUI() {
+        // Hide place/break buttons
+        this.hidePlaceBreakButtons();
+        
+        // Hide fly controls
+        const flyContainer = document.getElementById('mobile-fly-container');
+        if (flyContainer) {
+            flyContainer.style.display = 'none';
+        }
+        
+        // Hide walk toggle
+        const walkToggle = document.getElementById('mobile-walk-toggle');
+        if (walkToggle) {
+            walkToggle.style.display = 'none';
+        }
+        
+        // Hide cash UI
+        if (window.BuildModePanel && window.BuildModePanel.cashDisplay) {
+            window.BuildModePanel.cashDisplay.style.display = 'none';
+        }
+        
+        // Hide hotbar
+        if (window.HotbarPanel && window.HotbarPanel.hotbarElement) {
+            window.HotbarPanel.hotbarElement.style.display = 'none';
+        }
+        
+        // Hide level UI
+        if (window.PersistentLevelPanel && window.PersistentLevelPanel.levelContainer) {
+            window.PersistentLevelPanel.levelContainer.style.display = 'none';
+        }
+    }
+
+    showAllOtherUI() {
+        // Show place/break buttons
+        this.showPlaceBreakButtons();
+        
+        // Show fly controls
+        const flyContainer = document.getElementById('mobile-fly-container');
+        if (flyContainer) {
+            flyContainer.style.display = 'flex';
+        }
+        
+        // Show walk toggle
+        const walkToggle = document.getElementById('mobile-walk-toggle');
+        if (walkToggle) {
+            walkToggle.style.display = 'flex';
+        }
+        
+        // Show cash UI
+        if (window.BuildModePanel && window.BuildModePanel.cashDisplay) {
+            window.BuildModePanel.cashDisplay.style.display = 'flex';
+        }
+        
+        // Show hotbar
+        if (window.HotbarPanel && window.HotbarPanel.hotbarElement) {
+            window.HotbarPanel.hotbarElement.style.display = 'flex';
+        }
+        
+        // Show level UI
+        if (window.PersistentLevelPanel && window.PersistentLevelPanel.levelContainer) {
+            window.PersistentLevelPanel.levelContainer.style.display = 'block';
+        }
+    }
+
+    getTypeInfo(typeId) {
+        const types = [
+            { id: 'static', icon: '⬜', name: 'Static' },
+            { id: 'elevator', icon: '🔼', name: 'Elevator' },
+            { id: 'front-to-back', icon: '↕️', name: 'Front/Back' },
+            { id: 'side-to-side', icon: '↔️', name: 'Side/Side' },
+            { id: 'carousel', icon: '🔄', name: 'Carousel' }
+        ];
+        return types.find(t => t.id === typeId) || types[0];
+    }
+
     attachEventListeners() {
-        // Type selection buttons
-        this.panel.querySelectorAll('.type-btn').forEach(btn => {
+        // Side tab navigation
+        this.panel.querySelectorAll('.side-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                if (tabName === 'accept') {
+                    this.confirm();
+                } else if (tabName === 'cancel') {
+                    this.cancel();
+                } else {
+                    this.switchTab(tabName);
+                }
+            });
+        });
+
+        // Type cycling controls
+        const prevTypeBtn = this.panel.querySelector('#prev-type');
+        const nextTypeBtn = this.panel.querySelector('#next-type');
+        if (prevTypeBtn) {
+            prevTypeBtn.addEventListener('click', () => this.cycleType(-1));
+        }
+        if (nextTypeBtn) {
+            nextTypeBtn.addEventListener('click', () => this.cycleType(1));
+        }
+
+        // Plus/minus controls for size
+        this.panel.querySelectorAll('.pm-btn[data-axis]').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.selectType(btn.dataset.type);
+                const axis = btn.dataset.axis;
+                const action = btn.dataset.action;
+                const currentValue = this.currentConfig[axis];
+                const newValue = action === 'plus' ? currentValue + 1 : Math.max(1, currentValue - 1);
+                this.updateSize(axis, newValue);
             });
         });
 
-        // Size sliders
-        this.panel.querySelectorAll('.size-slider').forEach(slider => {
-            slider.addEventListener('input', (e) => {
-                this.updateSize(e.target.dataset.axis, parseInt(e.target.value));
+        // Plus/minus controls for movement
+        this.panel.querySelectorAll('.pm-btn[data-param]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const param = btn.dataset.param;
+                const action = btn.dataset.action;
+                const currentValue = this.currentConfig[param];
+                let newValue;
+                
+                if (param === 'speed') {
+                    newValue = action === 'plus' ? 
+                        Math.min(5.0, currentValue + 0.1) : 
+                        Math.max(0.1, currentValue - 0.1);
+                } else { // distance
+                    newValue = action === 'plus' ? 
+                        Math.min(10, currentValue + 1) : 
+                        Math.max(1, currentValue - 1);
+                }
+                
+                this.updateMovement(param, newValue);
             });
-        });
-
-        // Movement sliders
-        this.panel.querySelectorAll('.movement-slider').forEach(slider => {
-            slider.addEventListener('input', (e) => {
-                const param = e.target.dataset.param;
-                const value = param === 'speed' ? parseFloat(e.target.value) : parseInt(e.target.value);
-                this.updateMovement(param, value);
-            });
-        });
-
-        // Action buttons
-        this.panel.querySelector('#confirmBtn').addEventListener('click', () => {
-            this.confirm();
-        });
-
-        this.panel.querySelector('#cancelBtn').addEventListener('click', () => {
-            this.cancel();
         });
 
         // ESC key to cancel
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    }
+
+    switchTab(tabName) {
+        // Update tab states
+        this.panel.querySelectorAll('.side-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+
+        // Update content visibility
+        this.panel.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `${tabName}-content`);
+        });
+    }
+
+    cycleType(direction) {
+        const types = [
+            { id: 'static', icon: '⬜', name: 'Static' },
+            { id: 'elevator', icon: '🔼', name: 'Elevator' },
+            { id: 'front-to-back', icon: '↕️', name: 'Front/Back' },
+            { id: 'side-to-side', icon: '↔️', name: 'Side/Side' },
+            { id: 'carousel', icon: '🔄', name: 'Carousel' }
+        ];
+
+        const currentIndex = types.findIndex(t => t.id === this.currentConfig.type);
+        const newIndex = (currentIndex + direction + types.length) % types.length;
+        const newType = types[newIndex];
+        
+        console.log('[MechanicalConfigPanel] Type cycling:', {
+            direction,
+            currentType: this.currentConfig.type,
+            currentIndex,
+            newIndex,
+            newType: newType.name
+        });
+
+        this.currentConfig.type = newType.id;
+
+        // Update display
+        const typeIcon = this.panel.querySelector('.type-icon');
+        const typeName = this.panel.querySelector('.type-name');
+        if (typeIcon) typeIcon.textContent = newType.icon;
+        if (typeName) typeName.textContent = newType.name;
+
+        // Show/hide distance control based on type
+        const distanceControl = this.panel.querySelector('.distance-control');
+        if (distanceControl) {
+            const shouldHide = newType.id === 'static' || newType.id === 'carousel';
+            distanceControl.classList.toggle('hidden', shouldHide);
+        }
+
+        this.updatePreview();
     }
 
     selectType(type) {
@@ -542,8 +956,10 @@ class MechanicalConfigPanel {
         this.currentConfig[axis] = value;
         
         // Update display
-        const label = this.panel.querySelector(`[data-axis="${axis}"]`).parentElement.querySelector('.size-value');
-        label.textContent = value;
+        const valueElement = this.panel.querySelector(`#${axis}-value`);
+        if (valueElement) {
+            valueElement.textContent = value;
+        }
 
         this.updatePreview();
     }
@@ -552,8 +968,10 @@ class MechanicalConfigPanel {
         this.currentConfig[param] = value;
         
         // Update display
-        const label = this.panel.querySelector(`[data-param="${param}"]`).parentElement.querySelector('.movement-value');
-        label.textContent = param === 'speed' ? value.toFixed(1) : value;
+        const valueElement = this.panel.querySelector(`#${param}-value`);
+        if (valueElement) {
+            valueElement.textContent = param === 'speed' ? value.toFixed(1) : value;
+        }
 
         this.updatePreview();
     }

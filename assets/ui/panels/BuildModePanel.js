@@ -160,6 +160,14 @@ class BuildModePanel {
                 user-select: none;
             }
 
+            /* Mobile: Move cash to top-right where inventory button was */
+            body.mobile-device .build-mode-panel {
+                top: 20px;
+                right: 20px;
+                bottom: auto;
+                left: auto;
+            }
+
             .cash-display {
                 background-color: rgba(0, 0, 0, 0.6);
                 padding: 8px 12px;
@@ -175,6 +183,16 @@ class BuildModePanel {
                 text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
                 min-width: 60px;
                 text-align: center;
+            }
+
+            /* Mobile: Remove background and border, keep only green text */
+            body.mobile-device .cash-display {
+                background-color: transparent;
+                border: none;
+                padding: 4px 8px;
+                color: #4CAF50;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+                font-weight: bold;
             }
 
             #cash-amount {

@@ -89,7 +89,8 @@
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobileNpcOptionsPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/AchievementPopupPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/CompletionLeaderboardPanel.js'),
-                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MechanicalConfigPanel.js')
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MechanicalConfigPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/PlayModeExitPanel.js')
             ]);
             
             // Initialize panels
@@ -108,7 +109,7 @@
             window.mechanicalConfigPanel = new window.MechanicalConfigPanel();
             
             // New panels auto-initialize themselves
-            // AchievementPopupPanel and CompletionLeaderboardPanel are auto-initialized in their respective files
+            // AchievementPopupPanel, CompletionLeaderboardPanel, and PlayModeExitPanel are auto-initialized in their respective files
             
             console.log('Obby UI initialization complete');
             
@@ -200,6 +201,20 @@
                         window.mechanicalConfigPanel.show(data.position, data.config);
                         console.log('[UI] Showing mechanical config panel for position:', data.position);
                     }
+                } else if (data.type === 'showPlayModeExitButton') {
+                    // Show/hide play mode exit button
+                    if (window.PlayModeExitPanel) {
+                        if (data.visible) {
+                            if (data.isMobile) {
+                                window.PlayModeExitPanel.showMobile();
+                            } else {
+                                window.PlayModeExitPanel.showDesktop();
+                            }
+                        } else {
+                            window.PlayModeExitPanel.hide();
+                        }
+                        console.log('[UI] Updated play mode exit UI visibility:', data.visible, 'isMobile:', data.isMobile);
+                    }
                 }
             });
         }
@@ -223,7 +238,6 @@
     
     <!-- Container for block inventory -->
     <div id="inventory-container"></div>
-    
     
     <!-- Container for hotbar (always visible at bottom) -->
     <div id="hotbar-container"></div>

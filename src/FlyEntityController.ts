@@ -3,10 +3,16 @@ import { FlyEntity } from "./FlyEntity";
 
 export class FlyEntityController extends BaseEntityController {
     private flySpeed: number = 0.1; // Reduced for precise building movement
+    private mobileFlyDownActive: boolean = false; // Track mobile fly down button
 
     public override attach(entity: Entity) {
         super.attach(entity);
         console.log("[FlyEntityController] Attached to fly entity");
+    }
+
+    public setMobileFlyDownActive(active: boolean): void {
+        this.mobileFlyDownActive = active;
+        console.log("[FlyEntityController] Mobile fly down active:", active);
     }
 
     public processFlyMovement(
@@ -61,7 +67,7 @@ export class FlyEntityController extends BaseEntityController {
         if (input.sp) { // Up - correct property name for spacebar
             moveY += this.flySpeed;
         }
-        if (input.sh) { // Down - correct property name for shift
+        if (input.sh || this.mobileFlyDownActive) { // Down - shift OR mobile fly down button
             moveY -= this.flySpeed;
         }
         

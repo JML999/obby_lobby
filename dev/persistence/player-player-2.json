@@ -7177,14 +7177,6 @@
         {
           "relativePos": {
             "x": 10.5,
-            "y": 9,
-            "z": 20.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 10.5,
             "y": 10,
             "z": 20.5
           },
@@ -39893,9 +39885,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -5,
-            "y": 14.5,
-            "z": -11
+            "x": -5.5,
+            "y": 14,
+            "z": -11.5
           },
           "config": {
             "entityType": "carousel",
@@ -39915,9 +39907,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -5,
-            "y": 14.5,
-            "z": -11
+            "x": -5.5,
+            "y": 14,
+            "z": -11.5
           },
           "config": {
             "entityType": "carousel",
@@ -39937,9 +39929,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 0,
-            "y": 14.5,
-            "z": -18
+            "x": -0.5,
+            "y": 14,
+            "z": -18.5
           },
           "config": {
             "entityType": "front-to-back",
@@ -39958,9 +39950,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 6,
-            "y": 16.5,
-            "z": 20
+            "x": 5.5,
+            "y": 16,
+            "z": 19.5
           },
           "config": {
             "entityType": "elevator",
@@ -39979,9 +39971,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 9,
-            "y": 31.5,
-            "z": 7
+            "x": 8.5,
+            "y": 31,
+            "z": 6.5
           },
           "config": {
             "entityType": "front-to-back",
@@ -39996,24 +39988,13 @@
           }
         },
         {
-          "id": "bounce_pad_small",
-          "type": "bounce_pad",
-          "size": "small",
-          "relativePos": {
-            "x": 11.5,
-            "y": 34,
-            "z": -1.5
-          },
-          "config": {}
-        },
-        {
           "id": "-34,31,-29",
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 6,
-            "y": 30.5,
-            "z": 4
+            "x": 5.5,
+            "y": 30,
+            "z": 3.5
           },
           "config": {
             "entityType": "elevator",
@@ -40032,9 +40013,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -7,
-            "y": 12.5,
-            "z": -1
+            "x": -7.5,
+            "y": 12,
+            "z": -1.5
           },
           "config": {
             "entityType": "front-to-back",
@@ -40047,27 +40028,38 @@
             "distance": 5,
             "cost": 10
           }
+        },
+        {
+          "id": "bounce_pad_small",
+          "type": "bounce_pad",
+          "size": "small",
+          "relativePos": {
+            "x": 11.5,
+            "y": 34,
+            "z": -1.5
+          },
+          "config": {}
         }
       ],
-      "lastModified": 1754354291741,
+      "lastModified": 1754494344778,
       "creatorName": "player-2",
       "creatorId": "player-2",
       "scoreboard": []
     },
-    "cash": 4979
+    "cash": 4974
   },
   "levelData": {
     "level": 8,
-    "xp": 7566,
-    "totalXP": 8566,
+    "xp": 7791,
+    "totalXP": 8791,
     "firstTimeFlags": [
       "FIRST_BUILD"
     ],
-    "lastActiveTime": 1754354065102,
+    "lastActiveTime": 1754521345469,
     "loginStreak": 1,
-    "lastLoginDate": "Mon Aug 04 2025"
+    "lastLoginDate": "Wed Aug 06 2025"
   },
   "level": 8,
-  "xp": 7566,
-  "totalXP": 8566
+  "xp": 7791,
+  "totalXP": 8791
 }

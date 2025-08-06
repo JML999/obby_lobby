@@ -11,9 +11,9 @@ class YourPlotPanel {
         this.container.style.background = '#fffbe6';
         this.container.style.border = '2px solid #ffb300';
         this.container.style.borderRadius = '12px';
-        this.container.style.padding = '12px 20px';
+        this.container.style.padding = '8px 12px';
         this.container.style.fontFamily = "'Comic Neue', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif";
-        this.container.style.fontSize = '18px';
+        this.container.style.fontSize = '14px';
         this.container.style.fontWeight = 'bold';
         this.container.style.color = '#333';
         this.container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
@@ -25,6 +25,18 @@ class YourPlotPanel {
         if (!this.container) return;
         this.plotNumber = plotNumber;
         this.container.textContent = `Your Plot: ${plotNumber}`;
+        this.container.style.background = '#fffbe6';
+        this.container.style.border = '2px solid #ffb300';
+        this.container.style.color = '#333';
+        this.container.style.display = 'block';
+    }
+    
+    static showQuitHint() {
+        if (!this.container) return;
+        this.container.textContent = 'Chat "/quit" to leave game';
+        this.container.style.background = '#f3e5f5';
+        this.container.style.border = '2px solid #9c27b0';
+        this.container.style.color = '#4a148c';
         this.container.style.display = 'block';
     }
     
