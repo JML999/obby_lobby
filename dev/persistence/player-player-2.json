@@ -38168,30 +38168,6 @@
         },
         {
           "relativePos": {
-            "x": 14.5,
-            "y": 13,
-            "z": -17.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 13.5,
-            "y": 13,
-            "z": -18.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 15.5,
-            "y": 13,
-            "z": -18.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
             "x": 22.5,
             "y": 14,
             "z": -7.5
@@ -38509,22 +38485,6 @@
             "z": 14.5
           },
           "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 18.5,
-            "y": 13,
-            "z": 17.5
-          },
-          "blockTypeId": 6
-        },
-        {
-          "relativePos": {
-            "x": 18.5,
-            "y": 13,
-            "z": 18.5
-          },
-          "blockTypeId": 6
         },
         {
           "relativePos": {
@@ -39877,6 +39837,38 @@
             "z": -2.5
           },
           "blockTypeId": 21
+        },
+        {
+          "relativePos": {
+            "x": 14.5,
+            "y": 13,
+            "z": -17.5
+          },
+          "blockTypeId": 102
+        },
+        {
+          "relativePos": {
+            "x": 14.5,
+            "y": 13,
+            "z": -16.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 18.5,
+            "y": 13,
+            "z": 19.5
+          },
+          "blockTypeId": 1
+        },
+        {
+          "relativePos": {
+            "x": 18.5,
+            "y": 13,
+            "z": 16.5
+          },
+          "blockTypeId": 6
         }
       ],
       "obstacles": [
@@ -39885,9 +39877,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -5.5,
-            "y": 14,
-            "z": -11.5
+            "x": -5,
+            "y": 14.5,
+            "z": -11
           },
           "config": {
             "entityType": "carousel",
@@ -39907,9 +39899,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -5.5,
-            "y": 14,
-            "z": -11.5
+            "x": -5,
+            "y": 14.5,
+            "z": -11
           },
           "config": {
             "entityType": "carousel",
@@ -39929,9 +39921,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -0.5,
-            "y": 14,
-            "z": -18.5
+            "x": 0,
+            "y": 14.5,
+            "z": -18
           },
           "config": {
             "entityType": "front-to-back",
@@ -39950,9 +39942,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 5.5,
-            "y": 16,
-            "z": 19.5
+            "x": 6,
+            "y": 16.5,
+            "z": 20
           },
           "config": {
             "entityType": "elevator",
@@ -39971,9 +39963,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 8.5,
-            "y": 31,
-            "z": 6.5
+            "x": 9,
+            "y": 31.5,
+            "z": 7
           },
           "config": {
             "entityType": "front-to-back",
@@ -39992,9 +39984,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 5.5,
-            "y": 30,
-            "z": 3.5
+            "x": 6,
+            "y": 30.5,
+            "z": 4
           },
           "config": {
             "entityType": "elevator",
@@ -40013,9 +40005,9 @@
           "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": -7.5,
-            "y": 12,
-            "z": -1.5
+            "x": -7,
+            "y": 12.5,
+            "z": -1
           },
           "config": {
             "entityType": "front-to-back",
@@ -40041,25 +40033,25 @@
           "config": {}
         }
       ],
-      "lastModified": 1754494344778,
+      "lastModified": 1754529253370,
       "creatorName": "player-2",
       "creatorId": "player-2",
       "scoreboard": []
     },
-    "cash": 4974
+    "cash": 4980
   },
   "levelData": {
     "level": 8,
-    "xp": 7791,
-    "totalXP": 8791,
+    "xp": 7816,
+    "totalXP": 8816,
     "firstTimeFlags": [
       "FIRST_BUILD"
     ],
-    "lastActiveTime": 1754521345469,
+    "lastActiveTime": 1754529240382,
     "loginStreak": 1,
     "lastLoginDate": "Wed Aug 06 2025"
   },
   "level": 8,
-  "xp": 7791,
-  "totalXP": 8791
+  "xp": 7816,
+  "totalXP": 8816
 }

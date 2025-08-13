@@ -801,7 +801,17 @@ export class ObbyPlayerEntity extends DefaultPlayerEntity {
 
         // Use PlotSaveManager to save with specific plot boundaries
         try {
-            await this.plotSaveManager.savePlotWithBoundaries(player, saveBoundaries, plotId);
+            const saveResult = await this.plotSaveManager.savePlotWithBoundaries(player, saveBoundaries, plotId);
+            
+            // Award XP for successful course save based on complexity
+            // Get block counts from the save result or calculate from plot
+            const blockCount = saveResult?.blockCount || 0;
+            const obstacleCount = saveResult?.obstacleCount || 0;
+            
+            const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+            const levelingSystem = SimpleLevelingSystem.getInstance();
+            levelingSystem.onCourseSaved(player.id, blockCount, obstacleCount, player);
+            
             // Success message is already sent by PlotSaveManager
         } catch (error) {
             console.error(`[ObbyPlayerEntity] Error during save operation for player ${player.id}:`, error);

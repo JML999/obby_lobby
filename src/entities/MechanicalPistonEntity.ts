@@ -47,7 +47,7 @@ export class MechanicalPistonEntity extends ObstacleEntity implements ResizableM
         
         // Configure entity with beam shape
         super({
-            blockTextureUri: 'blocks/coal-ore.png', // Using coal-ore texture for pistons
+            blockTextureUri: 'blocks/mechanical-wheel.png', // Using mechanical wheel texture
             blockHalfExtents: blockHalfExtents, // Beam shape based on axis and size
             rigidBodyOptions: {
                 type: RigidBodyType.KINEMATIC_POSITION, // Use KINEMATIC_POSITION (VELOCITY causes recursive errors)

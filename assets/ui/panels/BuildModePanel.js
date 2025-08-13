@@ -3,8 +3,8 @@ class BuildModePanel {
         this.container = null;
         this.cashDisplay = null;
         this.cashAmount = null;
-        this.currentCash = 10000; // Default starting cash
-        this.maxCash = 10000;
+        this.currentCash = 0; // Will be set by server
+        this.maxCash = 0; // Will be set by server
         this.initialized = false;
         
         // State management

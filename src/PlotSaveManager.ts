@@ -137,17 +137,18 @@ export class PlotSaveManager {
       if (boundaries) {
         // Calculate the absolute world position after transformation
         const worldX = plotCenter.x + rotatedRelativeX;
+        const worldY = plotCenter.y + relativePos.y; // Y coordinate for clamping
         const worldZ = plotCenter.z + rotatedRelativeZ;
         
         // Clamp the transformed coordinates to stay within actual plot boundaries
         const clampedX = Math.max(boundaries.minX, Math.min(boundaries.maxX, worldX));
-        const clampedY = Math.max(boundaries.minY, Math.min(boundaries.maxY, relativePos.y));
+        const clampedY = Math.max(boundaries.minY, Math.min(boundaries.maxY, worldY));
         const clampedZ = Math.max(boundaries.minZ, Math.min(boundaries.maxZ, worldZ));
         
         // Convert back to relative coordinates for the new plot center
         return {
           x: clampedX - plotCenter.x,
-          y: clampedY,
+          y: clampedY - plotCenter.y, // Convert back to relative Y
           z: clampedZ - plotCenter.z
         };
       }
@@ -392,7 +393,7 @@ export class PlotSaveManager {
   public getPlayerCash(player: Player): number {
     const playerKey = this.getWorldAwarePlayerKey(player.id, player.world);
     const playerData = this.playerObbyCache.get(playerKey);
-    return playerData?.cash ?? CashCalculator.DEFAULT_STARTING_CASH;
+    return playerData?.cash ?? CashCalculator.getDefaultCashForPlayer(player.id);
   }
 
   /**
@@ -486,10 +487,10 @@ export class PlotSaveManager {
         playerObbyData = rawObbyData as PlayerObbyData;
         // Ensure cash is set for backward compatibility
         if (playerObbyData.cash === undefined) {
-          playerObbyData.cash = CashCalculator.DEFAULT_STARTING_CASH;
+          playerObbyData.cash = CashCalculator.getDefaultCashForPlayer(player.id);
         }
       } else {
-        playerObbyData = { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH };
+        playerObbyData = { plotData: null, cash: CashCalculator.getDefaultCashForPlayer(player.id) };
       }
       
       // Cache the result
@@ -505,7 +506,7 @@ export class PlotSaveManager {
   /**
    * Calculate the correct cash balance based on loaded blocks and obstacles
    */
-  private calculateCashFromLoadedContent(plotData: PlotData): number {
+  private calculateCashFromLoadedContent(plotData: PlotData, player: Player): number {
     let totalCost = 0;
     
     // Calculate cost of all blocks
@@ -535,7 +536,7 @@ export class PlotSaveManager {
       totalCost += obstacleCost;
     }
     
-    const remainingCash = Math.max(0, CashCalculator.DEFAULT_STARTING_CASH - totalCost);
+    const remainingCash = Math.max(0, CashCalculator.getDefaultCashForPlayer(player.id) - totalCost);
     console.log(`[PlotSaveManager] Calculated cash for loaded content: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles, total cost: ${totalCost}, remaining cash: ${remainingCash}`);
     
     return remainingCash;
@@ -566,10 +567,10 @@ export class PlotSaveManager {
         playerObbyData = rawObbyData as PlayerObbyData;
         // Ensure cash is set for backward compatibility
         if (playerObbyData.cash === undefined) {
-          playerObbyData.cash = CashCalculator.DEFAULT_STARTING_CASH;
+          playerObbyData.cash = CashCalculator.getDefaultCashForPlayer(player.id);
         }
       } else {
-        playerObbyData = { plotData: null, cash: CashCalculator.DEFAULT_STARTING_CASH };
+        playerObbyData = { plotData: null, cash: CashCalculator.getDefaultCashForPlayer(player.id) };
       }
       
       // Cache the player's obby data
@@ -586,7 +587,7 @@ export class PlotSaveManager {
       console.log(`[PlotSaveManager] Loading ${plotData.blocks.length} blocks and ${plotData.obstacles.length} obstacles`);
       
       // Calculate the correct cash balance based on loaded content
-      const calculatedCash = this.calculateCashFromLoadedContent(plotData);
+      const calculatedCash = this.calculateCashFromLoadedContent(plotData, player);
       this.setPlayerCash(player, calculatedCash);
       
       // Update the cached data with the calculated cash
@@ -787,8 +788,17 @@ export class PlotSaveManager {
         const { MechanicalBlockManager } = await import('./MechanicalBlockManager');
         const mechanicalManager = MechanicalBlockManager.getInstance();
         mechanicalManager.initializeWorld(player.world || this.world!);
-        mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, player.world || this.world!);
-        console.log(`[PlotSaveManager] Batch loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} using MechanicalBlockManager`);
+        
+        // Calculate direction multiplier for movement transformation when needed
+        let directionMultiplier: { x: number, z: number } | undefined;
+        if (needsTransformation) {
+          // 180° rotation: flip both X and Z movement directions
+          directionMultiplier = { x: -1, z: -1 };
+          console.log(`[PlotSaveManager] 🔄 Applying mechanical movement transformation: X=${directionMultiplier.x}, Z=${directionMultiplier.z}`);
+        }
+        
+        mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, player.world || this.world!, directionMultiplier);
+        console.log(`[PlotSaveManager] Batch loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} using MechanicalBlockManager with transformation=${!!needsTransformation}`);
       }
 
       // PHASE 2: Load regular obstacles using relative positions
@@ -833,6 +843,14 @@ export class PlotSaveManager {
       const mechanicalCount = mechanicalEntities.length;
       const regularObstacleCount = regularObstacles.length;
       
+      // Update anti-farming baseline after successful plot load
+      const { SimpleLevelingSystem } = await import('./SimpleLevelingSystem');
+      const levelingSystem = SimpleLevelingSystem.getInstance();
+      const playerData = (levelingSystem as any).getOrCreatePlayerData(player.id);
+      playerData.lastSaveBlockCount = plotData.blocks.length;
+      playerData.lastSaveObstacleCount = plotData.obstacles.length;
+      console.log(`[PlotSaveManager] Updated anti-farming baseline for ${player.id}: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles`);
+      
       this.world.chatManager.sendPlayerMessage(
         player,
         `💾 Loaded your obby: ${plotData.blocks.length} blocks, ${plotData.obstacles.length} obstacles (${mechanicalCount} mechanical entities, ${regularObstacleCount} regular obstacles)${plotData.scoreboard && plotData.scoreboard.length > 0 ? `, ${plotData.scoreboard.length} scores` : ''}`,
@@ -864,8 +882,8 @@ export class PlotSaveManager {
   /**
    * Save blocks within specific plot boundaries
    */
-  public async savePlotWithBoundaries(player: Player, plotBoundaries: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number }, plotId?: string): Promise<void> {
-    if (!this.world) return;
+  public async savePlotWithBoundaries(player: Player, plotBoundaries: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number }, plotId?: string): Promise<{ blockCount: number; obstacleCount: number }> {
+    if (!this.world) return { blockCount: 0, obstacleCount: 0 };
 
     try {
       console.log(`[PlotSaveManager] Saving plot for player ${player.username} with boundaries`, plotBoundaries);
@@ -981,6 +999,9 @@ export class PlotSaveManager {
         console.error(`[PlotSaveManager] No world available to send save success message to player ${player.username}`);
       }
 
+      // Return the counts for XP calculation
+      return { blockCount: blocks.length, obstacleCount: obstacles.length };
+
     } catch (error) {
       console.error(`[PlotSaveManager] Error saving plot data for ${player.username}:`, error);
       // Use player's world to ensure error message goes to correct region
@@ -990,6 +1011,8 @@ export class PlotSaveManager {
       } else {
         console.error(`[PlotSaveManager] No world available to send save error message to player ${player.username}`);
       }
+      // Return 0 counts on error
+      return { blockCount: 0, obstacleCount: 0 };
     }
   }
 

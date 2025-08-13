@@ -15,6 +15,7 @@ class HotbarPanel {
         this.currentPlayerState = 'LOBBY'; // Track current state
         this.isVisible = false;
         this.isFlying = false; // Track if the player is in fly mode
+        this.isMobile = false; // Track if the player is on mobile
         
         // Initialize empty hotbar
         this.initializeHotbar();
@@ -395,8 +396,12 @@ class HotbarPanel {
         if (action === 'saveCourse') {
             hytopia.sendData({ type: 'saveCourse' });
         } else if (action === 'toggleInventory') {
-            // Toggle the block inventory panel
-            if (window.BlockInventoryPanel) {
+            // Toggle the appropriate inventory panel based on device type
+            if (this.isMobile && window.MobileBlockInventoryPanel) {
+                console.log('[HotbarPanel] Toggling mobile inventory panel');
+                window.MobileBlockInventoryPanel.toggle();
+            } else if (window.BlockInventoryPanel) {
+                console.log('[HotbarPanel] Toggling desktop inventory panel');
                 window.BlockInventoryPanel.toggle();
             }
         }
@@ -406,11 +411,15 @@ class HotbarPanel {
     onPlayerStateChanged(newState, plotIndex, isMobile, mobileControls, playerLevel) {
         console.log('[HotbarPanel] Player state changed to:', newState, 'plotIndex:', plotIndex, 'isMobile:', isMobile, 'level:', playerLevel);
         this.currentPlayerState = newState;
+        this.isMobile = isMobile; // Store mobile state for inventory toggle
         
         // Only show hotbar when in building mode AND inventory is not open
         if (newState === 'BUILDING') {
-            // Check if inventory is currently open before showing hotbar
-            const inventoryOpen = window.BlockInventoryPanel && window.BlockInventoryPanel.inventoryOpen;
+            // Check if any inventory is currently open before showing hotbar
+            const desktopInventoryOpen = window.BlockInventoryPanel && window.BlockInventoryPanel.inventoryOpen;
+            const mobileInventoryOpen = window.MobileBlockInventoryPanel && window.MobileBlockInventoryPanel.inventoryOpen;
+            const inventoryOpen = desktopInventoryOpen || mobileInventoryOpen;
+            
             if (!inventoryOpen) {
                 this.setVisible(true);
                 // Update mobile-specific styling

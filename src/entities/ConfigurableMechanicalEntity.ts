@@ -19,6 +19,7 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
     private rotationSpeed: number; // degrees per second for carousel
     private currentRotation: number = 0;
     private moveDistance: number;
+    private directionMultiplier: { x: number; z: number };
     
     // Player tracking (like Roblox .Touched detection)
     private playersOnPlatform: Set<Entity> = new Set();
@@ -31,7 +32,8 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
         sizeY: number = 1, 
         sizeZ: number = 1,
         speed: number = 2.0,
-        distance: number = 2
+        distance: number = 2,
+        directionMultiplier?: { x: number, z: number } // For plot mirroring transformation
     ) {
         
         // Calculate half extents from full sizes
@@ -42,17 +44,17 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
         };
         
         // Choose texture based on type
-        let textureUri = 'blocks/stone.png'; // Default for static
+        let textureUri = 'blocks/mechanical-wheel.png'; // Same texture for all mechanical entities
         switch (type) {
             case 'elevator':
-                textureUri = 'blocks/iron-ore.png';
+                textureUri = 'blocks/mechanical-wheel.png';
                 break;
             case 'carousel':
-                textureUri = 'blocks/gold-ore.png';
+                textureUri = 'blocks/mechanical-wheel.png';
                 break;
             case 'side-to-side':
             case 'front-to-back':
-                textureUri = 'blocks/coal-ore.png'; // Same texture for both horizontal movements
+                textureUri = 'blocks/mechanical-wheel.png'; // Same texture for both horizontal movements
                 break;
         }
         
@@ -88,12 +90,17 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
             y: position.y, 
             z: position.z 
         };
+        this.directionMultiplier = directionMultiplier || { x: 1, z: 1 };
         
         
         // Calculate target positions based on type and distance
+        // Apply direction multiplier for plot mirroring if provided
+        const xMultiplier = directionMultiplier?.x ?? 1;
+        const zMultiplier = directionMultiplier?.z ?? 1;
+        
         switch (type) {
             case 'elevator':
-                // Move up by distance
+                // Move up by distance (Y-axis not affected by mirroring)
                 this.targetPosition = {
                     x: position.x,
                     y: position.y + this.moveDistance,
@@ -101,19 +108,19 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
                 };
                 break;
             case 'side-to-side':
-                // Move sideways by distance
+                // Move sideways by distance (apply X transformation for mirroring)
                 this.targetPosition = {
-                    x: position.x + this.moveDistance,
+                    x: position.x + (this.moveDistance * xMultiplier),
                     y: position.y,
                     z: position.z
                 };
                 break;
             case 'front-to-back':
-                // Move forward/backward by distance
+                // Move forward/backward by distance (apply Z transformation for mirroring)
                 this.targetPosition = {
                     x: position.x,
                     y: position.y,
-                    z: position.z + this.moveDistance
+                    z: position.z + (this.moveDistance * zMultiplier)
                 };
                 break;
             default:
@@ -364,17 +371,29 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
         let newPosition: Vector3Like;
         
         if (this.movingForward) {
-            const newX = Math.min(currentPos.x + moveDistance, this.targetPosition.x);
+            // Apply direction multiplier to movement
+            const moveStep = moveDistance * this.directionMultiplier.x;
+            const newX = this.directionMultiplier.x > 0 
+                ? Math.min(currentPos.x + moveStep, this.targetPosition.x)
+                : Math.max(currentPos.x + moveStep, this.targetPosition.x);
             newPosition = { x: newX, y: currentPos.y, z: currentPos.z };
             
-            if (newX >= this.targetPosition.x) {
+            // Check if reached target based on direction
+            if ((this.directionMultiplier.x > 0 && newX >= this.targetPosition.x) ||
+                (this.directionMultiplier.x < 0 && newX <= this.targetPosition.x)) {
                 this.movingForward = false;
             }
         } else {
-            const newX = Math.max(currentPos.x - moveDistance, this.startPosition.x);
+            // Return movement - opposite of forward direction
+            const moveStep = moveDistance * this.directionMultiplier.x;
+            const newX = this.directionMultiplier.x > 0
+                ? Math.max(currentPos.x - moveStep, this.startPosition.x)
+                : Math.min(currentPos.x - moveStep, this.startPosition.x);
             newPosition = { x: newX, y: currentPos.y, z: currentPos.z };
             
-            if (newX <= this.startPosition.x) {
+            // Check if reached start based on direction
+            if ((this.directionMultiplier.x > 0 && newX <= this.startPosition.x) ||
+                (this.directionMultiplier.x < 0 && newX >= this.startPosition.x)) {
                 this.movingForward = true;
             }
         }
@@ -417,17 +436,29 @@ export class ConfigurableMechanicalEntity extends ObstacleEntity {
         let newPosition: Vector3Like;
         
         if (this.movingForward) {
-            const newZ = Math.min(currentPos.z + moveDistance, this.targetPosition.z);
+            // Apply direction multiplier to movement
+            const moveStep = moveDistance * this.directionMultiplier.z;
+            const newZ = this.directionMultiplier.z > 0 
+                ? Math.min(currentPos.z + moveStep, this.targetPosition.z)
+                : Math.max(currentPos.z + moveStep, this.targetPosition.z);
             newPosition = { x: currentPos.x, y: currentPos.y, z: newZ };
             
-            if (newZ >= this.targetPosition.z) {
+            // Check if reached target based on direction
+            if ((this.directionMultiplier.z > 0 && newZ >= this.targetPosition.z) ||
+                (this.directionMultiplier.z < 0 && newZ <= this.targetPosition.z)) {
                 this.movingForward = false;
             }
         } else {
-            const newZ = Math.max(currentPos.z - moveDistance, this.startPosition.z);
+            // Return movement - opposite of forward direction
+            const moveStep = moveDistance * this.directionMultiplier.z;
+            const newZ = this.directionMultiplier.z > 0
+                ? Math.max(currentPos.z - moveStep, this.startPosition.z)
+                : Math.min(currentPos.z - moveStep, this.startPosition.z);
             newPosition = { x: currentPos.x, y: currentPos.y, z: newZ };
             
-            if (newZ <= this.startPosition.z) {
+            // Check if reached start based on direction
+            if ((this.directionMultiplier.z > 0 && newZ <= this.startPosition.z) ||
+                (this.directionMultiplier.z < 0 && newZ >= this.startPosition.z)) {
                 this.movingForward = true;
             }
         }

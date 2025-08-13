@@ -36,8 +36,13 @@ export class CashCalculator {
         // Add more entity types as needed
     };
 
-    // Default starting cash
-    public static readonly DEFAULT_STARTING_CASH = 10000;
+    // Get default cash based on player's level
+    public static getDefaultCashForPlayer(playerId: string): number {
+        // Avoid circular dependency by using dynamic import
+        const { SimpleLevelingSystem } = require('./SimpleLevelingSystem');
+        const levelingSystem = SimpleLevelingSystem.getInstance();
+        return levelingSystem.getPlayerCashAllowance(playerId);
+    }
 
     /**
      * Get the cost of placing a block

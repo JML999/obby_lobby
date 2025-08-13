@@ -4,44 +4,44 @@ import { MessageManager } from './MessageManager';
 // Level configuration with linear cash progression - ALL BLOCKS UNLOCKED AT ALL LEVELS
 const LEVEL_CONFIG: Record<number, { cash: number; blocks: string[]; xpRequired: number }> = {
   1: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+    cash: 100, // Starting allowance - basic courses
     blocks: [], // All blocks available at all levels - no unlocking system
     xpRequired: 0 
   },
   2: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
-    blocks: [], // All blocks available at all levels
-    xpRequired: 50
-  },
-  3: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+    cash: 300, // Small courses with some variety
     blocks: [], // All blocks available at all levels
     xpRequired: 100
   },
-  4: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+  3: { 
+    cash: 600, // Medium courses with more complexity
     blocks: [], // All blocks available at all levels
-    xpRequired: 200
+    xpRequired: 300
+  },
+  4: { 
+    cash: 1000, // Larger courses with advanced blocks
+    blocks: [], // All blocks available at all levels
+    xpRequired: 700
   },
   5: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+    cash: 1500, // Complex courses - prefabs unlock at this level
     blocks: [], // All blocks available at all levels
-    xpRequired: 350
+    xpRequired: 1500
   },
   6: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+    cash: 2500, // Advanced courses with multiple mechanics
     blocks: [], // All blocks available at all levels
-    xpRequired: 500
+    xpRequired: 2700
   },
   7: { 
-    cash: 10000, // Dev mode: 10000 allowance for all levels
+    cash: 3500, // Expert courses with intricate designs
     blocks: [], // All blocks available at all levels
-    xpRequired: 750
+    xpRequired: 4500
   },
   8: { 
-    cash: 10000, // Level 8 max cash allowance
+    cash: 5000, // Master courses - maximum complexity
     blocks: [], // All blocks available at all levels
-    xpRequired: 1000
+    xpRequired: 7200
   }
 };
 
@@ -79,6 +79,10 @@ interface PlayerLevelData {
   lastActiveTime: number;
   loginStreak: number;
   lastLoginDate: string;
+  // Anti-farming tracking
+  lastSaveBlockCount: number;
+  lastSaveObstacleCount: number;
+  lastXPSaveTime: number;
 }
 
 export class SimpleLevelingSystem {
@@ -119,7 +123,11 @@ export class SimpleLevelingSystem {
         firstTimeFlags: new Set(),
         lastActiveTime: Date.now(),
         loginStreak: 1,
-        lastLoginDate: new Date().toDateString()
+        lastLoginDate: new Date().toDateString(),
+        // Anti-farming defaults
+        lastSaveBlockCount: 0,
+        lastSaveObstacleCount: 0,
+        lastXPSaveTime: 0
       });
       console.log(`[SimpleLevelingSystem] Created new player data for ${playerId}`);
     }
@@ -140,39 +148,38 @@ export class SimpleLevelingSystem {
       let xp = 0;
       let totalXP = 0;
       
-      // Check multiple possible locations for level data
+      // Check for level data in persisted data
       if (persistedData) {
-        // PRIORITY 1: Check obby.levelData (where the real data is!)
-        if (persistedData.obby && persistedData.obby.levelData) {
-          console.log(`[SimpleLevelingSystem] 🎯 Found obby.levelData (REAL DATA):`, persistedData.obby.levelData);
-          level = persistedData.obby.levelData.level || 1;
-          xp = persistedData.obby.levelData.xp || 0;
-          totalXP = persistedData.obby.levelData.totalXP || 0;
-        }
-        // PRIORITY 2: Check if levelData exists
-        else if (persistedData.levelData) {
+        // Check if levelData exists (primary location)
+        if (persistedData.levelData) {
           console.log(`[SimpleLevelingSystem] Found levelData:`, persistedData.levelData);
           level = persistedData.levelData.level || 1;
           xp = persistedData.levelData.xp || 0;
           totalXP = persistedData.levelData.totalXP || 0;
         }
-        // PRIORITY 3: Check if it's stored under a different key
+        // Fallback: Check if it's stored in root
         else if (persistedData.level !== undefined) {
           console.log(`[SimpleLevelingSystem] Found level in root:`, persistedData.level);
           level = persistedData.level;
           xp = persistedData.xp || 0;
           totalXP = persistedData.totalXP || 0;
         }
-        // PRIORITY 4: Check if it's stored under player data
-        else if (persistedData.playerData) {
-          console.log(`[SimpleLevelingSystem] Found playerData:`, persistedData.playerData);
-          level = persistedData.playerData.level || 1;
-          xp = persistedData.playerData.xp || 0;
-          totalXP = persistedData.playerData.totalXp || 0;
-        }
       }
       
       console.log(`[SimpleLevelingSystem] Extracted values for ${player.id}: Level ${level}, XP ${xp}, Total ${totalXP}`);
+      
+      // Load anti-farming data from persistence
+      let lastSaveBlockCount = 0;
+      let lastSaveObstacleCount = 0;
+      let lastXPSaveTime = 0;
+      
+      if (persistedData?.levelData) {
+        lastSaveBlockCount = persistedData.levelData.lastSaveBlockCount || 0;
+        lastSaveObstacleCount = persistedData.levelData.lastSaveObstacleCount || 0;
+        lastXPSaveTime = persistedData.levelData.lastXPSaveTime || 0;
+      }
+      
+      console.log(`[SimpleLevelingSystem] Loading anti-farming data for ${player.id}: lastXPSaveTime=${lastXPSaveTime}, blocks=${lastSaveBlockCount}, obstacles=${lastSaveObstacleCount}`);
       
       // Create the player data object
       const playerData: PlayerLevelData = {
@@ -182,7 +189,11 @@ export class SimpleLevelingSystem {
         firstTimeFlags: new Set(),
         lastActiveTime: Date.now(),
         loginStreak: 1,
-        lastLoginDate: new Date().toDateString()
+        lastLoginDate: new Date().toDateString(),
+        // Anti-farming data loaded from persistence
+        lastSaveBlockCount,
+        lastSaveObstacleCount,
+        lastXPSaveTime
       };
       
       // Force cache the loaded data
@@ -273,11 +284,12 @@ export class SimpleLevelingSystem {
     const xpNeededForNextLevel = nextLevelConfig.xpRequired - (currentLevelConfig?.xpRequired || 0);
     
     if (data.xp >= xpNeededForNextLevel) {
-      // Level up!
+      // Level up with simple reset - no XP overflow
+      const excessXP = data.xp - xpNeededForNextLevel;
       data.level = nextLevel;
-      data.xp = data.xp - xpNeededForNextLevel; // Carry over excess XP
+      data.xp = 0; // Reset to 0, no overflow
       
-      console.log(`[SimpleLevelingSystem] Level up! New level: ${data.level}, Remaining XP: ${data.xp}`);
+      console.log(`[SimpleLevelingSystem] Level up! New level: ${data.level}, XP reset to 0 (${excessXP} excess XP discarded)`);
       return true;
     }
     
@@ -379,6 +391,118 @@ export class SimpleLevelingSystem {
    */
   public onBlockPlaced(playerId: string, player?: Player): void {
     this.addXP(playerId, XP_REWARDS.BLOCK_PLACED, player);
+  }
+
+  /**
+   * Handle when a player saves a completed course (NEW XP SYSTEM with Anti-Farming)
+   */
+  public onCourseSaved(playerId: string, blockCount: number, obstacleCount: number, player?: Player): void {
+    const data = this.getOrCreatePlayerData(playerId);
+    const now = Date.now();
+    
+    // Anti-farming check 1: Save cooldown (6 hours)
+    const timeSinceLastXPSave = now - (data.lastXPSaveTime || 0);
+    const cooldownMs = 6 * 60 * 60 * 1000; // 6 hours
+    
+    if (timeSinceLastXPSave < cooldownMs) {
+      const remainingMs = cooldownMs - timeSinceLastXPSave;
+      const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+      const remainingMinutes = Math.ceil(remainingMs / 60000);
+      
+      const timeDisplay = remainingHours >= 1 ? `${remainingHours}h` : `${remainingMinutes}m`;
+      console.log(`[SimpleLevelingSystem] Save cooldown active for ${playerId}: ${timeDisplay} remaining`);
+      
+      // Send save success message but no XP
+      if (player) {
+        try {
+          this.messageManager.sendRichGameMessage(
+            '💾 Course Saved!',
+            player,
+            {
+              bonus: `No XP - save cooldown (${timeDisplay} remaining)`,
+              duration: 4000
+            }
+          );
+        } catch (error) {
+          console.error(`[SimpleLevelingSystem] Failed to send cooldown message:`, error);
+        }
+      }
+      return;
+    }
+    
+    // Anti-farming check 2: Net change only
+    const netNewBlocks = blockCount - (data.lastSaveBlockCount || 0);
+    const netNewObstacles = obstacleCount - (data.lastSaveObstacleCount || 0);
+    
+    if (netNewBlocks <= 0 && netNewObstacles <= 0) {
+      console.log(`[SimpleLevelingSystem] No new content for ${playerId}: blocks ${blockCount} (was ${data.lastSaveBlockCount}), obstacles ${obstacleCount} (was ${data.lastSaveObstacleCount})`);
+      
+      // Send save success message but no XP
+      if (player) {
+        try {
+          this.messageManager.sendRichGameMessage(
+            '💾 Course Saved!',
+            player,
+            {
+              bonus: 'No XP - no new content added',
+              duration: 4000
+            }
+          );
+        } catch (error) {
+          console.error(`[SimpleLevelingSystem] Failed to send no-content message:`, error);
+        }
+      }
+      return;
+    }
+    
+    // Calculate XP based on NET NEW content only
+    let xp = 10; // Base XP for saving a valid course
+    
+    // Block complexity bonus (0.5 XP per NEW block)
+    xp += Math.max(0, netNewBlocks) * 0.5;
+    
+    // Obstacle/mechanical entity bonus (1 XP each for NEW obstacles)
+    xp += Math.max(0, netNewObstacles) * 1;
+    
+    // Complexity bonus: 20+ total blocks + 3+ total obstacles (on total, not net)
+    if (blockCount >= 20 && obstacleCount >= 3) {
+      xp += 25;
+      console.log(`[SimpleLevelingSystem] Complexity bonus awarded: +25 XP for ${playerId}`);
+    }
+    
+    const finalXP = Math.round(xp);
+    this.addXP(playerId, finalXP, player);
+    
+    // Update anti-farming tracking
+    data.lastSaveBlockCount = blockCount;
+    data.lastSaveObstacleCount = obstacleCount;
+    data.lastXPSaveTime = now;
+    
+    // Send achievement popup for course save XP
+    if (player && finalXP > 0) {
+      try {
+        let bonusText = `+${finalXP} XP earned`;
+        if (netNewBlocks > 0 || netNewObstacles > 0) {
+          bonusText += ` (${Math.max(0, netNewBlocks)} new blocks, ${Math.max(0, netNewObstacles)} new obstacles)`;
+        }
+        if (blockCount >= 20 && obstacleCount >= 3) {
+          bonusText += ' (includes complexity bonus!)';
+        }
+        
+        this.messageManager.sendRichGameMessage(
+          '💾 Course Saved!',
+          player,
+          {
+            bonus: bonusText,
+            duration: 4000
+          }
+        );
+      } catch (error) {
+        console.error(`[SimpleLevelingSystem] Failed to send course save achievement popup:`, error);
+      }
+    }
+    
+    console.log(`[SimpleLevelingSystem] Course saved XP: ${finalXP} XP for ${playerId} (${netNewBlocks} new blocks, ${netNewObstacles} new obstacles of ${blockCount} total blocks, ${obstacleCount} total obstacles)`);
   }
 
   /**
@@ -643,7 +767,11 @@ export class SimpleLevelingSystem {
         firstTimeFlags: Array.from(data.firstTimeFlags),
         lastActiveTime: data.lastActiveTime,
         loginStreak: data.loginStreak,
-        lastLoginDate: data.lastLoginDate
+        lastLoginDate: data.lastLoginDate,
+        // Anti-farming tracking
+        lastSaveBlockCount: data.lastSaveBlockCount,
+        lastSaveObstacleCount: data.lastSaveObstacleCount,
+        lastXPSaveTime: data.lastXPSaveTime
       };
 
       // Get existing persisted data first

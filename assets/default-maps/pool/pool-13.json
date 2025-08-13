@@ -7177,14 +7177,6 @@
           {
             "relativePos": {
               "x": 10.5,
-              "y": 9,
-              "z": 20.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 10.5,
               "y": 10,
               "z": 20.5
             },
@@ -38176,30 +38168,6 @@
           },
           {
             "relativePos": {
-              "x": 14.5,
-              "y": 13,
-              "z": -17.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 13.5,
-              "y": 13,
-              "z": -18.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 15.5,
-              "y": 13,
-              "z": -18.5
-            },
-            "blockTypeId": 1
-          },
-          {
-            "relativePos": {
               "x": 22.5,
               "y": 14,
               "z": -7.5
@@ -38517,22 +38485,6 @@
               "z": 14.5
             },
             "blockTypeId": 1
-          },
-          {
-            "relativePos": {
-              "x": 18.5,
-              "y": 13,
-              "z": 17.5
-            },
-            "blockTypeId": 6
-          },
-          {
-            "relativePos": {
-              "x": 18.5,
-              "y": 13,
-              "z": 18.5
-            },
-            "blockTypeId": 6
           },
           {
             "relativePos": {
@@ -39885,9 +39837,63 @@
               "z": -2.5
             },
             "blockTypeId": 21
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 13,
+              "z": -17.5
+            },
+            "blockTypeId": 102
+          },
+          {
+            "relativePos": {
+              "x": 14.5,
+              "y": 13,
+              "z": -16.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 18.5,
+              "y": 13,
+              "z": 19.5
+            },
+            "blockTypeId": 1
+          },
+          {
+            "relativePos": {
+              "x": 18.5,
+              "y": 13,
+              "z": 16.5
+            },
+            "blockTypeId": 6
           }
         ],
         "obstacles": [
+          {
+            "id": "-45,15,-44",
+            "type": "mechanical",
+            "size": "custom",
+            "relativePos": {
+              "x": -5,
+              "y": 14.5,
+              "z": -11
+            },
+            "config": {
+              "entityType": "carousel",
+              "dimensions": {
+                "x": 1,
+                "y": 1,
+                "z": 4
+              },
+              "speed": 3.200000047683716,
+              "distance": 3,
+              "rotationSpeed": 1,
+              "cost": 5
+            }
+          },
           {
             "id": "-45,15,-44",
             "type": "mechanical",
@@ -39974,17 +39980,6 @@
             }
           },
           {
-            "id": "bounce_pad_small",
-            "type": "bounce_pad",
-            "size": "small",
-            "relativePos": {
-              "x": 11.5,
-              "y": 34,
-              "z": -1.5
-            },
-            "config": {}
-          },
-          {
             "id": "-34,31,-29",
             "type": "mechanical",
             "size": "custom",
@@ -40025,27 +40020,38 @@
               "distance": 5,
               "cost": 10
             }
+          },
+          {
+            "id": "bounce_pad_small",
+            "type": "bounce_pad",
+            "size": "small",
+            "relativePos": {
+              "x": 11.5,
+              "y": 34,
+              "z": -1.5
+            },
+            "config": {}
           }
         ],
-        "lastModified": 1754354291741,
+        "lastModified": 1754529253370,
         "creatorName": "player-2",
         "creatorId": "player-2",
         "scoreboard": []
       },
-      "cash": 4978
+      "cash": 4980
     },
     "levelData": {
       "level": 8,
-      "xp": 7710,
-      "totalXP": 8710,
+      "xp": 7816,
+      "totalXP": 8816,
       "firstTimeFlags": [
-        "FIRST_COMPLETE"
+        "FIRST_BUILD"
       ],
-      "lastActiveTime": 1754430832674,
+      "lastActiveTime": 1754529240382,
       "loginStreak": 1,
-      "lastLoginDate": "Tue Aug 05 2025"
+      "lastLoginDate": "Wed Aug 06 2025"
     },
     "level": 8,
-    "xp": 7710,
-    "totalXP": 8710
+    "xp": 7816,
+    "totalXP": 8816
   }

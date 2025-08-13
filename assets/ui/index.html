@@ -76,6 +76,7 @@
             await Promise.all([
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/NpcDialoguePanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/BlockInventoryPanel.js'),
+                loadScript('{{CDN_ASSETS_URL}}/ui/panels/MobileBlockInventoryPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/HotbarPanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/BuildModePanel.js'),
                 loadScript('{{CDN_ASSETS_URL}}/ui/panels/PlayerOptionsPanel.js'),
@@ -96,6 +97,7 @@
             // Initialize panels
             window.BlockInventoryPanel.initialize('inventory-container');
             // window.BlockInventoryPanelV2.initialize('inventory-container-v2'); // DISABLED: Causing click conflicts
+            window.MobileBlockInventoryPanel.initialize('mobile-inventory-container');
             window.HotbarPanel.initialize('hotbar-container');
             window.BuildModePanel.initialize('build-mode-container');
             window.YourPlotPanel.initialize();

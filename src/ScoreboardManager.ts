@@ -228,10 +228,10 @@ export class ScoreboardManager {
                 cache.set(String(creatorPlayer.id ?? 'unknown'), { plotData: updatedPlotData });
             }
 
-            console.log(`[ScoreboardManager] Saved ${scoreboard.entries?.length || 0} scores to creator ${creatorName} for ${regionAwareKey} in world ${player.world?.name}`);
+            console.log(`[ScoreboardManager] Saved ${scoreboard.entries?.length || 0} scores to creator ${creatorName} for ${plotId} in world ${player.world?.name}`);
             
         } catch (error) {
-            console.error(`[ScoreboardManager] Error saving scoreboard for ${regionAwareKey}:`, error);
+            console.error(`[ScoreboardManager] Error saving scoreboard for ${plotId}:`, error);
         }
     }
 

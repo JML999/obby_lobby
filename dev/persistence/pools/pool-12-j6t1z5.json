@@ -1,0 +1,18 @@
+{
+  "poolId": "pool-12-j6t1z5",
+  "displayName": "Pool 12-j6t1z5",
+  "creator": "System",
+  "version": "1.0",
+  "lastModified": 1754540366707,
+  "scoreboard": [
+    {
+      "playerId": "player-1",
+      "playerName": "player-1",
+      "completionTime": 31033,
+      "timestamp": 1754540366697
+    }
+  ],
+  "metadata": {
+    "playCount": 1
+  }
+}

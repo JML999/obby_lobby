@@ -993,7 +993,7 @@ export class MechanicalBlockManager {
     /**
      * Load a single mechanical entity and register it with ObstacleCollisionManager (like jump pads)
      */
-    public loadSingleMechanicalEntity(plotId: string, entityId: string, position: Vector3Like, config: any, world: World): boolean {
+    public loadSingleMechanicalEntity(plotId: string, entityId: string, position: Vector3Like, config: any, world: World, directionMultiplier?: { x: number, z: number }): boolean {
         try {
             const positionKey = this.getPositionKey(position);
             
@@ -1008,7 +1008,7 @@ export class MechanicalBlockManager {
             console.log(`[MechanicalBlockManager] 📂 SINGLE-LOAD DEBUG - Saved position: ${position.x}, ${position.y}, ${position.z}`);
             console.log(`[MechanicalBlockManager] 📂 SINGLE-LOAD DEBUG - Entity spawn position: ${entitySpawnPosition.x}, ${entitySpawnPosition.y}, ${entitySpawnPosition.z}`);
             
-            // Create the entity using the stored configuration
+            // Create the entity using the stored configuration with direction transformation
             const entity = new ConfigurableMechanicalEntity(
                 world,
                 entitySpawnPosition,
@@ -1017,7 +1017,8 @@ export class MechanicalBlockManager {
                 config.dimensions.y,
                 config.dimensions.z,
                 config.speed || 2.0,
-                config.distance || 2
+                config.distance || 2,
+                directionMultiplier // Pass direction multiplier for movement transformation
             );
 
             // Note: rotationSpeed is automatically calculated from speed in the entity constructor
@@ -1056,13 +1057,17 @@ export class MechanicalBlockManager {
     /**
      * Load mechanical entities from saved data (called during plot loading)
      */
-    public loadMechanicalEntities(plotId: string, mechanicalEntities: any[], world: World): void {
+    public loadMechanicalEntities(plotId: string, mechanicalEntities: any[], world: World, directionMultiplier?: { x: number, z: number }): void {
         if (!this.world) {
             console.error('[MechanicalBlockManager] World not initialized');
             return;
         }
 
         console.log(`[MechanicalBlockManager] Loading ${mechanicalEntities.length} mechanical entities for plot ${plotId}`);
+        
+        if (directionMultiplier) {
+            console.log(`[MechanicalBlockManager] Movement direction transformation applied: X=${directionMultiplier.x}, Z=${directionMultiplier.z}`);
+        }
         
         // DEBUG: Track position keys to detect duplicates
         const positionKeyCount = new Map<string, number>();
@@ -1094,7 +1099,7 @@ export class MechanicalBlockManager {
                 
                 console.log(`[MechanicalBlockManager] Loading ${config.entityType} entity at ${positionKey} with dimensions ${config.dimensions.x}x${config.dimensions.y}x${config.dimensions.z}`);
 
-                // Create the entity using the stored configuration
+                // Create the entity using the stored configuration with direction transformation
                 const entity = new ConfigurableMechanicalEntity(
                     world,
                     entitySpawnPosition,
@@ -1103,7 +1108,8 @@ export class MechanicalBlockManager {
                     config.dimensions.y,
                     config.dimensions.z,
                     config.speed || 2.0,
-                    config.distance || 2
+                    config.distance || 2,
+                    directionMultiplier // Pass direction multiplier for movement transformation
                 );
 
                 // Spawn the entity

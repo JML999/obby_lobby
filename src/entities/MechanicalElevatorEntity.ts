@@ -35,7 +35,7 @@ export class MechanicalElevatorEntity extends ObstacleEntity implements Resizabl
         
         // Configure entity as a block-like entity with texture
         super({
-            blockTextureUri: 'blocks/iron-ore.png', // Using iron-ore texture for elevators
+            blockTextureUri: 'blocks/mechanical-wheel.png', // Using mechanical wheel texture
             blockHalfExtents: blockHalfExtents, // Size based on initialSize parameter
             rigidBodyOptions: {
                 type: RigidBodyType.KINEMATIC_POSITION, // Use KINEMATIC_POSITION (VELOCITY causes recursive errors)

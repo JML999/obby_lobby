@@ -370,7 +370,7 @@ export class BlockRegistry {
       // MECHANICAL BLOCKS (IDs 115, 120+)
       // =================================================================
       { 
-        id: 115, name: 'mechanical', textureUri: 'blocks/iron-ore.png', 
+        id: 115, name: 'mechanical', textureUri: 'blocks/mechanical-wheel.png', 
         category: 'special', buildable: true, destructible: true, pointCost: 5,
         description: 'Configurable mechanical block - opens config panel on placement'
       },

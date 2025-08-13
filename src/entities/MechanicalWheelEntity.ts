@@ -37,7 +37,7 @@ export class MechanicalWheelEntity extends ObstacleEntity implements ResizableMe
         
         // Configure entity as beam
         super({
-            blockTextureUri: 'blocks/gold-ore.png', // Using gold-ore texture for wheels
+            blockTextureUri: 'blocks/mechanical-wheel.png', // Using mechanical wheel texture
             blockHalfExtents: beamHalfExtents, // Beam shape
             rigidBodyOptions: {
                 type: RigidBodyType.KINEMATIC_POSITION, // Like Roblox anchored parts

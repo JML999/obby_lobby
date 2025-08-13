@@ -263,10 +263,7 @@ export class BlockPlacementManager {
       
       console.log(`[BlockPlacementManager] General mechanical block ${actualBlockId} handled - SHOULD NOT be tracked as regular block`);
       
-      // Grant XP for block placement
-      const xpSystem = SimpleLevelingSystem.getInstance();
-      xpSystem.onFirstBlockPlaced(player.id, player); // Handles first-time bonus
-      xpSystem.onBlockPlaced(player.id, player); // Always grant repeatable XP
+      // XP now awarded on course save, not per block
       
       // Send feedback
       const blockType = this.BLOCK_CATALOG.find(b => b.id === actualBlockId);
@@ -298,10 +295,7 @@ export class BlockPlacementManager {
       this.plotSaveManager.trackUserPlacedBlock(world, coordinate, actualBlockId, player.id, plotId);
     }
     
-    // Grant XP for block placement
-    const xpSystem = SimpleLevelingSystem.getInstance();
-    xpSystem.onFirstBlockPlaced(player.id, player); // Handles first-time bonus
-    xpSystem.onBlockPlaced(player.id, player); // Always grant repeatable XP
+    // XP now awarded on course save, not per block
     
     // Send feedback
     world.chatManager.sendPlayerMessage(player, `Placed ${blockType.name}`, '00FF00');

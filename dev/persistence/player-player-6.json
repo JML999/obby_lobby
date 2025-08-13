@@ -16,365 +16,156 @@
       "blocks": [
         {
           "relativePos": {
-            "x": 21.5,
-            "y": 1,
-            "z": 14.5
+            "x": 30.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 100
         },
         {
           "relativePos": {
-            "x": 20.5,
-            "y": 1,
-            "z": 14.5
+            "x": 29.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 20.5,
-            "y": 1,
-            "z": 13.5
+            "x": 28.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 21.5,
-            "y": 1,
-            "z": 13.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 20.5,
-            "y": 1,
-            "z": 15.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 21.5,
-            "y": 1,
-            "z": 15.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 22.5,
-            "y": 1,
-            "z": 14.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 22.5,
-            "y": 1,
-            "z": 15.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 22.5,
-            "y": 1,
-            "z": 13.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 7.5,
-            "y": 3,
-            "z": 13.5
-          },
-          "blockTypeId": 101
-        },
-        {
-          "relativePos": {
-            "x": 23.5,
-            "y": 1,
-            "z": 14.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 24.5,
-            "y": 1,
-            "z": 14.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 25.5,
-            "y": 1,
-            "z": 14.5
+            "x": 27.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
             "x": 26.5,
-            "y": 1,
-            "z": 14.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 27.5,
-            "y": 1,
-            "z": 14.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 27.5,
-            "y": 1,
-            "z": 13.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 27.5,
-            "y": 1,
-            "z": 12.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 12.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 11.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 10.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 9.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 8.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 7.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 6.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 5.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
-            "y": 1,
-            "z": 4.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 28.5,
             "y": 0,
-            "z": 5.5
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
+            "x": 25.5,
             "y": 0,
-            "z": 4.5
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
+            "x": 24.5,
             "y": 0,
-            "z": 3.5
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
-            "y": 1,
-            "z": 3.5
+            "x": 23.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
-            "y": 1,
-            "z": 2.5
+            "x": 22.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
-            "y": 1,
-            "z": 1.5
+            "x": 21.5,
+            "y": 0,
+            "z": -0.5
           },
           "blockTypeId": 1
         },
         {
           "relativePos": {
-            "x": 29.5,
-            "y": 1,
-            "z": 0.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 30.5,
+            "x": 18.5,
             "y": 0,
             "z": 2.5
           },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 30.5,
-            "y": 0,
-            "z": 1.5
-          },
-          "blockTypeId": 1
-        },
-        {
-          "relativePos": {
-            "x": 30.5,
-            "y": 0,
-            "z": 0.5
-          },
-          "blockTypeId": 1
+          "blockTypeId": 101
         }
       ],
       "obstacles": [
         {
-          "id": "-22,3,-82",
-          "type": "carousel",
+          "id": "-17,2,-97",
+          "type": "mechanical",
           "size": "custom",
           "relativePos": {
-            "x": 17.5,
-            "y": 2,
-            "z": 14.5
-          },
-          "config": {
-            "entityType": "carousel",
-            "dimensions": {
-              "x": 2,
-              "y": 2,
-              "z": 2
-            },
-            "speed": 1.600000023841858,
-            "distance": 2,
-            "rotationSpeed": 32.00000047683716,
-            "cost": 9
-          }
-        },
-        {
-          "id": "-28,4,-82",
-          "type": "side-to-side",
-          "size": "custom",
-          "relativePos": {
-            "x": 11.5,
-            "y": 3,
-            "z": 14.5
+            "x": 22.5,
+            "y": 1,
+            "z": -0.5
           },
           "config": {
             "entityType": "side-to-side",
             "dimensions": {
-              "x": 4,
+              "x": 1,
               "y": 1,
               "z": 1
             },
-            "speed": 1.2000000476837158,
-            "distance": 1,
-            "rotationSpeed": 24.000000953674316,
-            "cost": 5
+            "speed": 1.7999999523162842,
+            "distance": 2,
+            "cost": 2
+          }
+        },
+        {
+          "id": "-21,1,-97",
+          "type": "mechanical",
+          "size": "custom",
+          "relativePos": {
+            "x": 18.5,
+            "y": 0,
+            "z": -0.5
+          },
+          "config": {
+            "entityType": "front-to-back",
+            "dimensions": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "speed": 1.7999999523162842,
+            "distance": 2,
+            "cost": 2
           }
         }
       ],
-      "lastModified": 1754110138019,
+      "lastModified": 1754534375461,
       "creatorName": "player-6",
       "creatorId": "player-6",
-      "scoreboard": [
-        {
-          "playerId": "player-6",
-          "playerName": "player-6",
-          "completionTime": 3590,
-          "timestamp": 1754110138010
-        }
-      ]
+      "scoreboard": []
     },
-    "cash": 56
+    "cash": 9981
   },
   "levelData": {
     "level": 4,
-    "xp": 78,
-    "totalXP": 278,
+    "xp": 111,
+    "totalXP": 311,
     "firstTimeFlags": [
-      "FIRST_COMPLETE"
+      "FIRST_BUILD"
     ],
-    "lastActiveTime": 1754159935133,
+    "lastActiveTime": 1754534365496,
     "loginStreak": 1,
-    "lastLoginDate": "Sat Aug 02 2025"
+    "lastLoginDate": "Wed Aug 06 2025"
   },
   "level": 4,
-  "xp": 78,
-  "totalXP": 278
+  "xp": 111,
+  "totalXP": 311
 }

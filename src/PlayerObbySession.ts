@@ -156,16 +156,23 @@ export class PlayerObbySession implements IObbyPlayManager {
         const displayNumber = clockwiseMap[this.plotIndex] || this.plotIndex + 1;
         
         let creatorText: string;
-        if (creatorName && creatorName.includes('pool-')) {
+        
+        // Enhanced logging for debugging
+        console.log(`[PlayerObbySession] Plot ${this.plotIndex} creator name: "${creatorName}"`);
+        
+        if (creatorName && creatorName.startsWith('pool-')) {
             // Pool maps - randomly select a creator from the array
             const randomCreator = PlayerObbySession.POOL_CREATORS[Math.floor(Math.random() * PlayerObbySession.POOL_CREATORS.length)];
             creatorText = `by ${randomCreator}`;
-        } else if (creatorName) {
-            // Player builds - show actual creator
+            console.log(`[PlayerObbySession] Pool map detected, showing random creator: ${randomCreator}`);
+        } else if (creatorName && creatorName.trim() !== '') {
+            // Player builds - show actual creator (with validation)
             creatorText = `by ${creatorName}`;
+            console.log(`[PlayerObbySession] Player plot detected, showing creator: ${creatorName}`);
         } else {
             // Empty plots - show plot number
             creatorText = `Plot ${displayNumber}`;
+            console.log(`[PlayerObbySession] Empty plot detected, showing plot number: ${displayNumber}`);
         }
         console.log(`[PlayerObbySession] Displaying text: "COURSE STARTING" / "${creatorText}"`);
         

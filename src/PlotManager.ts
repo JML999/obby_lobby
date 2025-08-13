@@ -27,6 +27,18 @@ export class PlotManager {
     private managedWorlds: ManagedWorld[] = [];
     private defaultMapLoader: DefaultMapLoader;
     
+    // Plot assignment priority order: Display numbers 4→3→5→6→7→8→2→1
+    private static readonly PLOT_ASSIGNMENT_ORDER: number[] = [
+        0, // Display 4
+        1, // Display 3
+        4, // Display 5
+        5, // Display 6
+        6, // Display 7
+        7, // Display 8
+        2, // Display 2
+        3  // Display 1
+    ];
+    
     // Directional block mapping for 180° rotation (same as PlotSaveManager)
     private static readonly DIRECTIONAL_BLOCK_FLIP_MAP: { [key: number]: number } = {
         104: 105, // conveyor-z- → conveyor-z+ (South → North)
@@ -392,8 +404,17 @@ export class PlotManager {
             mw = await this.createNewWorld(worldFactory);
         }
         
-        // Find a free plot (all plots are now assignable)
-        const plot = mw.plots.find(p => !p.ownerId);
+        // Find a free plot using the assignment priority order
+        let plot: Plot | undefined;
+        for (const plotIndex of PlotManager.PLOT_ASSIGNMENT_ORDER) {
+            const candidatePlot = mw.plots[plotIndex];
+            if (candidatePlot && !candidatePlot.ownerId) {
+                plot = candidatePlot;
+                console.log(`[PlotManager] Assigning player ${playerId} to plot ${plotIndex} (Display ${this.getClockwiseDisplayNumber(plotIndex)}) following priority order`);
+                break;
+            }
+        }
+        
         if (!plot) {
             throw new Error('No free plot found (should not happen)');
         }
@@ -433,13 +454,20 @@ export class PlotManager {
             console.log(`[PlotManager]   Plot ${i} (Display ${displayNum}): ${status}`);
         }
         
-        // Find a free plot (all plots are now assignable)
-        const plot = mw.plots.find(p => !p.ownerId);
+        // Find a free plot using the assignment priority order
+        let plot: Plot | undefined;
+        for (const plotIndex of PlotManager.PLOT_ASSIGNMENT_ORDER) {
+            const candidatePlot = mw.plots[plotIndex];
+            if (candidatePlot && !candidatePlot.ownerId) {
+                plot = candidatePlot;
+                console.log(`[PlotManager] assignPlayerToPlotInWorld: Found free plot ${plotIndex} (Display ${this.getClockwiseDisplayNumber(plotIndex)}) for player ${playerId} following priority order`);
+                break;
+            }
+        }
+        
         if (!plot) {
             throw new Error(`No free plot found in world ${targetWorld.name}`);
         }
-        
-        console.log(`[PlotManager] assignPlayerToPlotInWorld: Found free plot ${plot.plotIndex} (Display ${this.getClockwiseDisplayNumber(plot.plotIndex)}) for player ${playerId} in world ${targetWorld.name}`);
         
         // Assign the plot to the player
         plot.ownerId = playerId;
@@ -475,109 +503,110 @@ export class PlotManager {
         }
     }
 
-    // Create initial plots for a new world: Leave first 3 plots empty, fill remaining 5 with pool maps
+    // Create initial plots for a new world with specific pool map placement
     private async createInitialPlots(world: World): Promise<Plot[]> {
         const plots: Plot[] = [];
         
-        // Load all available pool maps
+        // Load specific pool maps for displays 1 and 2
+        let pool13: DefaultMapData | null = null;
+        let pool14: DefaultMapData | null = null;
+        
+        try {
+            pool13 = await this.defaultMapLoader.loadSpecificPoolMap(13);
+            if (pool13) {
+                console.log(`[PlotManager] Successfully loaded pool-13 for display 1`);
+            }
+        } catch (error) {
+            console.warn(`[PlotManager] Could not load pool-13:`, error);
+        }
+        
+        try {
+            pool14 = await this.defaultMapLoader.loadSpecificPoolMap(14);
+            if (pool14) {
+                console.log(`[PlotManager] Successfully loaded pool-14 for display 2`);
+            }
+        } catch (error) {
+            console.warn(`[PlotManager] Could not load pool-14:`, error);
+        }
+        
+        // Load remaining pool maps for other slots (excluding 13 and 14)
         const allPoolMaps = await this.defaultMapLoader.loadAllPoolMaps();
+        const otherPoolMaps = allPoolMaps.filter(map => {
+            // Filter out pool-13 and pool-14 if they exist
+            const mapData = map.obby?.plotData;
+            if (!mapData) return true;
+            
+            // Check if this is pool-13 or pool-14 by comparing content
+            const isPool13 = pool13 && mapData.creatorName === pool13.obby?.plotData?.creatorName && 
+                           mapData.blocks?.length === pool13.obby?.plotData?.blocks?.length;
+            const isPool14 = pool14 && mapData.creatorName === pool14.obby?.plotData?.creatorName && 
+                           mapData.blocks?.length === pool14.obby?.plotData?.blocks?.length;
+            
+            return !isPool13 && !isPool14;
+        });
         
-        // Select pool maps ensuring exactly one of the big pool maps (13 or 14) is included
-        const selectedPoolMaps = await this.selectPoolMapsWithOneBigMap(allPoolMaps, 5);
+        // Select 3 random maps from the remaining pool maps for displays 6, 7, 8
+        const selectedOtherMaps = this.selectRandomUniquePoolMaps(otherPoolMaps, 3);
         
-        // Create all 8 plots
+        // Create all 8 plots with specific assignments
         for (let i = 0; i < 8; i++) {
-            // Keep first 3 plots (indices 0, 1, 2 = displays 4, 3, 2) empty for new players
-            if (i < 3) {
+            const displayNumber = this.getClockwiseDisplayNumber(i);
+            
+            // Plot assignments based on display number
+            if (i === 0 || i === 1 || i === 4) {
+                // Display 4, 3, 5 - Empty for new players
                 plots.push({ 
-                    ownerId: null, // Assignable to players
-                    obby: null, // Empty - no prefab content
+                    ownerId: null,
+                    obby: null,
                     plotIndex: i
                 });
-                const displayNumber = this.getClockwiseDisplayNumber(i);
                 console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) left empty for new players`);
-            } else {
-                // Fill remaining plots (indices 3-7) with pool maps
-                const poolMapIndex = i - 3; // Adjust index for selectedPoolMaps array
-                const poolMap = selectedPoolMaps[poolMapIndex];
+            } else if (i === 2 && pool14) {
+                // Display 2 - Pool-14
                 plots.push({ 
-                    ownerId: null, // Keep assignable to players
-                    obby: poolMap ? poolMap.obby : null, // Load pool content
+                    ownerId: null,
+                    obby: pool14.obby,
+                    plotIndex: i
+                });
+                console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool-14`);
+            } else if (i === 3 && pool13) {
+                // Display 1 - Pool-13
+                plots.push({ 
+                    ownerId: null,
+                    obby: pool13.obby,
+                    plotIndex: i
+                });
+                console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool-13`);
+            } else if (i === 5 || i === 6 || i === 7) {
+                // Display 6, 7, 8 - Other pool maps
+                const mapIndex = i - 5; // 0, 1, 2 for selectedOtherMaps
+                const poolMap = selectedOtherMaps[mapIndex];
+                plots.push({ 
+                    ownerId: null,
+                    obby: poolMap ? poolMap.obby : null,
                     plotIndex: i
                 });
                 
                 if (poolMap) {
-                    const displayNumber = this.getClockwiseDisplayNumber(i);
                     const creatorName = poolMap.obby?.plotData?.creatorName || 'unknown';
                     console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) filled with pool map (${creatorName})`);
+                } else {
+                    console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) left empty (no pool map available)`);
                 }
+            } else {
+                // Fallback - should not happen with current logic
+                plots.push({ 
+                    ownerId: null,
+                    obby: null,
+                    plotIndex: i
+                });
+                console.log(`[PlotManager] Plot ${i} (Display ${displayNumber}) left empty (fallback)`);
             }
         }
         
         return plots;
     }
 
-    /**
-     * Select pool maps ensuring exactly one of the big pool maps (13 or 14) is included
-     */
-    private async selectPoolMapsWithOneBigMap(availablePoolMaps: DefaultMapData[], count: number): Promise<DefaultMapData[]> {
-        if (count < 1) return [];
-        
-        // Since the pool maps don't have reliable ownerId, we need to work with what's loaded
-        // For now, we'll implement this by ensuring we attempt to load pool-13 and pool-14
-        // and include one if available
-        
-        console.log(`[PlotManager] Selecting from ${availablePoolMaps.length} available pool maps`);
-        
-        // Try to load the big pool maps specifically
-        const bigPoolNumbers = [13, 14];
-        const bigPoolMaps: DefaultMapData[] = [];
-        
-        // Attempt to load each big pool map
-        for (const mapNumber of bigPoolNumbers) {
-            try {
-                const bigMap = await this.defaultMapLoader.loadSpecificPoolMap(mapNumber);
-                if (bigMap) {
-                    // Add a marker to identify this as a big map
-                    (bigMap as any).mapNumber = mapNumber;
-                    bigPoolMaps.push(bigMap);
-                }
-            } catch (error) {
-                console.warn(`[PlotManager] Could not load big pool map ${mapNumber}:`, error);
-            }
-        }
-        
-        console.log(`[PlotManager] Found ${bigPoolMaps.length} big pool maps (13/14) available`);
-        
-        // If no big pool maps are available, fall back to regular selection
-        if (bigPoolMaps.length === 0) {
-            console.warn(`[PlotManager] No big pool maps (13/14) found, using regular selection from available maps`);
-            return this.selectRandomUniquePoolMaps(availablePoolMaps, count);
-        }
-        
-        // Select exactly one big pool map randomly
-        const selectedBigMap = bigPoolMaps[Math.floor(Math.random() * bigPoolMaps.length)];
-        const selectedMapNumber = (selectedBigMap as any).mapNumber;
-        console.log(`[PlotManager] Selected big pool map: pool-${selectedMapNumber}`);
-        
-        // Select remaining maps from the available pool maps (excluding big maps)
-        const remainingCount = count - 1;
-        // Filter out maps that match the selected big map to avoid duplicates
-        const availableWithoutBigMaps = availablePoolMaps.filter(map => {
-            // Compare by checking if this map's data matches any of the big pool maps
-            return !bigPoolMaps.some(bigMap => 
-                map.obby?.plotData?.creatorName === bigMap.obby?.plotData?.creatorName &&
-                map.obby?.plotData?.blocks?.length === bigMap.obby?.plotData?.blocks?.length
-            );
-        });
-        const selectedRegularMaps = this.selectRandomUniquePoolMaps(availableWithoutBigMaps, remainingCount);
-        
-        // Combine: one big map + regular maps
-        const finalSelection = [selectedBigMap, ...selectedRegularMaps];
-        
-        console.log(`[PlotManager] Final pool map selection: big map pool-${selectedMapNumber} + ${selectedRegularMaps.length} regular maps`);
-        return finalSelection;
-    }
 
     /**
      * Randomly select unique pool maps from available pool maps
@@ -768,8 +797,17 @@ export class PlotManager {
             const { MechanicalBlockManager } = await import('./MechanicalBlockManager');
             const mechanicalManager = MechanicalBlockManager.getInstance();
             mechanicalManager.initializeWorld(world); // Initialize with world context
-            mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, world);
-            console.log(`[PlotManager] Loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} from default map`);
+            
+            // Calculate direction multiplier for movement transformation when needed
+            let directionMultiplier: { x: number, z: number } | undefined;
+            if (needsTransformation) {
+                // 180° rotation: flip both X and Z movement directions
+                directionMultiplier = { x: -1, z: -1 };
+                console.log(`[PlotManager] 🔄 Applying mechanical movement transformation: X=${directionMultiplier.x}, Z=${directionMultiplier.z}`);
+            }
+            
+            mechanicalManager.loadMechanicalEntities(plotId, mechanicalEntities, world, directionMultiplier);
+            console.log(`[PlotManager] Loaded ${mechanicalEntities.length} mechanical entities for plot ${plotId} from default map with transformation=${!!needsTransformation}`);
         }
     }
 

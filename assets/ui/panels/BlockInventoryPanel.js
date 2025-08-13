@@ -117,7 +117,7 @@ class BlockInventoryPanel {
         this.availableObstacles = [
             { id: 'bounce_pad_small', name: 'Bounce Pad', size: 'Small', type: 'bounce_pad', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'prefab' },
             { id: 'rotating_beam_small', name: 'Rotating Beam', size: 'Small', type: 'rotating_beam', sizeId: 'small', icon: 'ui/icons/speed-icon.png', category: 'prefab' },
-            { id: 'seesaw', name: 'Seesaw', size: 'Standard', type: 'seesaw', sizeId: 'standard', icon: 'ui/icons/speed-icon.png', category: 'prefab' }
+            // Seesaw temporarily disabled for release
         ];
     }
 

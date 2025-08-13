@@ -56004,20 +56004,20 @@
       "creatorId": "player-3",
       "scoreboard": []
     },
-    "cash": 2996
+    "cash": 2997
   },
   "levelData": {
     "level": 8,
-    "xp": 9398,
-    "totalXP": 10398,
+    "xp": 9413,
+    "totalXP": 10413,
     "firstTimeFlags": [
-      "FIRST_BUILD"
+      "FIRST_COMPLETE"
     ],
-    "lastActiveTime": 1754420682282,
+    "lastActiveTime": 1754543978104,
     "loginStreak": 1,
-    "lastLoginDate": "Tue Aug 05 2025"
+    "lastLoginDate": "Wed Aug 06 2025"
   },
   "level": 8,
-  "xp": 9398,
-  "totalXP": 10398
+  "xp": 9413,
+  "totalXP": 10413
 }
